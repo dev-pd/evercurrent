@@ -31,8 +31,8 @@ export function DigestCard() {
   const [pendingFeedbackId, setPendingFeedbackId] = useState<string | null>(null);
 
   const digest = useQuery({
-    queryKey: ["digest", currentUserId, currentDay],
-    queryFn: () => api.getDigest(currentUserId!, currentDay),
+    queryKey: ["digest", currentUserId, currentDay, currentProjectId],
+    queryFn: () => api.getDigest(currentUserId!, currentDay, currentProjectId ?? undefined),
     enabled: Boolean(currentUserId),
     retry: false,
   });
@@ -41,13 +41,30 @@ export function DigestCard() {
     mutationFn: () => api.generateDigests(currentProjectId!, currentDay),
   });
 
+  // Regenerate is fully queue-driven: API enqueues onto Arq + returns a
+  // job_id; we poll /jobs/{id} until the worker finishes. The UI stays
+  // responsive, the LLM call runs in the worker pool, and re-clicks are
+  // de-duplicated by the deterministic job id keyed on
+  // (project, user, day, phase).
   const regenerate = useMutation({
-    mutationFn: () => api.regenerateDigest(currentUserId!, currentProjectId!, currentDay),
+    mutationFn: async () => {
+      const job = await api.enqueueRegenerate(currentUserId!, currentProjectId!, currentDay);
+      const deadline = Date.now() + 60_000;
+      while (Date.now() < deadline) {
+        const status = await api.getJob(job.job_id);
+        if (status.status === "complete" || status.status === "not_found") return status;
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      throw new Error("regenerate timed out");
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["digest", currentUserId] });
     },
   });
 
+  // Feedback only bumps user.topic_weights server-side. Nothing on-demand:
+  // the next Regenerate click (or the next precompute sweep) picks up the
+  // weight delta. Keeps the UI snappy.
   const feedback = useMutation({
     mutationFn: async (args: { messageId: string; signal: 1 | -1 }) => {
       setPendingFeedbackId(args.messageId);
@@ -57,15 +74,11 @@ export function DigestCard() {
           messageId: args.messageId,
           signal: args.signal,
         });
-        // Synchronously regenerate the digest so the user sees the learned-weight
-        // effect within ~5s rather than on the next refresh.
-        await api.regenerateDigest(currentUserId!, currentProjectId!, currentDay);
       } finally {
         setPendingFeedbackId(null);
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["digest", currentUserId] });
       void queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
@@ -162,8 +175,8 @@ export function DigestCard() {
               Rate the prioritisation
             </p>
             <p className="mb-3 text-xs text-zinc-500">
-              Thumbs up boosts that topic for you; thumbs down dampens it. Digest re-ranks
-              immediately (~3-10s).
+              Thumbs up boosts that topic for you; thumbs down dampens it. Click Regenerate above to
+              see the re-ranked digest.
             </p>
             <ul className="flex flex-col gap-2">
               {data.items.map((item) => {

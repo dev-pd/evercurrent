@@ -196,9 +196,14 @@ async def generate_digest_for_user(
     project_id: uuid.UUID,
     user_id: uuid.UUID,
     day: int,
+    phase: str | None = None,
     enriched_messages: Sequence[EnrichedMessage] | None = None,
 ) -> str | None:
-    """Score + generate + persist a digest for one user."""
+    """Score + generate + persist a digest for one (user, day, phase) cell.
+
+    `phase` overrides the project's current_phase — used by the
+    pre-compute step that sweeps every phase variant.
+    """
     async with session_scope() as session:
         projects = ProjectRepository(session)
         users = UserRepository(session)
@@ -210,17 +215,33 @@ async def generate_digest_for_user(
         if project is None or user is None:
             return None
 
+        # Score against the requested phase, not necessarily the live
+        # project phase. We swap the field on a copy so we don't persist
+        # the override.
+        effective_phase = phase or project.current_phase
+        scoring_project = project.model_copy(update={"current_phase": effective_phase})
+
         if enriched_messages is None:
             enriched_messages = await msgs.list_for_day(project_id, day, with_tags=True)
 
-        scored = score_messages_for_user(enriched_messages, user, project, top_n=TOP_N)
+        scored = score_messages_for_user(
+            enriched_messages,
+            user,
+            scoring_project,
+            top_n=TOP_N,
+        )
         generator = _pick_generator()
-        content = await generator.generate(user=user, project=project, top_messages=scored)
+        content = await generator.generate(
+            user=user,
+            project=scoring_project,
+            top_messages=scored,
+        )
 
         await digests.upsert(
             user_id=user.id,
             project_id=project.id,
             day=day,
+            phase=effective_phase,
             content_md=content,
             item_message_ids=[s.enriched.message.id for s in scored],
         )
@@ -228,7 +249,12 @@ async def generate_digest_for_user(
         return content
 
 
-async def generate_all_digests_for_day(project_id: uuid.UUID, day: int) -> int:
+async def generate_all_digests_for_day(
+    project_id: uuid.UUID,
+    day: int,
+    *,
+    phase: str | None = None,
+) -> int:
     """Generate digests for every user in the project on the given day."""
     async with session_scope() as session:
         users_repo = UserRepository(session)
@@ -242,6 +268,7 @@ async def generate_all_digests_for_day(project_id: uuid.UUID, day: int) -> int:
             project_id=project_id,
             user_id=user.id,
             day=day,
+            phase=phase,
             enriched_messages=enriched,
         )
         if content is not None:
@@ -249,3 +276,63 @@ async def generate_all_digests_for_day(project_id: uuid.UUID, day: int) -> int:
             log.info("digest.generate.user_done", user_id=str(user.id), day=day)
 
     return count
+
+
+_PROJECT_PHASES = ("concept", "design", "EVT", "DVT", "PVT", "MP")
+
+
+async def precompute_all_digests(
+    project_id: uuid.UUID,
+    *,
+    days: Sequence[int] = (1, 2, 3, 4, 5),
+    phases: Sequence[str] = _PROJECT_PHASES,
+) -> int:
+    """Pre-compute every (user, day, phase) digest variant.
+
+    Heavy — 8 users * 5 days * 6 phases = 240 Sonnet calls. Run once at
+    seed time so the UI never waits on an LLM during a phase swap.
+    """
+    total = 0
+    for phase in phases:
+        for day in days:
+            written = await generate_all_digests_for_day(
+                project_id,
+                day,
+                phase=phase,
+            )
+            log.info("digest.precompute.cell_done", phase=phase, day=day, written=written)
+            total += written
+    return total
+
+
+def main() -> None:
+    """CLI: `python -m evercurrent.digest.generator [--day N|--all]`."""
+    import argparse
+    import asyncio
+
+    parser = argparse.ArgumentParser(description="Generate / precompute digests.")
+    parser.add_argument("--day", type=int, help="Generate for one day (current phase only)")
+    parser.add_argument("--all", action="store_true", help="Precompute every (user, day, phase)")
+    parser.add_argument("--project-name", default="Warehouse Robot v2")
+    args = parser.parse_args()
+
+    async def _run() -> None:
+        async with session_scope() as session:
+            project = await ProjectRepository(session).get_by_name(args.project_name)
+        if project is None:
+            msg = f"project {args.project_name!r} not found; run `make seed` first."
+            raise RuntimeError(msg)
+        if args.all:
+            written = await precompute_all_digests(project.id)
+            log.info("digest.cli.precompute_done", total=written)
+        elif args.day:
+            written = await generate_all_digests_for_day(project.id, args.day)
+            log.info("digest.cli.day_done", day=args.day, total=written)
+        else:
+            log.info("digest.cli.usage", message="Pass --day N or --all.")
+
+    asyncio.run(_run())
+
+
+if __name__ == "__main__":
+    main()

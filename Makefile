@@ -81,9 +81,13 @@ ingest-docs: ## Run RAG document ingestion (chunk + embed + index)
 	$(API_EXEC) python -m evercurrent.rag.indexer --all
 
 .PHONY: generate-digests
-generate-digests: ## Generate digests for day=N. Usage: make generate-digests day=3
+generate-digests: ## Generate digests for day=N (current phase). Usage: make generate-digests day=3
 	@if [ -z "$(day)" ]; then echo "Usage: make generate-digests day=<N>"; exit 1; fi
-	$(API_EXEC) python -m evercurrent.digest.cli --day $(day)
+	$(API_EXEC) python -m evercurrent.digest.generator --day $(day)
+
+.PHONY: precompute-digests
+precompute-digests: ## Pre-compute every (user, day, phase) digest. ~240 Sonnet calls, ~10-20 min.
+	$(API_EXEC) python -m evercurrent.digest.generator --all
 
 .PHONY: psql
 psql: ## Open a psql shell against the running postgres container

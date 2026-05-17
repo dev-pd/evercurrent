@@ -40,6 +40,7 @@ class Document(BaseModel):
     kind: DocumentKindField
     title: Annotated[str, Field(min_length=1, max_length=255)]
     body: str
+    phases: list[str] = Field(default_factory=list)
     metadata: dict[str, object] = Field(default_factory=dict, alias="metadata_")
     created_at: dt.datetime
 

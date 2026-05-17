@@ -16,12 +16,8 @@ import { useState } from "react";
 const PHASES = ["concept", "design", "EVT", "DVT", "PVT", "MP"];
 
 export function PhaseSwitcher() {
-  const { currentProjectId, currentUserId, currentDay } = useImpersonationStore();
+  const { currentProjectId } = useImpersonationStore();
   const queryClient = useQueryClient();
-  // Local optimistic value: the dropdown reflects what the user just picked
-  // immediately, even while the backend mutation + digest regen are in
-  // flight (~3-10s). Cleared on settle so we fall back to the canonical
-  // value from the project query.
   const [optimisticPhase, setOptimisticPhase] = useState<string | null>(null);
 
   const project = useQuery({
@@ -30,20 +26,16 @@ export function PhaseSwitcher() {
     enabled: Boolean(currentProjectId),
   });
 
+  // Phase change is a metadata-only POST. Every (user, day, phase) digest
+  // is precomputed at seed, so the dashboard refetches the matching
+  // precomputed row — no LLM call in this hot path.
   const setPhase = useMutation({
-    mutationFn: async (phase: string) => {
-      await api.changePhase(currentProjectId!, phase);
-      if (currentUserId) {
-        await api.regenerateDigest(currentUserId, currentProjectId!, currentDay);
-      }
-    },
+    mutationFn: (phase: string) => api.changePhase(currentProjectId!, phase),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["project"] });
       void queryClient.invalidateQueries({ queryKey: ["digest"] });
     },
-    onSettled: () => {
-      setOptimisticPhase(null);
-    },
+    onSettled: () => setOptimisticPhase(null),
   });
 
   if (!project.data) {
@@ -73,7 +65,7 @@ export function PhaseSwitcher() {
           ))}
         </SelectContent>
       </Select>
-      {setPhase.isPending && <Spinner size="xs" label="Re-ranking…" />}
+      {setPhase.isPending && <Spinner size="xs" />}
       {setPhase.isError && <span className="text-xs text-red-700">phase change failed</span>}
     </div>
   );

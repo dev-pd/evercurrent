@@ -36,6 +36,18 @@ class UserResponse(BaseModel):
     topic_weights: dict[str, float]
 
 
+class DocumentResponse(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    id: uuid.UUID
+    project_id: uuid.UUID
+    kind: str
+    title: str
+    phases: list[str]
+    body_excerpt: str
+    chars: int
+
+
 class DigestItem(BaseModel):
     """One source message cited by the digest, joined with its tag."""
 
@@ -58,6 +70,7 @@ class DigestResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
     day: int
+    phase: str
     content_md: str
     item_message_ids: list[uuid.UUID]
     items: list[DigestItem] = Field(default_factory=list)

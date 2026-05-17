@@ -39,6 +39,7 @@ export const digestSchema = z.object({
   id: z.string().uuid(),
   user_id: z.string().uuid(),
   day: z.number().int(),
+  phase: z.string(),
   content_md: z.string(),
   item_message_ids: z.array(z.string().uuid()),
   items: z.array(digestItemSchema),
@@ -70,6 +71,27 @@ export const feedbackResponseSchema = z.object({
   topic_weights: z.record(z.number()),
 });
 export type FeedbackResponse = z.infer<typeof feedbackResponseSchema>;
+
+export const documentSchema = z.object({
+  id: z.string().uuid(),
+  project_id: z.string().uuid(),
+  kind: z.string(),
+  title: z.string(),
+  phases: z.array(z.string()),
+  body_excerpt: z.string(),
+  chars: z.number().int(),
+});
+export type Document = z.infer<typeof documentSchema>;
+
+export const jobStatusSchema = z.object({
+  job_id: z.string(),
+  status: z.string(),
+  result: z.record(z.unknown()).nullable().optional(),
+  enqueue_time: z.string().nullable().optional(),
+  start_time: z.string().nullable().optional(),
+  finish_time: z.string().nullable().optional(),
+});
+export type JobStatus = z.infer<typeof jobStatusSchema>;
 
 export type AgentEventType = "text_delta" | "tool_use_start" | "tool_use_result" | "done" | "close";
 

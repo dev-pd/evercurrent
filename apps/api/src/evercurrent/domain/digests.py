@@ -33,6 +33,7 @@ class Digest(BaseModel):
     user_id: uuid.UUID
     project_id: uuid.UUID
     day: Annotated[int, Field(ge=1)]
+    phase: Annotated[str, Field(min_length=1, max_length=32)]
     content_md: str
     item_message_ids: list[uuid.UUID] = Field(default_factory=list)
     generated_at: dt.datetime

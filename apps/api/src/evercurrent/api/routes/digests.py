@@ -16,7 +16,6 @@ from evercurrent.db.repositories import (
     ProjectRepository,
     UserRepository,
 )
-from evercurrent.digest.generator import generate_digest_for_user
 from evercurrent.domain.digests import Digest as DigestDomain
 
 router = APIRouter(prefix="/digests", tags=["digests"])
@@ -49,6 +48,7 @@ async def _build_response(digest: DigestDomain, session: AsyncSession) -> Digest
         id=digest.id,
         user_id=digest.user_id,
         day=digest.day,
+        phase=digest.phase,
         content_md=digest.content_md,
         item_message_ids=digest.item_message_ids,
         items=items,
@@ -75,31 +75,37 @@ async def generate(
     return GenerateDigestsResponse(job_id=job_id, day=day)
 
 
-@router.post("/{user_id}/regenerate", response_model=DigestResponse)
+@router.post(
+    "/{user_id}/regenerate",
+    response_model=GenerateDigestsResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
 async def regenerate_for_user(
     user_id: uuid.UUID,
+    arq: ArqPool,
     session: SessionDep,
     day: Annotated[int, Query(ge=1)],
     project_id: Annotated[uuid.UUID, Query()],
-) -> DigestResponse:
-    """Synchronously regenerate one user's digest. Returns the fresh row."""
+) -> GenerateDigestsResponse:
+    """Enqueue a per-user regenerate job onto the Arq queue.
+
+    Returns 202 with the Arq job_id so the client can poll
+    /jobs/{job_id} for status. The actual LLM call runs in the worker
+    pool — the API never blocks on a model roundtrip.
+    """
     project = await ProjectRepository(session).get_by_id(project_id)
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="project not found")
-    content = await generate_digest_for_user(
-        project_id=project_id,
-        user_id=user_id,
-        day=day,
+    job = await arq.enqueue_job(
+        "regenerate_user_digest",
+        str(project_id),
+        str(user_id),
+        day,
+        project.current_phase,
+        _job_id=f"regen:{project_id}:{user_id}:{day}:{project.current_phase}",
     )
-    if content is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user not found")
-    digest = await DigestRepository(session).get(user_id, day)
-    if digest is None:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="digest write failed",
-        )
-    return await _build_response(digest, session)
+    job_id = getattr(job, "job_id", str(uuid.uuid4()))
+    return GenerateDigestsResponse(job_id=job_id, day=day)
 
 
 @router.get("/{user_id}", response_model=DigestResponse)
@@ -107,8 +113,23 @@ async def get_digest(
     user_id: uuid.UUID,
     session: SessionDep,
     day: Annotated[int, Query(ge=1)],
+    project_id: Annotated[uuid.UUID | None, Query()] = None,
 ) -> DigestResponse:
-    digest = await DigestRepository(session).get(user_id, day)
+    """Return the precomputed digest for (user, day, project.current_phase).
+
+    Phase resolves from project_id when supplied, otherwise we fall back
+    to the most-recent digest for that user/day.
+    """
+    repo = DigestRepository(session)
+    phase: str | None = None
+    if project_id is not None:
+        project = await ProjectRepository(session).get_by_id(project_id)
+        if project is not None:
+            phase = project.current_phase
+    digest = await repo.get(user_id, day, phase=phase)
+    if digest is None and phase is not None:
+        # Phase variant not yet precomputed — fall back to any digest for the day.
+        digest = await repo.get(user_id, day)
     if digest is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="digest not found")
     return await _build_response(digest, session)

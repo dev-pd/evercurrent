@@ -172,6 +172,18 @@ async def load_docs(project_id: uuid.UUID) -> int:
         "test_report_thermal": DocumentKind.TEST_REPORT_THERMAL,
         "test_report_drop": DocumentKind.TEST_REPORT_DROP,
     }
+    # Which project phases each document kind is authoritative for.
+    # PRD spans the whole lifecycle; BOM evolves through DVT/PVT/MP;
+    # ECO log is most active during DVT/PVT; test reports are scoped to
+    # the phase that ran them.
+    phases_by_kind: dict[DocumentKind, list[str]] = {
+        DocumentKind.PRD: ["concept", "design", "EVT", "DVT", "PVT", "MP"],
+        DocumentKind.BOM: ["DVT", "PVT", "MP"],
+        DocumentKind.ECO_LOG: ["EVT", "DVT", "PVT"],
+        DocumentKind.TEST_REPORT_THERMAL: ["DVT", "PVT"],
+        DocumentKind.TEST_REPORT_DROP: ["DVT", "PVT"],
+        DocumentKind.OTHER: [],
+    }
 
     total = 0
     async with session_scope() as session:
@@ -187,6 +199,7 @@ async def load_docs(project_id: uuid.UUID) -> int:
                 kind=kind,
                 title=title,
                 body=body,
+                phases=phases_by_kind.get(kind, []),
             )
             total += 1
         await session.commit()

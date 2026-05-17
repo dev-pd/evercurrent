@@ -1,9 +1,9 @@
-"""RAG retriever. pgvector cosine search with optional kind filter."""
+"""RAG retriever. pgvector cosine search with kind + phase filters."""
 
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import structlog
 from sqlalchemy import bindparam, text
@@ -25,6 +25,7 @@ class ChunkResult:
     section_path: str | None
     text: str
     similarity: float
+    document_phases: list[str] = field(default_factory=list)
 
 
 async def search_documents(
@@ -32,9 +33,17 @@ async def search_documents(
     query: str,
     project_id: uuid.UUID,
     document_kinds: list[str] | None = None,
+    phase: str | None = None,
     top_k: int = 5,
     embedder: EmbeddingProvider | None = None,
 ) -> list[ChunkResult]:
+    """Cosine ANN over `document_chunks` with optional kind + phase filters.
+
+    `phase`: restrict to documents whose `phases` array contains the given
+    project phase. PRD-like docs that apply to all phases match every
+    request; phase-scoped docs (test reports, ECO log) only match when
+    relevant.
+    """
     emb = embedder or get_embedder()
     query_vec = await emb.embed_query(query)
 
@@ -45,6 +54,7 @@ async def search_documents(
             dc.document_id AS document_id,
             d.title AS document_title,
             d.kind AS document_kind,
+            d.phases AS document_phases,
             dc.section_path AS section_path,
             dc.text AS chunk_text,
             1 - (dc.embedding <=> CAST(:qvec AS vector)) AS similarity
@@ -52,6 +62,11 @@ async def search_documents(
         JOIN documents d ON d.id = dc.document_id
         WHERE d.project_id = :project_id
           AND (:kinds IS NULL OR d.kind = ANY(CAST(:kinds AS text[])))
+          AND (
+              :phase IS NULL
+              OR cardinality(d.phases) = 0
+              OR :phase = ANY(d.phases)
+          )
           AND dc.embedding IS NOT NULL
         ORDER BY dc.embedding <=> CAST(:qvec AS vector)
         LIMIT :limit
@@ -60,6 +75,7 @@ async def search_documents(
         bindparam("qvec"),
         bindparam("project_id"),
         bindparam("kinds"),
+        bindparam("phase"),
         bindparam("limit"),
     )
 
@@ -72,6 +88,7 @@ async def search_documents(
                 "qvec": qvec_literal,
                 "project_id": project_id,
                 "kinds": document_kinds,
+                "phase": phase,
                 "limit": top_k,
             },
         )
@@ -86,6 +103,7 @@ async def search_documents(
             section_path=r["section_path"],
             text=r["chunk_text"],
             similarity=float(r["similarity"]),
+            document_phases=list(r.get("document_phases", []) or []),
         )
         for r in rows
     ]

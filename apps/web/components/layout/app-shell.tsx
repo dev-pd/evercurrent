@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/decisions", label: "Decisions" },
+  { href: "/docs", label: "Documents" },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -44,7 +45,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <header className="flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-6">
-          <div className="text-sm text-zinc-500">Personalised digest + agentic chat</div>
+          <div className="text-sm text-zinc-500">Personalised digest · phase-aware</div>
           <ImpersonationDropdown />
         </header>
         <div className="min-h-0 flex-1 overflow-auto">{children}</div>

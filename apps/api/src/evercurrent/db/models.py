@@ -273,6 +273,11 @@ class Document(Base):
     kind: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
+    phases: Mapped[list[str]] = mapped_column(
+        ARRAY(Text),
+        nullable=False,
+        server_default="{}",
+    )
     metadata_: Mapped[dict[str, Any]] = mapped_column(
         "metadata",
         JSONB,
@@ -395,6 +400,7 @@ class Digest(Base):
         index=True,
     )
     day: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    phase: Mapped[str] = mapped_column(String(32), nullable=False)
     content_md: Mapped[str] = mapped_column(Text, nullable=False)
     item_message_ids: Mapped[list[str]] = mapped_column(
         ARRAY(UUID(as_uuid=True)),
@@ -405,7 +411,7 @@ class Digest(Base):
 
     user: Mapped[User] = relationship(back_populates="digests")
 
-    __table_args__ = (Index("ix_digests_user_day", "user_id", "day", unique=True),)
+    __table_args__ = (Index("ix_digests_user_day_phase", "user_id", "day", "phase", unique=True),)
 
 
 class Feedback(Base):

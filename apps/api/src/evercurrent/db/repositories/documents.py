@@ -41,6 +41,7 @@ class DocumentRepository:
         kind: DocumentKind,
         title: str,
         body: str,
+        phases: list[str] | None = None,
         metadata: dict[str, object] | None = None,
     ) -> Document:
         result = await self._s.execute(
@@ -53,14 +54,17 @@ class DocumentRepository:
         if existing is not None:
             existing.kind = kind.value
             existing.body = body
+            existing.phases = phases or []
             existing.metadata_ = metadata or {}
             await self._s.flush()
+            await self._s.refresh(existing)
             return Document.model_validate(existing)
         row = DocumentModel(
             project_id=project_id,
             kind=kind.value,
             title=title,
             body=body,
+            phases=phases or [],
             metadata_=metadata or {},
         )
         self._s.add(row)

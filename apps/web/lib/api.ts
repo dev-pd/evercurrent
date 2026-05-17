@@ -7,10 +7,14 @@ import {
   decisionSchema,
   type Digest,
   digestSchema,
+  type Document,
+  documentSchema,
   type FeedbackResponse,
   feedbackResponseSchema,
   type GenerateDigestsResponse,
   generateDigestsSchema,
+  type JobStatus,
+  jobStatusSchema,
   type Project,
   projectSchema,
   type User,
@@ -54,8 +58,9 @@ export const api = {
   async listUsers(projectId: string): Promise<User[]> {
     return request(`/users?project_id=${projectId}`, undefined, z.array(userSchema));
   },
-  async getDigest(userId: string, day: number): Promise<Digest> {
-    return request(`/digests/${userId}?day=${day}`, undefined, digestSchema);
+  async getDigest(userId: string, day: number, projectId?: string): Promise<Digest> {
+    const projectQs = projectId ? `&project_id=${projectId}` : "";
+    return request(`/digests/${userId}?day=${day}${projectQs}`, undefined, digestSchema);
   },
   async generateDigests(projectId: string, day: number): Promise<GenerateDigestsResponse> {
     return request(
@@ -64,12 +69,24 @@ export const api = {
       generateDigestsSchema,
     );
   },
-  async regenerateDigest(userId: string, projectId: string, day: number): Promise<Digest> {
+  async enqueueRegenerate(
+    userId: string,
+    projectId: string,
+    day: number,
+  ): Promise<GenerateDigestsResponse> {
     return request(
       `/digests/${userId}/regenerate?day=${day}&project_id=${projectId}`,
       { method: "POST" },
-      digestSchema,
+      generateDigestsSchema,
     );
+  },
+  async getJob(jobId: string): Promise<JobStatus> {
+    return request(`/jobs/${jobId}`, undefined, jobStatusSchema);
+  },
+  async listDocuments(projectId: string, phase?: string): Promise<Document[]> {
+    const params = new URLSearchParams({ project_id: projectId });
+    if (phase) params.set("phase", phase);
+    return request(`/documents?${params.toString()}`, undefined, z.array(documentSchema));
   },
   async postFeedback(args: {
     userId: string;

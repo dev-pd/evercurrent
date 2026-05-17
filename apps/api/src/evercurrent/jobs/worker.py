@@ -17,6 +17,7 @@ from evercurrent.jobs.tasks.enrich_messages import enrich_day
 from evercurrent.jobs.tasks.extract_decisions import extract_decisions_for_day
 from evercurrent.jobs.tasks.generate_digests import generate_all_digests
 from evercurrent.jobs.tasks.ingest_doc import ingest_document
+from evercurrent.jobs.tasks.regenerate_user_digest import regenerate_user_digest
 
 
 async def heartbeat(_ctx: dict[str, Any]) -> str:
@@ -41,6 +42,7 @@ class WorkerSettings:
         extract_decisions_for_day,
         generate_all_digests,
         ingest_document,
+        regenerate_user_digest,
     ]
     redis_settings: ClassVar[RedisSettings] = _redis_settings_from_env()
     handle_signals: ClassVar[bool] = True
