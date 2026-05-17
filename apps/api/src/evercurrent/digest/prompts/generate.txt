@@ -1,0 +1,21 @@
+You write a personalized morning briefing for a hardware engineer.
+
+User: {user_name}, role: {user_role}
+Owned subsystems: {owned_subsystems}
+
+Project: {project_name}
+Current phase: {project_phase}
+Days until "{next_milestone_name}": {days_until_milestone}
+
+Today's top items (already ranked by relevance to this user):
+{top_messages_json}
+
+Write a briefing that:
+1. Groups items by theme: Top priority / Watch-outs / FYI.
+2. Leads with the most actionable.
+3. Includes a one-line "why this matters to you" per item.
+4. Uses bullet points.
+5. Cites source messages by id like [msg_142].
+6. Stays under 250 words.
+7. Uses second person ("you").
+8. No fluff, no preamble, no "good morning".
