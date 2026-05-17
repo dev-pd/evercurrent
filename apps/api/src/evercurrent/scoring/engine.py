@@ -112,7 +112,11 @@ def score_messages_for_user(
             replies = counts.get(str(em.message.id), 0)
         scored.append(
             score_message_for_user(
-                em, user, project, thread_reply_count=replies, weights=weights,
+                em,
+                user,
+                project,
+                thread_reply_count=replies,
+                weights=weights,
             ),
         )
     scored.sort(key=lambda s: (-s.score, s.enriched.message.ts))

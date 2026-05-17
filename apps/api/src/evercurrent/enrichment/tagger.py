@@ -21,13 +21,28 @@ PROMPTS_DIR = Path(__file__).parent / "prompts"
 
 ROLE_KEYWORDS: dict[str, tuple[str, ...]] = {
     "mech_eng": (
-        "chassis", "bracket", "extrusion", "arm", "gripper", "mech",
-        "AL-", "mounting", "drop test", "thermal",
+        "chassis",
+        "bracket",
+        "extrusion",
+        "arm",
+        "gripper",
+        "mech",
+        "AL-",
+        "mounting",
+        "drop test",
+        "thermal",
     ),
     "ee": ("PCB", "MOSFET", "motor driver", "power board", "voltage", "BMS", "EMC"),
     "supply_chain": (
-        "supplier", "strike", "lead time", "sourcing", "BOM", "vendor",
-        "AlumWest", "ExtruCo", "second source",
+        "supplier",
+        "strike",
+        "lead time",
+        "sourcing",
+        "BOM",
+        "vendor",
+        "AlumWest",
+        "ExtruCo",
+        "second source",
     ),
     "pm": ("schedule", "milestone", "risk register", "review", "ECO", "DVT exit", "PVT"),
     "qa": ("test", "drop", "thermal cycling", "chamber", "FAI", "first article", "failure"),
@@ -54,8 +69,14 @@ URGENCY_RULES: tuple[tuple[Urgency, tuple[str, ...]], ...] = (
     (
         Urgency.HIGH,
         (
-            "FAIL", "strike", "fast-track", "approved", "exit review", "blocker",
-            "thermal failure", "regression",
+            "FAIL",
+            "strike",
+            "fast-track",
+            "approved",
+            "exit review",
+            "blocker",
+            "thermal failure",
+            "regression",
         ),
     ),
     (Urgency.MEDIUM, ("worth a look", "follow-up", "investigate", "characterise", "anomaly")),
@@ -63,8 +84,20 @@ URGENCY_RULES: tuple[tuple[Urgency, tuple[str, ...]], ...] = (
 
 PART_NUMBER_PATTERN = re.compile(r"\b[A-Z]{2,5}-[A-Z0-9]+(?:-[A-Z0-9]+)*\b")
 ENTITY_KEYWORDS = (
-    "bracket", "chassis", "gripper", "arm", "BMS", "motor driver", "power board",
-    "supplier", "AlumWest", "ExtruCo", "MachineHaus", "BMS", "PVT", "DVT",
+    "bracket",
+    "chassis",
+    "gripper",
+    "arm",
+    "BMS",
+    "motor driver",
+    "power board",
+    "supplier",
+    "AlumWest",
+    "ExtruCo",
+    "MachineHaus",
+    "BMS",
+    "PVT",
+    "DVT",
 )
 
 
@@ -134,15 +167,11 @@ class LLMTagger:
         self._provider = provider or get_provider()
         self._prompt = (PROMPTS_DIR / "tag_message.txt").read_text()
         self._system = (
-            "You are a precise tagger for hardware engineering Slack messages. "
-            "Output JSON only."
+            "You are a precise tagger for hardware engineering Slack messages. Output JSON only."
         )
 
     async def tag_batch(self, messages: Sequence[Message]) -> list[MessageTagPayload]:
-        payload = [
-            {"id": str(m.id), "channel": "", "text": m.text}
-            for m in messages
-        ]
+        payload = [{"id": str(m.id), "channel": "", "text": m.text} for m in messages]
         prompt = self._prompt.replace("{messages_json}", json.dumps(payload, indent=2))
         prompt = prompt.replace("{len(messages)}", str(len(messages)))
         raw = await self._provider.complete_json(

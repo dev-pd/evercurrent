@@ -15,7 +15,9 @@ log = structlog.get_logger(__name__)
 
 
 async def extract_decisions_for_day(
-    _ctx: dict[str, Any], project_id: str, day: int,
+    _ctx: dict[str, Any],
+    project_id: str,
+    day: int,
 ) -> dict[str, Any]:
     from evercurrent.decisions.extractor import extract_decisions_for_day as _do
 

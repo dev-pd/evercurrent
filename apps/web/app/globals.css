@@ -1,26 +1,71 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
+  background: #fafafa;
+  color: #18181b;
+  font-family:
+    var(--font-geist-sans),
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Minimal markdown rendering — Tailwind v4 dropped @tailwindcss/typography
+   from defaults, so we ship a small bespoke ruleset for ReactMarkdown
+   output. Scoped to .prose so other UI is untouched. */
+.prose {
+  line-height: 1.55;
+}
+.prose h1,
+.prose h2,
+.prose h3 {
+  font-weight: 600;
+  margin: 0.6rem 0 0.4rem;
+}
+.prose h1 {
+  font-size: 1.25rem;
+}
+.prose h2 {
+  font-size: 1.1rem;
+}
+.prose h3 {
+  font-size: 1rem;
+}
+.prose p {
+  margin: 0.4rem 0;
+}
+.prose ul {
+  list-style: disc;
+  margin: 0.4rem 0 0.4rem 1.25rem;
+}
+.prose ol {
+  list-style: decimal;
+  margin: 0.4rem 0 0.4rem 1.25rem;
+}
+.prose li {
+  margin: 0.2rem 0;
+}
+.prose code {
+  background: #f4f4f5;
+  border-radius: 0.2rem;
+  padding: 0.05rem 0.3rem;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.85em;
+}
+.prose strong {
+  font-weight: 600;
+}
+.prose em {
+  font-style: italic;
+}
+.prose a {
+  color: #2563eb;
+  text-decoration: underline;
 }

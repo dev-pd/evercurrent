@@ -11,7 +11,9 @@ log = structlog.get_logger(__name__)
 
 
 async def generate_all_digests(
-    _ctx: dict[str, Any], project_id: str, day: int,
+    _ctx: dict[str, Any],
+    project_id: str,
+    day: int,
 ) -> dict[str, Any]:
     from evercurrent.digest.generator import generate_all_digests_for_day
 

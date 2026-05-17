@@ -125,17 +125,15 @@ services:
     command: ["pnpm", "dev"]
     environment:
       NODE_ENV: development
+    # Mount the whole host source tree over /app, preserve the image's
+    # node_modules with a named volume so they survive across runs.
     volumes:
-      - ./apps/web/app:/app/app
-      - ./apps/web/public:/app/public
-      - ./apps/web/eslint.config.mjs:/app/eslint.config.mjs
-      - ./apps/web/.prettierrc:/app/.prettierrc
-      - ./apps/web/.prettierignore:/app/.prettierignore
-      - ./apps/web/next.config.ts:/app/next.config.ts
-      - ./apps/web/postcss.config.mjs:/app/postcss.config.mjs
-      - ./apps/web/tsconfig.json:/app/tsconfig.json
-      - ./apps/web/package.json:/app/package.json
+      - ./apps/web:/app
+      - web_dev_node_modules:/app/node_modules
+      - web_dev_next:/app/.next
 
 volumes:
   postgres_data:
   redis_data:
+  web_dev_node_modules:
+  web_dev_next:

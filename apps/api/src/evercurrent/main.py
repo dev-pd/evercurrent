@@ -14,6 +14,7 @@ from sqlalchemy import text
 
 from evercurrent.api.middleware import RequestIDMiddleware
 from evercurrent.api.routes.agent import router as agent_router
+from evercurrent.api.routes.decisions import router as decisions_router
 from evercurrent.api.routes.digests import router as digests_router
 from evercurrent.api.routes.feedback import router as feedback_router
 from evercurrent.api.routes.projects import router as projects_router
@@ -87,6 +88,7 @@ def create_app() -> FastAPI:
     app.include_router(digests_router)
     app.include_router(feedback_router)
     app.include_router(agent_router)
+    app.include_router(decisions_router)
 
     return app
 
