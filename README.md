@@ -11,13 +11,20 @@ reasoning across team docs and chatter.
 ## Quickstart
 
 ```bash
-# 1. Prereqs: Docker, uv, pnpm, Node 25+
-# 2. Copy env template (added in Phase 0.2)
-cp .env.example .env  # fill ANTHROPIC_API_KEY and VOYAGE_API_KEY
-# 3. Run the stack (added in Phase 0.2)
-make up
-# 4. Open http://localhost:3000
+# 1. Prereqs: Docker Desktop, plus (for local non-container dev) uv, pnpm, Node 25+
+# 2. Copy env template and fill in your API keys
+cp .env.example .env
+#    edit .env: ANTHROPIC_API_KEY=..., VOYAGE_API_KEY=...
+# 3. Bring up the full stack (postgres + redis + api + worker + web + nginx)
+docker compose up --build
+# 4. Open the unified entry point
+#       http://localhost           # nginx routes / -> web, /api/* -> api
+#       http://localhost:3000      # direct Next.js dev port
+#       http://localhost:8000/health  # direct API healthcheck
 ```
+
+`docker compose down` cleans up. `docker compose down -v` also removes the
+Postgres and Redis volumes.
 
 ## Layout
 

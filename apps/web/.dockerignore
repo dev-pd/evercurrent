@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.turbo/
+out/
+.pnpm-store/
+.git/
+.gitignore
+.env
+.env.*
+!.env.example
+.DS_Store
+README.md
+AGENTS.md
+CLAUDE.md
+*.log

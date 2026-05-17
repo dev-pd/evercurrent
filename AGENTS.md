@@ -32,7 +32,7 @@ scope. This file wins for code-style decisions.
 - Python 3.13 with uv
 - FastAPI 0.136.1, Pydantic 2.12+, SQLAlchemy 2.0 async, Alembic
 - Postgres 17 with pgvector 0.8+
-- Arq job queue on Redis 7.4
+- Arq job queue on Redis 8.x (latest stable)
 - Anthropic SDK with Claude Sonnet 4.6 (`claude-sonnet-4-6`) and Haiku 4.5
   (`claude-haiku-4-5-20251001`)
 - Voyage AI (`voyage-3-lite`, 512 dims) for embeddings

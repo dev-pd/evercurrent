@@ -66,7 +66,7 @@ This is the build plan for the EverCurrent take-home. Structured for execution b
 | Database | Postgres | 17 | Latest stable. |
 | Vector extension | pgvector | 0.8+ | Cosine + HNSW. |
 | Job queue | Arq | latest | Async Redis queue, fits FastAPI naturally. |
-| Cache + queue | Redis | 7.4 | |
+| Cache + queue | Redis | 8.x | Latest stable (bumped from doc default of 7.4). |
 | LLM SDK | anthropic (Python) | latest | Claude Sonnet 4.6 + Haiku 4.5 tiered. |
 | Embeddings | Voyage AI | `voyage-3-lite` | 512 dims. Anthropic-partnered. |
 | Logging | structlog | latest | JSON output. |
