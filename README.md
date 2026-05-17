@@ -1,62 +1,115 @@
 # EverCurrent
 
-An agentic AI layer for hardware engineering teams. Personalizes information by
-role, project phase, and behavior. Tracks cross-functional dependencies.
-Extracts structured decisions from team conversations. Answers questions by
-reasoning across team docs and chatter.
+> An agentic AI layer for hardware engineering teams. Personalises Slack-style
+> conversations by role + project phase + cross-functional dependencies.
+> Extracts structured decisions from chatter. Answers questions across team
+> docs and messages with a 6-tool reasoning agent.
 
-> Status: phase 0 (scaffolding). Not yet runnable end-to-end. See
-> `EVERCURRENT_BUILD_DOC.md` for the full build plan.
-
-## Quickstart
-
-Everything runs in docker. Only Docker Desktop is required on the host.
+## Quickstart (docker-only)
 
 ```bash
-# 1. Copy env template and fill in your API keys
-cp .env.example .env
-#    edit .env: ANTHROPIC_API_KEY=..., VOYAGE_API_KEY=...
-# 2. Build + bring up the full stack
-make up                    # = docker compose up -d --build
-# 3. Apply DB migrations (creates schema + pgvector extension)
-make migrate
-# 4. Open the unified entry point
-#       http://localhost:8080            # nginx routes / -> web, /api/* -> api
-#       http://localhost:8080/api/health # API healthcheck through nginx
+cp .env.example .env          # fill ANTHROPIC_API_KEY + VOYAGE_API_KEY
+make up                       # postgres + redis + api + worker + web + nginx
+make migrate                  # 10 tables, pgvector + pgcrypto extensions
+make seed                     # project + 8 users + 5 channels + 42 messages + 5 docs
+open http://localhost:8080
 ```
 
-Only `nginx` is exposed on the host (port `8080`). `postgres`, `redis`, `api`,
-`worker`, and `web` are internal to the docker network. To reach them, use
-`docker compose exec <service> ...` (or the `make` helpers below).
+Stop with `make down`. Reset with `make down-v` (wipes volumes).
 
-Useful one-liners:
+| Route                          | Notes                                   |
+|--------------------------------|-----------------------------------------|
+| `http://localhost:8080`        | Dashboard via nginx                     |
+| `http://localhost:8080/api/health` | Liveness probe                      |
+| `http://localhost:8080/api/ready`  | DB-reachable readiness check         |
 
-- `make ps` — container status
-- `make logs` — tail all service logs
-- `make psql` — psql shell into postgres
-- `make shell-bash` — bash shell in the api container
-- `make lint` — ruff + ty + eslint + prettier + tsc, all inside docker
-- `make test` — pytest health/ready unit tests inside docker
-- `make down` — stop stack (preserves volumes)
-- `make down-v` — stop stack and wipe volumes
+Only nginx is exposed on the host — everything else is internal to the
+docker network. See `docs/ARCHITECTURE.md` for the diagram.
+
+## What's inside
+
+- **Personalised digest** — `scoring/engine.py` ranks messages per user
+  by role, owned subsystems/parts, urgency, phase concerns, and learned
+  feedback weights. The Sonnet generator turns the top 8 into a
+  one-shot markdown briefing with `[msg_<id>]` citations.
+- **Cross-functional dependency match** — `scoring/dependencies.py`
+  fuzzy-matches owned subsystems (e.g. "chassis") against tagged
+  entities (e.g. "BRK-A1", "AL-6063-T5") via an explicit synonym map.
+- **Decision extraction** — `decisions/extractor.py` runs Sonnet over
+  a day's messages, validates strictly with Pydantic, downgrades
+  borderline outputs to `proposed` via a confidence cutoff.
+- **RAG** — pgvector HNSW + cosine, voyage-3-lite at 512 dims, markdown
+  chunker that preserves section paths.
+- **Agent** — 6 tools (search_messages, get_thread_context,
+  get_user_context, get_project_state, search_documents,
+  query_decisions), Sonnet tool-use loop, SSE streaming to the
+  Next.js chat panel.
+- **Heuristic fallbacks** — without API keys the tagger and digest
+  generator emit deterministic markdown so the pipeline runs end-to-end
+  for CI and demos.
 
 ## Layout
 
-- `apps/api/` — FastAPI backend (Python 3.13, uv)
-- `apps/web/` — Next.js 16.2 frontend (TypeScript, App Router, Tailwind v4)
-- `docs/` — Architecture, production roadmap, eval baseline, learning notes
-- `EVERCURRENT_BUILD_DOC.md` — Authoritative build plan (phases + subphases)
-- `AGENTS.md` — Coding standards (single source of truth)
-- `CLAUDE.md` — Claude Code session pointer (imports `AGENTS.md`)
+```
+evercurrent/
+├── apps/
+│   ├── api/                FastAPI backend (Python 3.13 + uv)
+│   │   ├── src/evercurrent/
+│   │   │   ├── domain/     pure Pydantic models (no I/O)
+│   │   │   ├── db/         SQLAlchemy 2.0 async ORM + repositories
+│   │   │   ├── ingestion/  seeder + (future) Slack adapter slot
+│   │   │   ├── enrichment/ Claude Haiku tagger + heuristic fallback
+│   │   │   ├── scoring/    pure-Python ranker + weights + synonyms
+│   │   │   ├── digest/     Claude Sonnet generator + heuristic fallback
+│   │   │   ├── decisions/  Sonnet extractor with confidence cutoff
+│   │   │   ├── rag/        Voyage embedder + markdown chunker + retriever
+│   │   │   ├── agent/      6-tool runner + SSE serialiser
+│   │   │   ├── jobs/       Arq worker + tasks
+│   │   │   ├── api/        FastAPI routes + schemas + deps
+│   │   │   └── llm/        Anthropic client wrapper + model tiering
+│   │   ├── tests/{evals,unit}
+│   │   ├── alembic/versions
+│   │   └── seed_data/      committed JSON + markdown
+│   └── web/                Next.js 16.2 + React 19 + Tailwind v4
+│       ├── app/            App Router pages
+│       ├── components/     ui/ · layout/ · digest/ · chat/ · simulation/
+│       ├── hooks/          use-agent (SSE stream)
+│       ├── lib/            api client · stream parser · types · utils
+│       └── stores/         zustand impersonation store
+├── docs/
+│   ├── ARCHITECTURE.md     diagrams + layer boundaries + design notes
+│   ├── PRODUCTION_ROADMAP.md  scale-out story
+│   ├── EVAL_BASELINE.md    eval numbers + investigation triggers
+│   ├── DEMO_SCRIPT.md      5-minute walkthrough
+│   ├── LEARNING_NOTES.md   engineer's log
+│   └── CONTRIBUTING.md     conventions
+├── nginx/nginx.conf
+├── docker-compose.yml
+├── Makefile
+├── EVERCURRENT_BUILD_DOC.md  authoritative build plan
+├── AGENTS.md                 coding standards + test policy
+└── CLAUDE.md                 Claude Code entrypoint (imports AGENTS.md)
+```
 
-## Documentation
+## Eval results
 
-Deeper docs live in `docs/`:
+`make eval` runs scoring + determinism scenarios. Current baseline:
 
-- `ARCHITECTURE.md` — design decisions, layer boundaries, data flow
-- `PRODUCTION_ROADMAP.md` — scale-out story
-- `EVAL_BASELINE.md` — eval harness baseline numbers
-- `LEARNING_NOTES.md` — engineer's log
+| Suite                | Result        |
+|----------------------|---------------|
+| Scoring scenarios    | **6 / 6**     |
+| Determinism (10/100) | **stable**    |
+| Decisions extracted  | 23 across 5 days |
+
+See `docs/EVAL_BASELINE.md` for the full table + investigation triggers.
+
+## Three things to read first
+
+1. `docs/ARCHITECTURE.md` — system + data flow + design decisions.
+2. `docs/PRODUCTION_ROADMAP.md` — the production path: Slack adapter,
+   multi-tenancy, compliance, observability, RAG evolution, AWS deploy.
+3. `docs/DEMO_SCRIPT.md` — 5-minute walkthrough mirroring the demo
+   video.
 
 ## License
 

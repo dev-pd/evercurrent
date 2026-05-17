@@ -1,0 +1,159 @@
+# EverCurrent — Architecture
+
+## System overview
+
+```mermaid
+flowchart LR
+    subgraph Browser
+        Web[Next.js 16<br/>App Router]
+    end
+    subgraph Edge
+        Nginx[(nginx :8080)]
+    end
+    subgraph Backend
+        API[FastAPI<br/>routes/services]
+        Worker[Arq worker]
+        DB[(Postgres 17 +<br/>pgvector)]
+        Redis[(Redis 8)]
+    end
+    subgraph External
+        Anthropic[Claude<br/>Sonnet 4.6 + Haiku 4.5]
+        Voyage[Voyage AI<br/>voyage-3-lite]
+    end
+    Web --> Nginx
+    Nginx --> Web
+    Nginx -->|/api/*| API
+    API --> DB
+    API --> Redis
+    API --> Anthropic
+    API --> Voyage
+    Worker --> DB
+    Worker --> Redis
+    Worker --> Anthropic
+    Worker --> Voyage
+```
+
+Only nginx is exposed to the host. Service-to-service traffic stays
+inside the docker network.
+
+## Layer boundaries
+
+```
+┌─────────────────────────────────────────────┐
+│ apps/web (Next.js App Router)               │
+│   - server components fetch via /api/*      │
+│   - TanStack Query for client state         │
+│   - Zustand for impersonation               │
+│   - SSE for the agent chat                  │
+├─────────────────────────────────────────────┤
+│ apps/api FastAPI routes                     │
+│   - Pydantic request/response schemas       │
+│   - DI via Depends() (session, arq pool,    │
+│     current user id from header)            │
+├─────────────────────────────────────────────┤
+│ Domain services                             │
+│   ingestion · enrichment · scoring ·        │
+│   digest · decisions · rag · agent          │
+│   Pure Python where possible; LLM at edges. │
+├─────────────────────────────────────────────┤
+│ Repositories (db/repositories/*)            │
+│   - take + return Pydantic domain models    │
+│   - never leak SQLAlchemy rows              │
+├─────────────────────────────────────────────┤
+│ SQLAlchemy 2.0 async ORM (db/models.py)     │
+│   - one declarative class per table         │
+│   - explicit eager-load relationships       │
+├─────────────────────────────────────────────┤
+│ Postgres 17 + pgvector 0.8                  │
+└─────────────────────────────────────────────┘
+```
+
+## Data flow — daily pipeline
+
+```mermaid
+flowchart TB
+    A[Seed: project + users + channels<br/>+ committed messages + docs]
+        --> B[enrich_day(day=N)<br/>Claude Haiku tagger]
+    B --> C[extract_decisions_for_day(N)<br/>Claude Sonnet]
+    C --> D[score_messages_for_user<br/>pure Python]
+    D --> E[generate_all_digests_for_day(N)<br/>Claude Sonnet]
+    E --> F[(digests table)]
+    C --> G[(decisions table)]
+    B --> H[(message_tags table)]
+```
+
+All three LLM hops are idempotent at the database boundary:
+`enrich_day` skips messages with existing tags, decisions are
+re-extracted on every `advance_day` (the duplicate-suppression is left
+to the prompt + confidence cutoff for now — production would dedupe),
+digests use UNIQUE(user_id, day) so re-runs replace cleanly.
+
+## Data flow — agent chat
+
+```mermaid
+flowchart LR
+    User[User]
+        --> Web[ChatPanel<br/>useAgent]
+    Web --> Nginx
+    Nginx -->|SSE /api/agent/chat| API
+    API --> Runner[agent.runner.run_agent]
+    Runner -->|tool_use loop<br/>max 10 iters| Anthropic
+    Runner --> Tools{6 tools}
+    Tools -->|search_messages| DB
+    Tools -->|search_documents| RAG[(pgvector ANN)]
+    Tools -->|query_decisions| DB
+    Tools -->|get_project_state| DB
+    Tools -->|get_user_context| DB
+    Tools -->|get_thread_context| DB
+```
+
+The runner appends each assistant tool-use turn AND the corresponding
+tool_result message to the conversation, so the model sees its own
+intermediate calls. Streaming is the default — `text_delta`,
+`tool_use_start`, `tool_use_result` events flow back to the UI as they
+arrive.
+
+## Design decisions
+
+**Why Arq, not Celery?** Arq is async-first, uses Redis directly, has a
+tiny surface area, and works cleanly with our async-everywhere stack.
+Celery's process-per-worker model would have meant blocking calls and
+either eventlet/gevent shims or a separate sync stack. Arq schedules
+seamlessly from FastAPI lifespan.
+
+**Why Voyage, not OpenAI embeddings?** Anthropic recommends Voyage in
+its docs; `voyage-3-lite` at 512 dims is fast and cheap. Free tier is
+3 RPM which we hit on the seed indexing; a payment method lifts that to
+the standard tier. The `EmbeddingProvider` interface keeps the swap
+clean.
+
+**Why Haiku for tagging, Sonnet for everything else?** Tagging is a
+bounded, repetitive task: per-message topic + urgency + role +
+entities. Haiku is fast and ~10× cheaper. Digest, decision, agent and
+doc generation need reasoning quality and instruction-following, so
+they get Sonnet.
+
+**Why server components by default in Next.js?** Initial paint comes
+straight from the server (digest renders without a client roundtrip);
+client components light up only where interactivity is required (chat,
+buttons, dropdowns). Shrinks JS payload and avoids client-side data
+fetching for the digest path.
+
+**Why pure-Python scoring?** Predictable, cheap, testable. Phase
+transitions reshuffle digests via a deterministic rule rather than an
+LLM call — same data, different `current_phase` flips the digest
+priorities in milliseconds. The `scoring/engine.py` function is a pure
+mapping from `(EnrichedMessage[], User, Project) -> ScoredMessage[]`
+which the eval harness can exercise without LLM cost.
+
+**Why a heuristic tagger fallback?** API keys are optional for the
+take-home reviewer. With `ANTHROPIC_API_KEY` unset, `enrich_day` falls
+back to a keyword-driven tagger that emits the same `MessageTagPayload`
+shape. The rest of the pipeline (scoring, digest heuristic, decisions
+skipped) continues to work end-to-end. Same applies to the digest
+generator's heuristic markdown fallback.
+
+## File layout
+
+See `apps/api/src/evercurrent/` and `apps/web/`. Per-directory READMEs
+sit alongside the code.
