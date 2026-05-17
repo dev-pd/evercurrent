@@ -20,6 +20,7 @@ from evercurrent.api.routes.documents import router as documents_router
 from evercurrent.api.routes.feedback import router as feedback_router
 from evercurrent.api.routes.jobs import router as jobs_router
 from evercurrent.api.routes.projects import router as projects_router
+from evercurrent.api.routes.today import router as today_router
 from evercurrent.api.routes.users import router as users_router
 from evercurrent.config import get_settings
 from evercurrent.db.session import dispose_engine, get_sessionmaker, init_engine
@@ -93,6 +94,7 @@ def create_app() -> FastAPI:
     app.include_router(decisions_router)
     app.include_router(documents_router)
     app.include_router(jobs_router)
+    app.include_router(today_router)
 
     return app
 

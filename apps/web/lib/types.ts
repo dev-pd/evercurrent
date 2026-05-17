@@ -93,6 +93,16 @@ export const jobStatusSchema = z.object({
 });
 export type JobStatus = z.infer<typeof jobStatusSchema>;
 
+export const todaySchema = z.object({
+  project_id: z.string().uuid(),
+  live_day: z.number().int(),
+  phase: z.string(),
+  message_count: z.number().int(),
+  last_message_at: z.string().nullable(),
+  last_digest_generated_at: z.string().nullable(),
+});
+export type Today = z.infer<typeof todaySchema>;
+
 export type AgentEventType = "text_delta" | "tool_use_start" | "tool_use_result" | "done" | "close";
 
 export interface AgentEvent {

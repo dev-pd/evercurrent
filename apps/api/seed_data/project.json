@@ -1,7 +1,7 @@
 {
   "name": "Warehouse Robot v2",
   "current_phase": "DVT",
-  "current_day": 1,
+  "current_day": 6,
   "phase_concerns": {
     "concept": [
       "user stories",
