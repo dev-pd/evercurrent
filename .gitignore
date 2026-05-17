@@ -1,0 +1,56 @@
+# Add these lines to your top-level .gitignore.
+# (Keeping a separate file so you can see what's new vs your existing rules.)
+
+# Claude Code local state (the directory structure is committed, but per-user
+# state should not be)
+.claude/.cache/
+.claude/.history/
+.claude/.snapshots/
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.ty_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Node / Next.js
+node_modules/
+.next/
+.turbo/
+out/
+.pnpm-store/
+.pnpm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Docker volumes (when developing without volumes mounted)
+.docker-data/
