@@ -68,11 +68,38 @@ package = true
 [tool.ruff]
 target-version = "py313"
 line-length = 100
+extend-exclude = ["alembic/versions"]
 
 [tool.ruff.lint]
-# Light config for phase 0.1. Full ALL+ignores config lands in phase 0.3.
-select = ["E", "F", "W", "I"]
+select = ["ALL"]
+ignore = [
+    "D",       # pydocstyle — docstring style is opinionated; AGENTS.md governs
+    "COM812",  # missing trailing comma — handled by formatter
+    "ISC001",  # implicit string concat — conflicts with formatter
+    "TD",      # author/issue links in TODO comments
+    "FIX",     # forbid TODO/FIXME comments — too strict
+    "EM",      # forbids string literals in raise; noisy
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["S101", "PLR2004", "ANN", "INP001"]
+"src/evercurrent/main.py" = ["INP001"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.ty]
+# ty is in early development. Light config; CI runs `ty check`.
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+]

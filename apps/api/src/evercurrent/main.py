@@ -1,7 +1,9 @@
 """FastAPI app factory and entrypoint for the EverCurrent backend.
 
-Phase 0.1 scope: minimal app exposing `/health`. Subsequent phases wire
-DB/Redis lifespan, middleware, routers, and a real `/ready` check.
+Phase 0.x scope: minimal app exposing `/health` (liveness) and `/ready`
+(readiness). Real DB/Redis dependency checks land in `/ready` once those
+clients are wired (Phase 1+); for now both return a fixed shape so the
+unit tests + docker healthchecks can rely on them.
 """
 
 from fastapi import FastAPI
@@ -17,6 +19,12 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/ready")
+    async def ready() -> dict[str, object]:
+        # Real dependency probes (postgres + redis) land in Phase 1+ when
+        # the clients are wired through lifespan.
+        return {"status": "ok", "checks": {"db": "skipped", "redis": "skipped"}}
 
     return app
 

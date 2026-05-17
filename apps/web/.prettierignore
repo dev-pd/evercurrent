@@ -1,0 +1,7 @@
+node_modules/
+.next/
+.turbo/
+out/
+public/
+next-env.d.ts
+pnpm-lock.yaml

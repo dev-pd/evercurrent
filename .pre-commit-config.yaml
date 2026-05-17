@@ -1,0 +1,45 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=512"]
+
+  # Python: ruff format + lint (run only on apps/api/**/*.py)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.13
+    hooks:
+      - id: ruff-format
+        files: ^apps/api/.*\.py$
+      - id: ruff
+        args: ["--fix"]
+        files: ^apps/api/.*\.py$
+
+  # Type check (api) — runs `uv run ty check` inside apps/api.
+  - repo: local
+    hooks:
+      - id: ty
+        name: ty type check (api)
+        entry: bash -c 'cd apps/api && uv run --quiet ty check'
+        language: system
+        files: ^apps/api/.*\.py$
+        pass_filenames: false
+
+  # Frontend: prettier + eslint via pnpm
+  - repo: local
+    hooks:
+      - id: prettier-web
+        name: prettier (web)
+        entry: bash -c 'cd apps/web && pnpm exec prettier --write'
+        language: system
+        files: ^apps/web/.*\.(ts|tsx|js|mjs|json|md|css)$
+      - id: eslint-web
+        name: eslint (web)
+        entry: bash -c 'cd apps/web && pnpm exec eslint --fix'
+        language: system
+        files: ^apps/web/.*\.(ts|tsx)$
