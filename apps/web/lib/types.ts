@@ -22,12 +22,26 @@ export const userSchema = z.object({
 });
 export type User = z.infer<typeof userSchema>;
 
+export const digestItemSchema = z.object({
+  id: z.string().uuid(),
+  channel: z.string(),
+  author_username: z.string(),
+  author_display_name: z.string(),
+  day: z.number().int(),
+  ts: z.string(),
+  text: z.string(),
+  topic: z.string().nullable().optional(),
+  urgency: z.string().nullable().optional(),
+});
+export type DigestItem = z.infer<typeof digestItemSchema>;
+
 export const digestSchema = z.object({
   id: z.string().uuid(),
   user_id: z.string().uuid(),
   day: z.number().int(),
   content_md: z.string(),
   item_message_ids: z.array(z.string().uuid()),
+  items: z.array(digestItemSchema),
   generated_at: z.string(),
 });
 export type Digest = z.infer<typeof digestSchema>;
