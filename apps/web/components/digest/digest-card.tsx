@@ -37,21 +37,18 @@ export function DigestCard() {
   });
   const currentPhase = project.data?.current_phase ?? null;
 
-  // Today's digest refetches every 30s so live worker updates appear
-  // without a manual reload. Historical days are static.
-  const todayQuery = useQuery({
-    queryKey: ["today", currentProjectId],
-    queryFn: () => api.getToday(currentProjectId!),
-    enabled: Boolean(currentProjectId),
-  });
-  const isToday = todayQuery.data ? todayQuery.data.live_day === currentDay : false;
-
+  // Digest does NOT poll on a timer. TodayBanner polls /today every 10s
+  // and invalidates this query whenever the worker writes a fresh digest
+  // (last_digest_generated_at moves). One small heartbeat call drives the
+  // whole dashboard; the per-user digest fetch only fires when there's
+  // actually new content to deliver. Production: replace /today poll
+  // with an SSE channel that pushes "digest.updated" events from a
+  // Celery task -> Redis pub/sub -> /events endpoint.
   const digest = useQuery({
     queryKey: ["digest", currentUserId, currentDay, currentProjectId, currentPhase],
     queryFn: () => api.getDigest(currentUserId!, currentDay, currentProjectId ?? undefined),
     enabled: Boolean(currentUserId) && Boolean(currentPhase),
     retry: false,
-    refetchInterval: isToday ? 30_000 : false,
   });
 
   // Cold-start path: the GET endpoint falls back to the most-recent
