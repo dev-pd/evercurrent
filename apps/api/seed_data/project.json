@@ -1,0 +1,61 @@
+{
+  "name": "Warehouse Robot v2",
+  "current_phase": "DVT",
+  "current_day": 1,
+  "phase_concerns": {
+    "concept": [
+      "user stories",
+      "scope",
+      "feasibility",
+      "rough cost"
+    ],
+    "design": [
+      "block diagram",
+      "ICDs",
+      "early supplier engagement",
+      "DFM"
+    ],
+    "EVT": [
+      "first power-on",
+      "interface validation",
+      "early ECOs",
+      "alpha yield"
+    ],
+    "DVT": [
+      "thermal margin",
+      "yield rate",
+      "test failures",
+      "ECO velocity",
+      "compliance"
+    ],
+    "PVT": [
+      "first article",
+      "manufacturing yield",
+      "supplier quality",
+      "FAI sign-off"
+    ],
+    "MP": [
+      "line yield",
+      "field returns",
+      "RMA velocity",
+      "cost reduction"
+    ]
+  },
+  "milestones": [
+    {
+      "name": "DVT exit",
+      "target_date": "2026-06-30",
+      "status": "in_progress"
+    },
+    {
+      "name": "PVT kickoff",
+      "target_date": "2026-07-15",
+      "status": "planned"
+    },
+    {
+      "name": "Mass production",
+      "target_date": "2026-10-01",
+      "status": "planned"
+    }
+  ]
+}

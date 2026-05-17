@@ -7,7 +7,7 @@ import uuid
 from enum import StrEnum
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 
 class Role(StrEnum):
@@ -20,6 +20,17 @@ class Role(StrEnum):
     PROCUREMENT = "procurement"
 
 
+def _coerce_role(v: object) -> Role:
+    if isinstance(v, Role):
+        return v
+    if isinstance(v, str):
+        return Role(v)
+    raise TypeError(f"cannot coerce {type(v).__name__} to Role")
+
+
+RoleField = Annotated[Role, BeforeValidator(_coerce_role)]
+
+
 class User(BaseModel):
     model_config = ConfigDict(strict=True, from_attributes=True)
 
@@ -27,7 +38,7 @@ class User(BaseModel):
     project_id: uuid.UUID
     username: Annotated[str, Field(min_length=1, max_length=64)]
     display_name: Annotated[str, Field(min_length=1, max_length=128)]
-    role: Role
+    role: RoleField
     owned_subsystems: list[str] = Field(default_factory=list)
     owned_parts: list[str] = Field(default_factory=list)
     topic_weights: dict[str, float] = Field(default_factory=dict)

@@ -7,7 +7,7 @@ import uuid
 from enum import StrEnum
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 
 class Urgency(StrEnum):
@@ -15,6 +15,17 @@ class Urgency(StrEnum):
     MEDIUM = "medium"
     HIGH = "high"
     CRITICAL = "critical"
+
+
+def _coerce_urgency(v: object) -> Urgency:
+    if isinstance(v, Urgency):
+        return v
+    if isinstance(v, str):
+        return Urgency(v)
+    raise TypeError(f"cannot coerce {type(v).__name__} to Urgency")
+
+
+UrgencyField = Annotated[Urgency, BeforeValidator(_coerce_urgency)]
 
 
 class Message(BaseModel):
@@ -37,7 +48,7 @@ class MessageTag(BaseModel):
 
     message_id: uuid.UUID
     topic: Annotated[str, Field(min_length=1, max_length=64)]
-    urgency: Urgency
+    urgency: UrgencyField
     affected_roles: list[str] = Field(default_factory=list)
     entities: list[str] = Field(default_factory=list)
     raw_tag: dict[str, object] = Field(default_factory=dict)

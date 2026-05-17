@@ -1,0 +1,58 @@
+[
+  {
+    "username": "sarah",
+    "display_name": "Sarah Chen",
+    "role": "mech_eng",
+    "owned_subsystems": ["chassis", "mounting"],
+    "owned_parts": ["bracket-A1", "bracket-A2", "AL-6063-T5"]
+  },
+  {
+    "username": "raj",
+    "display_name": "Raj Patel",
+    "role": "ee",
+    "owned_subsystems": ["power", "motor_control"],
+    "owned_parts": ["PCB-PWR-2401", "MD-MOSFET-IRFB", "battery_pack"]
+  },
+  {
+    "username": "mei",
+    "display_name": "Mei Tanaka",
+    "role": "supply_chain",
+    "owned_subsystems": ["BOM", "supplier_management"],
+    "owned_parts": ["AL-6063-T5", "BC-18650", "M-2401"]
+  },
+  {
+    "username": "david",
+    "display_name": "David Okafor",
+    "role": "pm",
+    "owned_subsystems": ["schedule", "scope", "risk_register"],
+    "owned_parts": []
+  },
+  {
+    "username": "lin",
+    "display_name": "Lin Park",
+    "role": "qa",
+    "owned_subsystems": ["thermal_testing", "drop_testing", "EMC"],
+    "owned_parts": []
+  },
+  {
+    "username": "tom",
+    "display_name": "Tom Bauer",
+    "role": "firmware",
+    "owned_subsystems": ["motor_firmware", "safety_logic", "BMS_firmware"],
+    "owned_parts": []
+  },
+  {
+    "username": "priya",
+    "display_name": "Priya Iyer",
+    "role": "mech_eng",
+    "owned_subsystems": ["arms", "gripper"],
+    "owned_parts": ["arm-link-1", "arm-link-2", "gripper-motor"]
+  },
+  {
+    "username": "carlos",
+    "display_name": "Carlos Reyes",
+    "role": "procurement",
+    "owned_subsystems": ["vendor_qualification"],
+    "owned_parts": []
+  }
+]

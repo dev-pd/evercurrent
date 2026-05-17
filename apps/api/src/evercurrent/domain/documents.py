@@ -7,7 +7,7 @@ import uuid
 from enum import StrEnum
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 
 class DocumentKind(StrEnum):
@@ -19,12 +19,23 @@ class DocumentKind(StrEnum):
     OTHER = "other"
 
 
+def _coerce_kind(v: object) -> DocumentKind:
+    if isinstance(v, DocumentKind):
+        return v
+    if isinstance(v, str):
+        return DocumentKind(v)
+    raise TypeError(f"cannot coerce {type(v).__name__} to DocumentKind")
+
+
+DocumentKindField = Annotated[DocumentKind, BeforeValidator(_coerce_kind)]
+
+
 class Document(BaseModel):
     model_config = ConfigDict(strict=True, from_attributes=True)
 
     id: uuid.UUID
     project_id: uuid.UUID
-    kind: DocumentKind
+    kind: DocumentKindField
     title: Annotated[str, Field(min_length=1, max_length=255)]
     body: str
     metadata: dict[str, object] = Field(default_factory=dict)

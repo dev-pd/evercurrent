@@ -7,7 +7,7 @@ import uuid
 from enum import StrEnum
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 
 class DecisionStatus(StrEnum):
@@ -15,6 +15,17 @@ class DecisionStatus(StrEnum):
     DECIDED = "decided"
     IMPLEMENTED = "implemented"
     REVERTED = "reverted"
+
+
+def _coerce_status(v: object) -> DecisionStatus:
+    if isinstance(v, DecisionStatus):
+        return v
+    if isinstance(v, str):
+        return DecisionStatus(v)
+    raise TypeError(f"cannot coerce {type(v).__name__} to DecisionStatus")
+
+
+DecisionStatusField = Annotated[DecisionStatus, BeforeValidator(_coerce_status)]
 
 
 class Decision(BaseModel):
@@ -28,6 +39,6 @@ class Decision(BaseModel):
     decided_at: dt.datetime
     source_message_ids: list[uuid.UUID] = Field(default_factory=list)
     affected_subsystems: list[str] = Field(default_factory=list)
-    status: DecisionStatus
+    status: DecisionStatusField
     confidence: Annotated[float, Field(ge=0.0, le=1.0)]
     created_at: dt.datetime

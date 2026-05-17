@@ -1,0 +1,22 @@
+[
+  {
+    "name": "#mech-design",
+    "description": "Mechanical design discussion: chassis, brackets, arms, gripper, mounting."
+  },
+  {
+    "name": "#electrical",
+    "description": "Power board, motor drivers, BMS, sensors, EMC. Schematic + layout review."
+  },
+  {
+    "name": "#supply-chain",
+    "description": "BOM, lead times, supplier issues, ECOs that affect cost or sourcing."
+  },
+  {
+    "name": "#qa-testing",
+    "description": "Test plans, thermal cycling, drop test, EMC, compliance, anomaly reports."
+  },
+  {
+    "name": "#general",
+    "description": "Program-wide announcements, schedule, ECOs in flight, decisions."
+  }
+]
