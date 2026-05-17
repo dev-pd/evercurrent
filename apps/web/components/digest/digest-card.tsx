@@ -8,7 +8,7 @@ import type { DigestItem } from "@/lib/types";
 import { useImpersonationStore } from "@/stores/impersonation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, ThumbsDown, ThumbsUp } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -30,12 +30,51 @@ export function DigestCard() {
   const queryClient = useQueryClient();
   const [pendingFeedbackId, setPendingFeedbackId] = useState<string | null>(null);
 
+  const project = useQuery({
+    queryKey: ["project", currentProjectId],
+    queryFn: () => api.getProject(currentProjectId!),
+    enabled: Boolean(currentProjectId),
+  });
+  const currentPhase = project.data?.current_phase ?? null;
+
   const digest = useQuery({
-    queryKey: ["digest", currentUserId, currentDay, currentProjectId],
+    queryKey: ["digest", currentUserId, currentDay, currentProjectId, currentPhase],
     queryFn: () => api.getDigest(currentUserId!, currentDay, currentProjectId ?? undefined),
-    enabled: Boolean(currentUserId),
+    enabled: Boolean(currentUserId) && Boolean(currentPhase),
     retry: false,
   });
+
+  // Cold-start path: the GET endpoint falls back to the most-recent
+  // digest when no row exists for the active phase. Detect that gap and
+  // enqueue a precompute for the missing cell, then poll the job and
+  // refetch. Cache hit on the next phase swap is instant.
+  const coldStart = useMutation({
+    mutationFn: async () => {
+      const job = await api.enqueueRegenerate(currentUserId!, currentProjectId!, currentDay);
+      const deadline = Date.now() + 60_000;
+      while (Date.now() < deadline) {
+        const status = await api.getJob(job.job_id);
+        if (status.status === "complete" || status.status === "not_found") return status;
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      throw new Error("cold-start precompute timed out");
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["digest", currentUserId] });
+    },
+  });
+
+  const phaseMismatch = digest.data && currentPhase ? digest.data.phase !== currentPhase : false;
+
+  // Kick off the cold-start exactly once per (user, day, phase) cell.
+  const seenMismatchKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (!phaseMismatch || !currentPhase || !currentUserId) return;
+    const key = `${currentUserId}:${currentDay}:${currentPhase}`;
+    if (seenMismatchKey.current === key) return;
+    seenMismatchKey.current = key;
+    coldStart.mutate();
+  }, [phaseMismatch, currentPhase, currentUserId, currentDay, coldStart]);
 
   const generate = useMutation({
     mutationFn: () => api.generateDigests(currentProjectId!, currentDay),
@@ -130,7 +169,8 @@ export function DigestCard() {
   }
 
   const data = digest.data;
-  const regenerating = regenerate.isPending || feedback.isPending;
+  const regenerating = regenerate.isPending || feedback.isPending || coldStart.isPending;
+  const showingMismatch = phaseMismatch && !regenerating;
 
   return (
     <Card>
@@ -139,9 +179,17 @@ export function DigestCard() {
           <CardTitle>Day {data.day} briefing</CardTitle>
           <p className="text-xs text-zinc-500">
             generated {new Date(data.generated_at).toLocaleString()}
+            <span className="ml-2 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] tracking-wide text-zinc-700 uppercase">
+              phase: {data.phase}
+            </span>
             {regenerating && (
               <span className="ml-2 inline-flex">
                 <Spinner size="xs" label="Re-ranking…" />
+              </span>
+            )}
+            {showingMismatch && (
+              <span className="ml-2 text-amber-700">
+                Showing cached {data.phase} — {currentPhase} variant building in the queue.
               </span>
             )}
           </p>
