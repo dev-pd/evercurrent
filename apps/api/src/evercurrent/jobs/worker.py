@@ -1,9 +1,7 @@
 """Arq worker entrypoint.
 
-Phase 0.2 scope: a bootable worker with a single `heartbeat` task. Real
-tasks (enrich_messages, generate_digests, extract_decisions, advance_day,
-ingest_doc) are appended to `WorkerSettings.functions` as later phases
-implement them.
+Real task modules live under `tasks/`. They are registered here in the
+order they were introduced through phases 2..7.
 """
 
 from __future__ import annotations
@@ -14,9 +12,15 @@ from typing import Any, ClassVar
 
 from arq.connections import RedisSettings
 
+from evercurrent.jobs.tasks.advance_day import advance_day
+from evercurrent.jobs.tasks.enrich_messages import enrich_day
+from evercurrent.jobs.tasks.extract_decisions import extract_decisions_for_day
+from evercurrent.jobs.tasks.generate_digests import generate_all_digests
+from evercurrent.jobs.tasks.ingest_doc import ingest_document
+
 
 async def heartbeat(_ctx: dict[str, Any]) -> str:
-    """Return an ISO timestamp. Smoke-test target for ops + CI."""
+    """Smoke-test target for ops + CI."""
     return dt.datetime.now(dt.UTC).isoformat()
 
 
@@ -30,6 +34,13 @@ def _redis_settings_from_env() -> RedisSettings:
 class WorkerSettings:
     """Arq WorkerSettings consumed by `arq evercurrent.jobs.worker.WorkerSettings`."""
 
-    functions: ClassVar[list[Any]] = [heartbeat]
+    functions: ClassVar[list[Any]] = [
+        heartbeat,
+        enrich_day,
+        advance_day,
+        extract_decisions_for_day,
+        generate_all_digests,
+        ingest_document,
+    ]
     redis_settings: ClassVar[RedisSettings] = _redis_settings_from_env()
     handle_signals: ClassVar[bool] = True

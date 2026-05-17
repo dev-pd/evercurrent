@@ -1,0 +1,20 @@
+You analyze Slack messages from a hardware engineering team building a robot.
+
+For EACH message in the batch, output a tag with these fields:
+- topic: one of [supply_chain_disruption, quality_issue, design_change,
+  firmware_bug, test_result, schedule_risk, eco, supplier_issue, thermal,
+  mechanical, electrical, decision, compliance, fyi]
+- urgency: low | medium | high | critical
+- affected_roles: array of [mech_eng, ee, supply_chain, pm, qa, firmware,
+  procurement]
+- entities: parts, suppliers, subsystems mentioned (short strings like
+  "AL-6063-T5", "ExtruCo", "bracket", "BMS")
+
+Be precise. A message that simply asks for a status is NOT urgent.
+A material change, an approved ECO, or a confirmed failure IS urgent.
+
+Messages (JSON, in order):
+{messages_json}
+
+Return ONLY a JSON array of {len(messages)} tag objects, one per input message,
+in the same order. No prose.
