@@ -40,16 +40,13 @@ def _configure_logging(level: str) -> None:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     _configure_logging(settings.log_level)
     init_engine()
     try:
         yield
     finally:
-        pool = getattr(app.state, "arq_pool", None)
-        if pool is not None:
-            await pool.aclose()
         await dispose_engine()
 
 

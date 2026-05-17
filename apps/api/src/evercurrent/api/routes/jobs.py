@@ -1,16 +1,18 @@
-"""Job status — thin probe over the Arq job registry."""
+"""Celery task status probe."""
 
 from __future__ import annotations
 
-import contextlib
-
-from arq.jobs import Job
+from celery.result import AsyncResult
 from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict
 
-from evercurrent.api.deps import ArqPool
+from evercurrent.jobs.celery_app import celery_app
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
+
+# Celery states we want the UI to treat as "still working" — the dashboard
+# polls until status flips out of these.
+_PENDING_STATES = {"PENDING", "RECEIVED", "STARTED", "RETRY"}
 
 
 class JobStatusResponse(BaseModel):
@@ -25,31 +27,22 @@ class JobStatusResponse(BaseModel):
 
 
 @router.get("/{job_id}", response_model=JobStatusResponse)
-async def get_status(job_id: str, arq: ArqPool) -> JobStatusResponse:
-    """Return the queue + worker state for an Arq job id.
+async def get_status(job_id: str) -> JobStatusResponse:
+    """Return Celery task state for `job_id`.
 
-    Statuses: `deferred`, `queued`, `in_progress`, `complete`, `not_found`.
-    Frontend polls this so the UI shows a spinner until the worker
-    actually finishes — useful for the per-user regenerate flow.
+    Statuses: PENDING / RECEIVED / STARTED / SUCCESS / FAILURE / RETRY /
+    REVOKED. The frontend treats anything outside SUCCESS / FAILURE /
+    REVOKED as still-running and keeps polling.
     """
-    job = Job(job_id, arq)
-    raw_status = await job.status()
-    status_str = raw_status.value if hasattr(raw_status, "value") else str(raw_status)
-    info = await job.info()
+    async_result: AsyncResult[object] = AsyncResult(job_id, app=celery_app)
+    state = async_result.state
     result: dict[str, object] | None = None
-    if status_str == "complete":
-        with contextlib.suppress(Exception):
-            value = await job.result(timeout=0)
-            if isinstance(value, dict):
-                result = value
-    enqueue_time = getattr(info, "enqueue_time", None)
-    start_time = getattr(info, "start_time", None)
-    finish_time = getattr(info, "finish_time", None)
+    if state == "SUCCESS":
+        value = async_result.result
+        if isinstance(value, dict):
+            result = value
     return JobStatusResponse(
         job_id=job_id,
-        status=status_str,
+        status="complete" if state == "SUCCESS" else state.lower(),
         result=result,
-        enqueue_time=enqueue_time.isoformat() if enqueue_time else None,
-        start_time=start_time.isoformat() if start_time else None,
-        finish_time=finish_time.isoformat() if finish_time else None,
     )

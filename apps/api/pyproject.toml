@@ -25,7 +25,7 @@ dependencies = [
     "pgvector",
 
     # Job queue + cache
-    "arq",
+    "celery>=5.4",
     "redis",
 
     # LLM + embeddings
@@ -96,6 +96,7 @@ ignore = [
 "src/evercurrent/main.py" = ["INP001"]
 "alembic/env.py" = ["INP001"]
 "src/evercurrent/jobs/tasks/*.py" = ["PLC0415"]
+"src/evercurrent/jobs/celery_tasks.py" = ["PLC0415"]
 "src/evercurrent/api/routes/*.py" = ["B008", "PLC0415"]
 "src/evercurrent/rag/indexer.py" = ["PLC0415"]
 "src/evercurrent/digest/generator.py" = ["PLC0415"]

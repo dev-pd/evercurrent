@@ -8,7 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from evercurrent.api.deps import ArqPool, SessionDep
+from evercurrent.api.deps import SessionDep
 from evercurrent.api.schemas import DigestItem, DigestResponse, GenerateDigestsResponse
 from evercurrent.db.repositories import (
     DigestRepository,
@@ -17,6 +17,12 @@ from evercurrent.db.repositories import (
     UserRepository,
 )
 from evercurrent.domain.digests import Digest as DigestDomain
+from evercurrent.jobs.celery_tasks import (
+    generate_all_digests as celery_generate_all_digests,
+)
+from evercurrent.jobs.celery_tasks import (
+    regenerate_user_digest as celery_regenerate_user_digest,
+)
 
 router = APIRouter(prefix="/digests", tags=["digests"])
 
@@ -62,7 +68,6 @@ async def _build_response(digest: DigestDomain, session: AsyncSession) -> Digest
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def generate(
-    arq: ArqPool,
     session: SessionDep,
     day: Annotated[int, Query(ge=1)],
     project_id: Annotated[uuid.UUID, Query()],
@@ -70,9 +75,8 @@ async def generate(
     project = await ProjectRepository(session).get_by_id(project_id)
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="project not found")
-    job = await arq.enqueue_job("generate_all_digests", str(project_id), day)
-    job_id = getattr(job, "job_id", str(uuid.uuid4()))
-    return GenerateDigestsResponse(job_id=job_id, day=day)
+    result = celery_generate_all_digests.delay(str(project_id), day)
+    return GenerateDigestsResponse(job_id=result.id, day=day)
 
 
 @router.post(
@@ -82,30 +86,25 @@ async def generate(
 )
 async def regenerate_for_user(
     user_id: uuid.UUID,
-    arq: ArqPool,
     session: SessionDep,
     day: Annotated[int, Query(ge=1)],
     project_id: Annotated[uuid.UUID, Query()],
 ) -> GenerateDigestsResponse:
-    """Enqueue a per-user regenerate job onto the Arq queue.
+    """Enqueue a per-user regenerate task onto Celery.
 
-    Returns 202 with the Arq job_id so the client can poll
-    /jobs/{job_id} for status. The actual LLM call runs in the worker
-    pool — the API never blocks on a model roundtrip.
+    Each call produces a fresh task_id — Celery doesn't dedup against
+    completed results, so re-clicks always re-run.
     """
     project = await ProjectRepository(session).get_by_id(project_id)
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="project not found")
-    job = await arq.enqueue_job(
-        "regenerate_user_digest",
+    result = celery_regenerate_user_digest.delay(
         str(project_id),
         str(user_id),
         day,
         project.current_phase,
-        _job_id=f"regen:{project_id}:{user_id}:{day}:{project.current_phase}",
     )
-    job_id = getattr(job, "job_id", str(uuid.uuid4()))
-    return GenerateDigestsResponse(job_id=job_id, day=day)
+    return GenerateDigestsResponse(job_id=result.id, day=day)
 
 
 @router.get("/{user_id}", response_model=DigestResponse)
@@ -115,11 +114,7 @@ async def get_digest(
     day: Annotated[int, Query(ge=1)],
     project_id: Annotated[uuid.UUID | None, Query()] = None,
 ) -> DigestResponse:
-    """Return the precomputed digest for (user, day, project.current_phase).
-
-    Phase resolves from project_id when supplied, otherwise we fall back
-    to the most-recent digest for that user/day.
-    """
+    """Return the precomputed digest for (user, day, project.current_phase)."""
     repo = DigestRepository(session)
     phase: str | None = None
     if project_id is not None:
@@ -128,7 +123,6 @@ async def get_digest(
             phase = project.current_phase
     digest = await repo.get(user_id, day, phase=phase)
     if digest is None and phase is not None:
-        # Phase variant not yet precomputed — fall back to any digest for the day.
         digest = await repo.get(user_id, day)
     if digest is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="digest not found")

@@ -70,7 +70,15 @@ services:
       context: ./apps/api
       dockerfile: Dockerfile
     restart: unless-stopped
-    command: ["arq", "evercurrent.jobs.worker.WorkerSettings"]
+    command:
+      [
+        "celery",
+        "-A",
+        "evercurrent.jobs.celery_app",
+        "worker",
+        "--loglevel=info",
+        "--concurrency=4",
+      ]
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://evercurrent:evercurrent@postgres:5432/evercurrent}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
@@ -85,6 +93,34 @@ services:
     volumes:
       - ./apps/api/src:/app/src
       - ./apps/api/seed_data:/app/seed_data
+
+  beat:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command:
+      [
+        "celery",
+        "-A",
+        "evercurrent.jobs.celery_app",
+        "beat",
+        "--loglevel=info",
+        "--schedule=/tmp/celerybeat-schedule",
+      ]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://evercurrent:evercurrent@postgres:5432/evercurrent}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      redis:
+        condition: service_healthy
+      worker:
+        condition: service_started
+    volumes:
+      - ./apps/api/src:/app/src
 
   web:
     build:

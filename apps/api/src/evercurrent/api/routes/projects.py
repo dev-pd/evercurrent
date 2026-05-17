@@ -6,7 +6,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, status
 
-from evercurrent.api.deps import ArqPool, SessionDep
+from evercurrent.api.deps import SessionDep
 from evercurrent.api.schemas import ChangePhaseRequest, ProjectResponse
 from evercurrent.db.repositories import ProjectRepository
 
@@ -36,7 +36,6 @@ async def change_phase(
     project_id: uuid.UUID,
     payload: ChangePhaseRequest,
     session: SessionDep,
-    _arq: ArqPool,
 ) -> ProjectResponse:
     repo = ProjectRepository(session)
     project = await repo.set_phase(project_id, payload.phase)

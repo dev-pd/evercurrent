@@ -64,7 +64,13 @@ export function DigestCard() {
       const deadline = Date.now() + 60_000;
       while (Date.now() < deadline) {
         const status = await api.getJob(job.job_id);
-        if (status.status === "complete" || status.status === "not_found") return status;
+        if (
+          status.status === "complete" ||
+          status.status === "not_found" ||
+          status.status === "failure" ||
+          status.status === "revoked"
+        )
+          return status;
         await new Promise((resolve) => setTimeout(resolve, 1500));
       }
       throw new Error("cold-start precompute timed out");
@@ -90,18 +96,23 @@ export function DigestCard() {
     mutationFn: () => api.generateDigests(currentProjectId!, currentDay),
   });
 
-  // Regenerate is fully queue-driven: API enqueues onto Arq + returns a
-  // job_id; we poll /jobs/{id} until the worker finishes. The UI stays
-  // responsive, the LLM call runs in the worker pool, and re-clicks are
-  // de-duplicated by the deterministic job id keyed on
-  // (project, user, day, phase).
+  // Regenerate is fully queue-driven: API enqueues onto Celery + returns
+  // a task_id; we poll /jobs/{id} until the worker finishes. The UI stays
+  // responsive, the LLM call runs in the worker pool, and every click
+  // queues a fresh task (no dedup against completed results).
   const regenerate = useMutation({
     mutationFn: async () => {
       const job = await api.enqueueRegenerate(currentUserId!, currentProjectId!, currentDay);
       const deadline = Date.now() + 60_000;
       while (Date.now() < deadline) {
         const status = await api.getJob(job.job_id);
-        if (status.status === "complete" || status.status === "not_found") return status;
+        if (
+          status.status === "complete" ||
+          status.status === "not_found" ||
+          status.status === "failure" ||
+          status.status === "revoked"
+        )
+          return status;
         await new Promise((resolve) => setTimeout(resolve, 1500));
       }
       throw new Error("regenerate timed out");
