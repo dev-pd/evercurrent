@@ -3,11 +3,13 @@
 import { Spinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
 import { useImpersonationStore } from "@/stores/impersonation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Activity } from "lucide-react";
-import { useEffect, useRef } from "react";
 
-const TODAY_POLL_MS = 10_000;
+// SSE invalidation (see hooks/use-events.ts) drives refetches. We still
+// re-render relative timestamps every 5s so '12s ago' counts up; the
+// `today` query itself isn't refetched by that interval.
+const TIMER_TICK_MS = 5_000;
 
 function relativeTime(iso: string | null): string {
   if (!iso) return "never";
@@ -27,26 +29,16 @@ function formatDate(iso: string): string {
 
 export function TodayBanner() {
   const { currentProjectId } = useImpersonationStore();
-  const queryClient = useQueryClient();
-  const lastDigestSeen = useRef<string | null>(null);
-
   const today = useQuery({
     queryKey: ["today", currentProjectId],
     queryFn: () => api.getToday(currentProjectId!),
     enabled: Boolean(currentProjectId),
-    refetchInterval: TODAY_POLL_MS,
   });
 
-  // When the worker writes a fresh digest, /today's
-  // last_digest_generated_at moves. Invalidate the dashboard's digest
-  // query so the user sees the new ranking without a manual reload.
-  const lastDigestAt = today.data?.last_digest_generated_at ?? null;
-  useEffect(() => {
-    if (!lastDigestAt) return;
-    if (lastDigestSeen.current === lastDigestAt) return;
-    lastDigestSeen.current = lastDigestAt;
-    void queryClient.invalidateQueries({ queryKey: ["digest"] });
-  }, [lastDigestAt, queryClient]);
+  // Force a re-render every TIMER_TICK_MS so relativeTime() keeps ticking
+  // forward even when no SSE event has arrived. No network calls.
+  const _ = useTickerState();
+  void _;
 
   if (!today.data) {
     return (
@@ -73,9 +65,18 @@ export function TodayBanner() {
       <span>last inbound {relativeTime(today.data.last_message_at)}</span>
       <span>·</span>
       <span>digest refreshed {relativeTime(today.data.last_digest_generated_at)}</span>
-      <span className="ml-auto text-emerald-700">
-        Worker re-ranks every 30s; new Slack-style messages arrive every minute.
-      </span>
+      <span className="ml-auto text-emerald-700">SSE · server pushes updates</span>
     </div>
   );
+}
+
+import { useEffect, useState } from "react";
+
+function useTickerState(): number {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((t) => t + 1), TIMER_TICK_MS);
+    return () => window.clearInterval(id);
+  }, []);
+  return tick;
 }

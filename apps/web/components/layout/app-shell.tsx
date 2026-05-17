@@ -1,6 +1,7 @@
 "use client";
 
 import { ImpersonationDropdown } from "@/components/layout/impersonation-dropdown";
+import { useEvents } from "@/hooks/use-events";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,6 +15,10 @@ const NAV = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  // Open one SSE connection per dashboard mount. Server pushes
+  // 'digest.updated' / 'message.synthesized' / 'phase.changed' events
+  // and TanStack Query invalidations follow — no polling.
+  useEvents();
   return (
     <div className="flex h-screen w-screen bg-zinc-50">
       <aside className="flex w-56 shrink-0 flex-col border-r border-zinc-200 bg-white">

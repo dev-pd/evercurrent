@@ -37,9 +37,12 @@ async def change_phase(
     payload: ChangePhaseRequest,
     session: SessionDep,
 ) -> ProjectResponse:
+    from evercurrent.realtime import publish_event
+
     repo = ProjectRepository(session)
     project = await repo.set_phase(project_id, payload.phase)
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="project not found")
     await session.commit()
+    publish_event(project_id, "phase.changed", {"phase": payload.phase})
     return ProjectResponse.model_validate(project.model_dump())

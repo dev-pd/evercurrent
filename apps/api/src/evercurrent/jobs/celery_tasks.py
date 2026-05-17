@@ -14,6 +14,7 @@ from typing import Any
 import structlog
 
 from evercurrent.jobs.celery_app import celery_app
+from evercurrent.realtime import publish_event
 
 log = structlog.get_logger(__name__)
 
@@ -38,14 +39,40 @@ def heartbeat() -> str:
 def refresh_today(project_name: str | None = None) -> dict[str, Any]:
     from evercurrent.jobs.tasks.refresh_today import refresh_today as impl
 
-    return _run(impl({}, project_name))
+    result = _run(impl({}, project_name))
+    project_id = result.get("project_id") if isinstance(result, dict) else None
+    if project_id:
+        publish_event(
+            project_id,
+            "digest.updated",
+            {"day": result.get("day"), "phase": result.get("phase")},
+        )
+    return result
 
 
 @celery_app.task(name="evercurrent.synthesize_today_message")
 def synthesize_today_message(project_name: str | None = None) -> dict[str, Any]:
     from evercurrent.jobs.tasks.refresh_today import synthesize_today_message as impl
 
-    return _run(impl({}, project_name))
+    result = _run(impl({}, project_name))
+    msgs = result.get("messages") if isinstance(result, dict) else None
+    if isinstance(msgs, list) and msgs:
+        # Inserted messages carry no project_id at this layer; publish
+        # under the project_name's resolved id is overkill — just emit a
+        # generic 'message.synthesized' on a project-scoped lookup.
+        from evercurrent.db.repositories import ProjectRepository
+        from evercurrent.db.session import session_scope
+
+        async def _publish_for(name: str | None) -> None:
+            async with session_scope() as session:
+                proj = await ProjectRepository(session).get_by_name(
+                    name or "Warehouse Robot v2",
+                )
+            if proj is not None:
+                publish_event(proj.id, "message.synthesized", {"count": len(msgs)})
+
+        _run(_publish_for(project_name))
+    return result
 
 
 @celery_app.task(name="evercurrent.enrich_day")
@@ -92,7 +119,13 @@ def regenerate_user_digest(
 ) -> dict[str, Any]:
     from evercurrent.jobs.tasks.regenerate_user_digest import regenerate_user_digest as impl
 
-    return _run(impl({}, project_id, user_id, day, phase))
+    result = _run(impl({}, project_id, user_id, day, phase))
+    publish_event(
+        project_id,
+        "digest.updated",
+        {"user_id": user_id, "day": day, "phase": phase},
+    )
+    return result
 
 
 def _new_task_id() -> str:
