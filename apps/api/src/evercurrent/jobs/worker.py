@@ -34,10 +34,11 @@ def _redis_settings_from_env() -> RedisSettings:
     return RedisSettings(host="redis", port=6379, database=0)
 
 
-# Cron schedule. Demo cadence — production would key off Slack webhook
-# arrival, not a wall-clock cron.
-_REFRESH_MINUTES = set(range(0, 60, 2))  # every 2 minutes
-_SYNTHESIZE_MINUTES = set(range(0, 60, 4))  # every 4 minutes
+# Cron cadence. Production replaces synthesize with a Slack webhook
+# listener and keeps refresh as a 30s backstop.
+_EVERY_MINUTE = set(range(60))
+_REFRESH_SECONDS = {0, 30}  # refresh_today fires twice a minute
+_SYNTHESIZE_SECONDS = {15}   # synthesize fires once a minute
 
 
 class WorkerSettings:
@@ -55,12 +56,22 @@ class WorkerSettings:
         synthesize_today_message,
     ]
     cron_jobs: ClassVar[list[Any]] = [
-        # Refresh today's digests every 2 minutes. Cheap: only regenerates
-        # for the current day + current phase across all users (~8 calls).
-        cron(refresh_today, minute=_REFRESH_MINUTES, second={5}, run_at_startup=True),
-        # Generate one new message every 4 minutes to simulate the
-        # continuous Slack stream a real deployment would receive.
-        cron(synthesize_today_message, minute=_SYNTHESIZE_MINUTES, second={15}),
+        # Every 30s: enrich any new inbound messages, regenerate digests
+        # for today's day + current phase, re-extract decisions. ~8 LLM
+        # calls per tick.
+        cron(
+            refresh_today,
+            minute=_EVERY_MINUTE,
+            second=_REFRESH_SECONDS,
+            run_at_startup=True,
+        ),
+        # Every 60s: synth a small batch of phase-scoped messages so the
+        # UI shows live inbound traffic.
+        cron(
+            synthesize_today_message,
+            minute=_EVERY_MINUTE,
+            second=_SYNTHESIZE_SECONDS,
+        ),
     ]
     redis_settings: ClassVar[RedisSettings] = _redis_settings_from_env()
     handle_signals: ClassVar[bool] = True

@@ -88,20 +88,6 @@ export const api = {
   async getToday(projectId: string): Promise<Today> {
     return request(`/today?project_id=${projectId}`, undefined, todaySchema);
   },
-  async refreshToday(projectId: string): Promise<GenerateDigestsResponse> {
-    return request(
-      `/today/refresh?project_id=${projectId}`,
-      { method: "POST" },
-      generateDigestsSchema,
-    );
-  },
-  async synthesizeTodayMessage(projectId: string): Promise<GenerateDigestsResponse> {
-    return request(
-      `/today/synthesize?project_id=${projectId}`,
-      { method: "POST" },
-      generateDigestsSchema,
-    );
-  },
   async listDocuments(projectId: string, phase?: string): Promise<Document[]> {
     const params = new URLSearchParams({ project_id: projectId });
     if (phase) params.set("phase", phase);

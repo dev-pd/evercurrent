@@ -14,6 +14,7 @@ from typing import Any, ClassVar
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     CheckConstraint,
+    Date,
     Float,
     ForeignKey,
     Index,
@@ -63,6 +64,11 @@ class Project(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     current_phase: Mapped[str] = mapped_column(String(32), nullable=False)
     current_day: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    start_date: Mapped[dt.date] = mapped_column(
+        Date,
+        nullable=False,
+        server_default="2026-05-11",
+    )
     phase_concerns: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,

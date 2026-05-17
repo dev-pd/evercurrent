@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import uuid
 
 from sqlalchemy import select
@@ -35,26 +36,25 @@ class ProjectRepository:
         name: str,
         current_phase: str,
         current_day: int = 1,
+        start_date: dt.date | None = None,
         phase_concerns: dict[str, list[str]] | None = None,
         milestones: list[dict[str, str]] | None = None,
     ) -> Project:
+        values: dict[str, object] = {
+            "name": name,
+            "current_phase": current_phase,
+            "current_day": current_day,
+            "phase_concerns": phase_concerns or {},
+            "milestones": milestones or [],
+        }
+        if start_date is not None:
+            values["start_date"] = start_date
         stmt = (
             pg_insert(ProjectModel)
-            .values(
-                name=name,
-                current_phase=current_phase,
-                current_day=current_day,
-                phase_concerns=phase_concerns or {},
-                milestones=milestones or [],
-            )
+            .values(**values)
             .on_conflict_do_update(
                 index_elements=[ProjectModel.name],
-                set_={
-                    "current_phase": current_phase,
-                    "current_day": current_day,
-                    "phase_concerns": phase_concerns or {},
-                    "milestones": milestones or [],
-                },
+                set_={k: v for k, v in values.items() if k != "name"},
             )
             .returning(ProjectModel)
         )

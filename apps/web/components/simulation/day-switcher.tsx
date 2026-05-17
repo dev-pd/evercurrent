@@ -8,6 +8,13 @@ import { useQuery } from "@tanstack/react-query";
 
 const HISTORICAL = [1, 2, 3, 4, 5] as const;
 
+function dateLabelFor(day: number, startDateIso: string | undefined): string {
+  if (!startDateIso) return `Day ${day}`;
+  const start = new Date(`${startDateIso}T00:00:00`);
+  start.setDate(start.getDate() + (day - 1));
+  return start.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 export function DaySwitcher() {
   const { currentProjectId, currentDay, setCurrentDay } = useImpersonationStore();
   const today = useQuery({
@@ -16,10 +23,11 @@ export function DaySwitcher() {
     enabled: Boolean(currentProjectId),
   });
   const liveDay = today.data?.live_day;
+  const startDate = today.data?.start_date;
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-zinc-500">Day</span>
+      <span className="text-xs text-zinc-500">Date</span>
       <div className="inline-flex rounded-md border border-zinc-200 bg-white">
         {HISTORICAL.map((day) => (
           <Button
@@ -32,7 +40,7 @@ export function DaySwitcher() {
               currentDay === day && "bg-zinc-900 text-zinc-50 hover:bg-zinc-800",
             )}
           >
-            {day}
+            {dateLabelFor(day, startDate)}
           </Button>
         ))}
         {liveDay !== undefined && liveDay > HISTORICAL[HISTORICAL.length - 1] && (
@@ -47,7 +55,7 @@ export function DaySwitcher() {
                 : "text-emerald-700 hover:bg-emerald-50",
             )}
           >
-            Today ({liveDay})
+            Today · {dateLabelFor(liveDay, startDate)}
           </Button>
         )}
       </div>

@@ -1,24 +1,57 @@
-"""Arq task: refresh today's digests.
+"""Cron tasks that simulate the live Slack stream.
 
-Today = `project.current_day`. The cron fires every 2 minutes and:
-1. Tags every new (untagged) message that landed since the last run.
-2. Regenerates digests for every user under the project's current phase
-   so the dashboard is never more than 2 min behind reality.
-3. Re-extracts decisions for the day.
+`refresh_today` — runs every 30s. It rolls `project.current_day`
+forward to wall-clock today, enriches any newly-arrived messages, and
+regenerates digests for the current phase x every user. Idempotent.
 
-Idempotent — tag upserts skip already-tagged messages; digest upserts
-overwrite the matching (user, day, phase) row.
+`synthesize_today_message` — runs every 60s. It asks Sonnet for a
+small batch of realistic Slack messages that extend the project
+narrative on today's date, scoped to the current project phase.
+
+Production: replace synthesize with a Slack webhook listener that
+enqueues `enrich + nudge_refresh` per inbound message; the 30s cron
+stays as a backstop.
 """
 
 from __future__ import annotations
 
 import datetime as dt
+import json
+import os
 import uuid
 from typing import Any
 
 import structlog
 
 log = structlog.get_logger(__name__)
+
+_SYNTHESIZE_BATCH = 2
+
+
+async def _roll_day_if_needed(project_id: str) -> tuple[int, str]:
+    from evercurrent.db.repositories import ProjectRepository
+    from evercurrent.db.session import session_scope
+
+    async with session_scope() as session:
+        repo = ProjectRepository(session)
+        project = await repo.get_by_id(uuid.UUID(project_id))
+        if project is None:
+            msg = f"project {project_id} not found"
+            raise LookupError(msg)
+        expected = project.today_day
+        if project.current_day == expected:
+            return project.current_day, project.current_phase
+        updated = await repo.set_current_day(project.id, expected)
+        await session.commit()
+        log.info(
+            "refresh_today.rollover",
+            project_id=project_id,
+            from_day=project.current_day,
+            to_day=expected,
+        )
+        if updated is not None:
+            return updated.current_day, updated.current_phase
+        return expected, project.current_phase
 
 
 async def refresh_today(_ctx: dict[str, Any], project_name: str | None = None) -> dict[str, Any]:
@@ -35,8 +68,7 @@ async def refresh_today(_ctx: dict[str, Any], project_name: str | None = None) -
         log.warning("refresh_today.skip_missing_project", name=target)
         return {"status": "no_project"}
 
-    day = project.current_day
-    phase = project.current_phase
+    day, phase = await _roll_day_if_needed(str(project.id))
 
     enrich = await enrich_day({}, str(project.id), day)
     digests = await generate_all_digests_for_day(project.id, day, phase=phase)
@@ -55,19 +87,10 @@ async def refresh_today(_ctx: dict[str, Any], project_name: str | None = None) -
     return payload
 
 
-async def synthesize_today_message(  # noqa: PLR0911
+async def synthesize_today_message(
     _ctx: dict[str, Any],
     project_name: str | None = None,
 ) -> dict[str, Any]:
-    """Generate one new message in the today bucket via Sonnet.
-
-    Picks a recent thread context, asks the model to extend the narrative
-    with one realistic Slack-style message, persists it as part of
-    `current_day`. Skipped silently when ANTHROPIC_API_KEY is unset.
-    """
-    import json
-    import os
-
     from evercurrent.db.repositories import (
         ChannelRepository,
         MessageRepository,
@@ -89,8 +112,6 @@ async def synthesize_today_message(  # noqa: PLR0911
         users = await UserRepository(session).list_for_project(project.id)
         channels = await ChannelRepository(session).list_for_project(project.id)
         msgs_repo = MessageRepository(session)
-        # Use the last day of seed data as context, plus anything already
-        # in today's bucket.
         prior_day = max(1, project.current_day - 1)
         prior = await msgs_repo.list_for_day(project.id, prior_day, with_tags=True)
         today = await msgs_repo.list_for_day(project.id, project.current_day, with_tags=True)
@@ -105,70 +126,78 @@ async def synthesize_today_message(  # noqa: PLR0911
             "ts": em.message.ts.isoformat(),
             "text": em.message.text,
         }
-        for em in prior[-10:] + today[-10:]
+        for em in prior[-8:] + today[-8:]
     ]
 
+    phase = project.current_phase
+    phase_concerns = project.phase_concerns.get(phase, [])
+
     prompt = (
-        "You write one realistic Slack message that extends an ongoing\n"
-        "hardware-engineering project narrative for the warehouse robot v2.\n"
-        "Pick exactly one of the listed channels and one of the listed\n"
-        "usernames as the author. The message should be technical, short\n"
-        "(1-3 sentences), and reference part numbers / topics already seen\n"
-        "in the context. Reply with a JSON object only.\n\n"
-        f"Channels: {[c.name for c in channels]}\n"
-        f"Usernames: {[u.username for u in users]}\n\n"
+        "You generate realistic Slack messages for a hardware engineering\n"
+        f"team currently in the {phase} phase of project '{project.name}'.\n"
+        f"Phase concerns for {phase}: {phase_concerns}\n\n"
+        f"Produce a JSON array of EXACTLY {_SYNTHESIZE_BATCH} message objects\n"
+        "that extend the narrative. Each message must:\n"
+        f"- Pick channel from: {[c.name for c in channels]}\n"
+        f"- Pick author_username from: {[u.username for u in users]}\n"
+        "- Reference part numbers / topics already in the context\n"
+        f"- Stay relevant to a {phase} engineer's concerns (above)\n"
+        "- Be 1-3 sentences, technical, no fluff\n\n"
+        "Use diverse authors + channels across the batch (don't repeat).\n\n"
         f"Recent context (newest last):\n{json.dumps(context, indent=2)}\n\n"
-        'Output schema: {"channel": str, "author_username": str, "text": str}.\n'
+        'Output schema: [{"channel": str, "author_username": str, "text": str}, ...]\n'
     )
     provider = get_provider()
     raw = await provider.complete_json(
         tier=ModelTier.DIGEST,
         system="You produce JSON-only output. No prose.",
         prompt=prompt,
-        max_tokens=512,
-        temperature=0.6,
+        max_tokens=1024,
+        temperature=0.7,
     )
-    if not isinstance(raw, dict):
+    if not isinstance(raw, list):
         return {"status": "bad_output"}
-    channel_name = str(raw.get("channel", "")).strip()
-    author_username = str(raw.get("author_username", "")).strip()
-    text = str(raw.get("text", "")).strip()
-    if not channel_name or not author_username or not text:
-        return {"status": "missing_fields"}
 
     user_by_username = {u.username: u for u in users}
     channel_by_name = {c.name: c for c in channels}
-    user = user_by_username.get(author_username)
-    channel = channel_by_name.get(channel_name)
-    if user is None or channel is None:
-        return {"status": "unknown_channel_or_user"}
+    inserted: list[dict[str, str]] = []
 
     async with session_scope() as session:
         msgs = MessageRepository(session)
-        created = await msgs.create(
-            project_id=project.id,
-            channel_id=channel.id,
-            author_id=user.id,
-            day=project.current_day,
-            text=text,
-            ts=dt.datetime.now(dt.UTC),
-            reactions={},
-        )
+        for entry in raw:
+            if not isinstance(entry, dict):
+                continue
+            channel_name = str(entry.get("channel", "")).strip()
+            author_username = str(entry.get("author_username", "")).strip()
+            text = str(entry.get("text", "")).strip()
+            if not channel_name or not author_username or not text:
+                continue
+            user = user_by_username.get(author_username)
+            channel = channel_by_name.get(channel_name)
+            if user is None or channel is None:
+                continue
+            created = await msgs.create(
+                project_id=project.id,
+                channel_id=channel.id,
+                author_id=user.id,
+                day=project.current_day,
+                text=text,
+                ts=dt.datetime.now(dt.UTC),
+                reactions={},
+            )
+            inserted.append(
+                {
+                    "message_id": str(created.id),
+                    "channel": channel_name,
+                    "author": author_username,
+                },
+            )
         await session.commit()
     log.info(
         "synthesize_today_message.done",
         project_id=str(project.id),
-        message_id=str(created.id),
-        author=author_username,
-        channel=channel_name,
+        count=len(inserted),
+        phase=phase,
+        day=project.current_day,
     )
-    return {
-        "status": "ok",
-        "message_id": str(created.id),
-        "channel": channel_name,
-        "author": author_username,
-    }
-
-
-def _new_message_uuid() -> uuid.UUID:
-    return uuid.uuid4()
+    return {"status": "ok", "count": len(inserted), "messages": inserted}

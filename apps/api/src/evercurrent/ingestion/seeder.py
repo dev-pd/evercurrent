@@ -61,10 +61,15 @@ async def seed_base() -> uuid.UUID:
         users = UserRepository(session)
         channels = ChannelRepository(session)
 
+        start_date_raw = project_data.get("start_date")
+        start_date = (
+            dt.date.fromisoformat(start_date_raw) if isinstance(start_date_raw, str) else None
+        )
         project = await projects.upsert(
             name=project_data["name"],
             current_phase=project_data["current_phase"],
             current_day=project_data.get("current_day", 1),
+            start_date=start_date,
             phase_concerns=project_data.get("phase_concerns", {}),
             milestones=project_data.get("milestones", []),
         )

@@ -96,7 +96,10 @@ export type JobStatus = z.infer<typeof jobStatusSchema>;
 export const todaySchema = z.object({
   project_id: z.string().uuid(),
   live_day: z.number().int(),
+  live_date: z.string(),
+  start_date: z.string(),
   phase: z.string(),
+  phase_concerns: z.array(z.string()),
   message_count: z.number().int(),
   last_message_at: z.string().nullable(),
   last_digest_generated_at: z.string().nullable(),

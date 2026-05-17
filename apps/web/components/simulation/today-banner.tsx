@@ -1,13 +1,13 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
 import { useImpersonationStore } from "@/stores/impersonation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, RefreshCw, Sparkles } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Activity } from "lucide-react";
+import { useEffect, useRef } from "react";
 
-const REFRESH_INTERVAL_MS = 15_000;
+const TODAY_POLL_MS = 10_000;
 
 function relativeTime(iso: string | null): string {
   if (!iso) return "never";
@@ -17,32 +17,36 @@ function relativeTime(iso: string | null): string {
   return `${Math.round(diffMs / 3600_000)}h ago`;
 }
 
+function formatDate(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function TodayBanner() {
-  const { currentProjectId, currentDay, setCurrentDay } = useImpersonationStore();
+  const { currentProjectId } = useImpersonationStore();
   const queryClient = useQueryClient();
+  const lastDigestSeen = useRef<string | null>(null);
 
   const today = useQuery({
     queryKey: ["today", currentProjectId],
     queryFn: () => api.getToday(currentProjectId!),
     enabled: Boolean(currentProjectId),
-    // Poll every 15s so the dashboard reflects the worker's cron sweeps.
-    refetchInterval: REFRESH_INTERVAL_MS,
+    refetchInterval: TODAY_POLL_MS,
   });
 
-  const refresh = useMutation({
-    mutationFn: () => api.refreshToday(currentProjectId!),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["digest"] });
-      void queryClient.invalidateQueries({ queryKey: ["today"] });
-    },
-  });
-
-  const synthesize = useMutation({
-    mutationFn: () => api.synthesizeTodayMessage(currentProjectId!),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["today"] });
-    },
-  });
+  // When the worker writes a fresh digest, /today's
+  // last_digest_generated_at moves. Invalidate the dashboard's digest
+  // query so the user sees the new ranking without a manual reload.
+  const lastDigestAt = today.data?.last_digest_generated_at ?? null;
+  useEffect(() => {
+    if (!lastDigestAt) return;
+    if (lastDigestSeen.current === lastDigestAt) return;
+    lastDigestSeen.current = lastDigestAt;
+    void queryClient.invalidateQueries({ queryKey: ["digest"] });
+  }, [lastDigestAt, queryClient]);
 
   if (!today.data) {
     return (
@@ -52,55 +56,26 @@ export function TodayBanner() {
     );
   }
 
-  const onToday = currentDay === today.data.live_day;
+  const liveDateText = formatDate(today.data.live_date);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-200 bg-emerald-50 px-6 py-2 text-xs text-emerald-900">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white uppercase">
-          <Activity className="h-3 w-3 animate-pulse" />
-          Live
-        </span>
-        <span className="font-medium">Today is day {today.data.live_day}</span>
-        <span>·</span>
-        <span>{today.data.message_count} message(s) in today&apos;s bucket</span>
-        <span>·</span>
-        <span>last message {relativeTime(today.data.last_message_at)}</span>
-        <span>·</span>
-        <span>last digest refresh {relativeTime(today.data.last_digest_generated_at)}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        {!onToday && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 border-emerald-300 bg-white text-emerald-900"
-            onClick={() => setCurrentDay(today.data!.live_day)}
-          >
-            Jump to today
-          </Button>
-        )}
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 border-emerald-300 bg-white text-emerald-900"
-          onClick={() => synthesize.mutate()}
-          disabled={synthesize.isPending}
-        >
-          {synthesize.isPending ? <Spinner size="xs" /> : <Sparkles className="h-3 w-3" />}
-          Inject a new message
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 border-emerald-300 bg-white text-emerald-900"
-          onClick={() => refresh.mutate()}
-          disabled={refresh.isPending}
-        >
-          {refresh.isPending ? <Spinner size="xs" /> : <RefreshCw className="h-3 w-3" />}
-          Refresh now
-        </Button>
-      </div>
+    <div className="flex flex-wrap items-center gap-3 border-b border-emerald-200 bg-emerald-50 px-6 py-2 text-xs text-emerald-900">
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white uppercase">
+        <Activity className="h-3 w-3 animate-pulse" />
+        Live
+      </span>
+      <span className="font-medium">{liveDateText}</span>
+      <span>·</span>
+      <span>phase {today.data.phase}</span>
+      <span>·</span>
+      <span>{today.data.message_count} messages today</span>
+      <span>·</span>
+      <span>last inbound {relativeTime(today.data.last_message_at)}</span>
+      <span>·</span>
+      <span>digest refreshed {relativeTime(today.data.last_digest_generated_at)}</span>
+      <span className="ml-auto text-emerald-700">
+        Worker re-ranks every 30s; new Slack-style messages arrive every minute.
+      </span>
     </div>
   );
 }

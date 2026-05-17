@@ -35,6 +35,7 @@ def _make_project(spec: dict[str, Any]) -> Project:
         name="eval-project",
         current_phase=spec["current_phase"],
         current_day=1,
+        start_date=dt.datetime.now(dt.UTC).date(),
         phase_concerns=spec.get("phase_concerns", {}),
         milestones=[],
         created_at=dt.datetime.now(dt.UTC),
