@@ -1,4 +1,13 @@
-# EverCurrent — Build Doc
+# EverCurrent — Build Doc (historical plan)
+
+> **Status: historical.** This is the original phased build plan
+> captured before implementation. The shipped system diverges in
+> several places (Celery instead of Arq, SSE channel instead of
+> polling, calendar-date "today" with cron rollover, no chat panel in
+> the UI, simplified day-advance flow). For the current architecture
+> read `README.md`, `docs/ARCHITECTURE.md`, and
+> `docs/BACKEND_DEEP_DIVE.md`. The build doc is kept for traceability
+> and for anyone retracing the phase-by-phase journey.
 
 > An agentic AI layer for hardware engineering teams. Personalizes information by role, project phase, and behavior. Tracks cross-functional dependencies. Extracts structured decisions from team chatter. Answers questions by reasoning across team docs and conversations.
 

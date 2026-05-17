@@ -77,6 +77,63 @@ plugin or ship a small bespoke `.prose` ruleset in globals.css. Spent
 5 minutes debugging why ReactMarkdown output rendered as one wall of
 text.
 
+## Arq dedup on completed results bit us
+
+Arq's `enqueue_job(_job_id=...)` skips the enqueue if a result for that
+id already exists in Redis. We used a deterministic
+`regen:{project}:{user}:{day}:{phase}` id to dedup spam-clicks — but
+that also broke re-clicks after the first success. The user clicked
+Regenerate again, Arq saw the previous result, returned without
+running, the dashboard saw "complete" instantly + invalidated the
+digest query, refetch returned the same content. Looked like the
+button did nothing.
+
+Fixed by migrating to Celery, which doesn't dedup against completed
+results — every `.delay()` call gets a fresh UUID task_id. Click
+spam is debounced client-side via `disabled={isPending}` instead.
+
+Larger lesson: queue dedup semantics live at the boundary of "what
+the user expects to happen on a second click". If the answer is "yes,
+do it again, content may differ", dedup keys are the wrong tool.
+
+## SSE > polling, but only when there's something to push
+
+First pass had `/today` polling every 10s + a 30s digest refetch.
+Worked, fine for one user. Second pass moved to SSE: Celery task
+publishes to Redis pub/sub, FastAPI subscribes, browser EventSource
+receives. Network traffic dropped to near-zero at idle; the dashboard
+still updates within 50ms of the worker finishing.
+
+The gotcha is the keepalive. EventSource will silently drop a
+connection that's been idle for too long if anything in the path
+(nginx, ALB, ELB) decides the socket is dead. The fix is a
+`: keepalive\n\n` comment frame from the relay every 15s. Cheap on
+the server, invisible to the client.
+
+## Per-(user, day, phase) precompute beats on-demand regen
+
+Phase swap on the UI used to trigger a synchronous LLM call.
+~3-10s lag every click. The fix: precompute every cell at seed
+(`make precompute-digests`, ~336 Sonnet calls). Phase swap becomes a
+single Postgres write + one cached SELECT. Cells that haven't been
+precomputed get a queued cold-start with a clear UI banner ("Showing
+cached X while Y is queued").
+
+Cost ~$1.70 per project at full precompute. Trivially recouped by
+not paying for an LLM call on every click.
+
+## Calendar-date rollover from a cron task
+
+Mapping "today" to `project.current_day = (today - start_date) + 1`
+sounds simple but the bookkeeping matters. We do it inside
+`refresh_today` every 30s — first thing the task does is reconcile
+`current_day` with wall-clock today. That way:
+
+- A worker restart after midnight automatically catches up.
+- Tests can freeze time + override `start_date` to drive any day.
+- The UI labels everything by `start_date + (day - 1)` so the int
+  is purely an internal handle.
+
 ## Heuristic fallback paid off twice
 
 When the reviewer runs without API keys: enrichment falls back to

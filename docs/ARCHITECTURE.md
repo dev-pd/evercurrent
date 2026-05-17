@@ -83,35 +83,25 @@ flowchart TB
 ```
 
 All three LLM hops are idempotent at the database boundary:
-`enrich_day` skips messages with existing tags, decisions are
-re-extracted on every `advance_day` (the duplicate-suppression is left
-to the prompt + confidence cutoff for now — production would dedupe),
-digests use UNIQUE(user_id, day) so re-runs replace cleanly.
+`enrich_day` skips messages with existing tags; decisions are
+re-extracted on every refresh tick (dedup is left to the prompt +
+confidence cutoff for now — production would hash-dedup against
+existing rows); digests use `UNIQUE (user_id, day, phase)` so
+re-runs replace cleanly.
 
-## Data flow — agent chat
+## Agent (backend-only)
 
-```mermaid
-flowchart LR
-    User[User]
-        --> Web[ChatPanel<br/>useAgent]
-    Web --> Nginx
-    Nginx -->|SSE /api/agent/chat| API
-    API --> Runner[agent.runner.run_agent]
-    Runner -->|tool_use loop<br/>max 10 iters| Anthropic
-    Runner --> Tools{6 tools}
-    Tools -->|search_messages| DB
-    Tools -->|search_documents| RAG[(pgvector ANN)]
-    Tools -->|query_decisions| DB
-    Tools -->|get_project_state| DB
-    Tools -->|get_user_context| DB
-    Tools -->|get_thread_context| DB
-```
+`POST /api/agent/chat` still serves Sonnet tool-use over SSE — six
+tools (`search_messages`, `get_thread_context`, `get_user_context`,
+`get_project_state`, `search_documents`, `query_decisions`) over the
+project's own data. The frontend doesn't surface a chat panel
+anymore (removed from the dashboard); the endpoint is kept for
+backend integrations (e.g., Slack slash command, internal tooling).
 
 The runner appends each assistant tool-use turn AND the corresponding
-tool_result message to the conversation, so the model sees its own
-intermediate calls. Streaming is the default — `text_delta`,
-`tool_use_start`, `tool_use_result` events flow back to the UI as they
-arrive.
+`tool_result` message to the conversation, so the model sees its own
+intermediate calls. Streaming is the default; `text_delta`,
+`tool_use_start`, `tool_use_result` events flow back to the consumer.
 
 ## Design decisions
 
