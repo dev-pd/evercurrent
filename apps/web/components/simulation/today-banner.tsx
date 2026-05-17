@@ -60,7 +60,7 @@ export function TodayBanner() {
       <span>·</span>
       <span>phase {today.data.phase}</span>
       <span>·</span>
-      <span>{today.data.message_count} messages today</span>
+      <span>{today.data.message_count} inbound today</span>
       <span>·</span>
       <span>last inbound {relativeTime(today.data.last_message_at)}</span>
       <span>·</span>

@@ -1,6 +1,6 @@
-"""Arq background jobs.
+"""Celery background jobs.
 
-Task modules will be added under `tasks/` as later phases implement them
-(enrich_messages, generate_digests, extract_decisions, advance_day,
-ingest_doc). The Arq worker entrypoint is `worker.WorkerSettings`.
+The Celery app lives in `celery_app.celery_app`. Sync task wrappers are
+in `celery_tasks.py`; each one calls `asyncio.run(<async impl>)` on
+the matching coroutine in `tasks/`.
 """

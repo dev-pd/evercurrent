@@ -81,7 +81,7 @@ This document maps the take-home prototype to a production system.
 - Vector index: HNSW scales to a few million chunks. Beyond that, swap
   pgvector for Qdrant or a managed vector DB and keep the
   `EmbeddingProvider` adapter pattern in place.
-- Worker fan-out: Arq is single-node; for tens of QPS migrate to
+- Worker fan-out: Celery scales horizontally; for tens of QPS migrate to
   Temporal — durable workflows + retries + heartbeats are first-class
   there, and the activity API maps cleanly to our task functions.
 - Embeddings: when `voyage-3-lite` becomes a cost line item, fine-tune
@@ -167,13 +167,13 @@ flowchart LR
 
 ## Reliability
 
-- Chaos testing: kill a worker mid-job; verify Arq retries. Kill
+- Chaos testing: kill a worker mid-job; verify Celery retries via task_default_retry_delay + max_retries. Kill
   postgres for 30s; verify api returns 503 with retry-after, doesn't
   crash.
 - Degraded mode: agent falls back to heuristic answers if Anthropic
   is unreachable. Digest falls back to heuristic markdown if Sonnet
   fails. Scoring keeps working regardless.
-- Idempotency keys on every Arq task. `(project_id, day, task_name)`
+- Idempotency keys on every Celery task. `(project_id, day, task_name)`
   prevents double-enrichment.
 
 ## What I would build next, in order

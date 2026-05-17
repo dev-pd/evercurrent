@@ -12,7 +12,7 @@ flowchart LR
     end
     subgraph Backend
         API[FastAPI<br/>routes/services]
-        Worker[Arq worker]
+        Worker[Celery worker + beat]
         DB[(Postgres 17 +<br/>pgvector)]
         Redis[(Redis 8)]
     end
@@ -48,7 +48,7 @@ inside the docker network.
 ├─────────────────────────────────────────────┤
 │ apps/api FastAPI routes                     │
 │   - Pydantic request/response schemas       │
-│   - DI via Depends() (session, arq pool,    │
+│   - DI via Depends() (session,             │
 │     current user id from header)            │
 ├─────────────────────────────────────────────┤
 │ Domain services                             │
@@ -115,11 +115,13 @@ arrive.
 
 ## Design decisions
 
-**Why Arq, not Celery?** Arq is async-first, uses Redis directly, has a
-tiny surface area, and works cleanly with our async-everywhere stack.
-Celery's process-per-worker model would have meant blocking calls and
-either eventlet/gevent shims or a separate sync stack. Arq schedules
-seamlessly from FastAPI lifespan.
+**Why Celery + Celery Beat?** Battle-tested, broad operational
+toolchain (Flower, monitoring, retries, routing), and well-understood
+at scale. Tasks are sync wrappers that call `asyncio.run(...)` on
+existing async business logic — Celery handles concurrency via a
+fork pool while our DB / LLM / Redis calls stay async. Beat fires
+sub-minute schedules via `schedule(run_every=30.0)`. Redis serves
+both as the broker and as the SSE pub/sub bus.
 
 **Why Voyage, not OpenAI embeddings?** Anthropic recommends Voyage in
 its docs; `voyage-3-lite` at 512 dims is fast and cheap. Free tier is

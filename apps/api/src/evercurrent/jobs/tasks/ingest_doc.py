@@ -1,4 +1,4 @@
-"""Arq task: chunk + embed + index a single document."""
+"""Async impl behind a Celery task: chunk + embed + index a single document."""
 
 from __future__ import annotations
 

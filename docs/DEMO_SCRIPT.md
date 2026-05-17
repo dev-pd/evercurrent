@@ -1,89 +1,75 @@
 # EverCurrent — Demo Script
 
-Five-minute walkthrough for a reviewer.
+Five-minute walkthrough. Backend-heavy: the dashboard is intentionally
+thin; the depth lives in the queue + the pipeline.
 
 ## Minute 1 — the framing
 
-Hardware engineering teams have knowledge scattered across Slack,
-MCAD, Jira, Confluence. A mech engineer doesn't read the supply chain
-channel, but when a supplier strike hits the aluminum extrusion her
-bracket needs, she needs to know today. EverCurrent's positioning is
-cross-functional dependency tracking and decision extraction — not
-generic summarisation. This prototype demonstrates both, plus a
-6-tool reasoning agent over the same data.
+Hardware teams have knowledge scattered across Slack, MCAD, Jira,
+Confluence. A mech engineer doesn't read the supply chain channel,
+but when a supplier strike hits the aluminum extrusion her bracket
+needs, she needs to know **today**. EverCurrent's positioning is
+cross-functional dependency tracking, decision extraction, and a
+continuously updating, role-aware briefing — not generic summarisation.
 
-## Minute 2 — personalisation
+## Minute 2 — the live pipeline
 
-1. Open `http://localhost:8080/dashboard`.
-2. Impersonation dropdown is preset to Sarah Chen (mech_eng, owns
-   chassis + mounting + brackets).
-3. Day 3 digest leads with:
-   - **ECO-178 fast-track** (she authored).
-   - **AL-7075-T6 sourcing** (her chassis subsystem, cost delta).
-   - **Lin's testing plan** (test units cover her revised brackets).
-4. Switch impersonation to Mei Tanaka (supply_chain, owns BOM +
-   supplier_management).
-5. Same underlying messages — different digest. Now leads with the
-   AlumWest trial lot, the ExtruCo strike status, the cost premium
-   absorption decision for PVT.
+Open `http://localhost:8080/dashboard` impersonated as Sarah Chen
+(mech_eng).
 
-Drive home: same data, different digests, **driven by role +
-cross-functional dependency match, scored deterministically before any
-LLM rewrites it**.
+- Top banner shows `Live · Sat, May 17 · phase DVT · N messages today
+  · last inbound 12s ago · digest refreshed 18s ago · SSE — server
+  pushes updates`.
+- Open browser devtools → Network. One persistent `/api/events?...`
+  connection, no periodic polls. Inspect the stream — SSE events
+  arrive as `digest.updated`, `message.synthesized`, `phase.changed`.
+- Behind the scenes: Celery beat fires `synthesize_today_message`
+  every 60s (Sonnet writes 2 phase-scoped messages), `refresh_today`
+  every 30s (Haiku tags, Sonnet rewrites digests for every user under
+  the current phase, decisions get extracted).
+- When the worker writes, it `redis.publish("events:{project_id}",
+  ...)`. The `/events` SSE relay subscribes + pushes to the browser.
+  TanStack Query invalidations re-fetch.
 
-## Minute 3 — phase awareness
+## Minute 3 — personalisation + phase
 
-1. With Sarah selected, switch project phase DVT → PVT via the
-   dropdown.
-2. Within 100ms the digest reshuffles toward production yield and
-   supplier quality items.
-3. This is governed by `scoring/weights.py` and the `phase_concerns`
-   map in `seed_data/project.json`, NOT by re-asking the LLM.
-   Predictable, cheap, testable — and exactly what a senior architect
-   wants for a personalisation layer.
+- Switch impersonation Sarah → Mei (supply_chain). Same underlying
+  messages, different digest. Sarah leads with ECO-178, AL-7075-T6
+  sourcing, thermal failures. Mei leads with extrusion sourcing +
+  AlumWest cost premium.
+- Switch user back. Flip phase DVT → PVT in the dropdown. The
+  dashboard re-renders within ~50ms — every (user, day, phase) digest
+  is precomputed. **No LLM call in the request path** for phase swap.
+- For a cell that hasn't been precomputed, the dashboard enqueues a
+  `regenerate_user_digest` task transparently and shows "Showing
+  cached <X> — <Y> variant building". Task completes in ~10s, SSE
+  pushes `digest.updated`, panel refetches.
 
-## Minute 4 — agentic chat
+## Minute 4 — decisions + docs
 
-1. Open the right-side chat panel.
-2. Ask **"What should I worry about this week?"**.
-3. Watch the tool call cards stream in:
-   `get_project_state` → `query_decisions` → `search_messages` →
-   final text answer.
-4. The model cites `[msg_<id>]`, `[doc:<title>]`, `[decision_<id>]` as
-   it reasons across the three sources.
-5. Follow up with **"What's the torque spec for the chassis motor?"**.
-6. `search_documents` fires against the PRD; the answer cites
-   `[doc:PRD §3]` with the torque figure.
+- Open Decisions. Sonnet extracted ~20 decisions across the seed
+  data. Each carries status, affected subsystems, confidence,
+  source message ids. The filter narrows to decisions whose affected
+  subsystems intersect the impersonated user's owned subsystems.
+- Open Documents. Each doc is tagged with the project phases it is
+  authoritative for. The RAG retriever filters by the active project
+  phase so it doesn't cite a thermal test report when the project is
+  in `design`.
 
-Drive home: **multi-source reasoning**, not single-tool RAG.
+## Minute 5 — eval + production story
 
-## Minute 5 — eval rigor + production story
-
-1. From a terminal: `make eval`. 6/6 scoring scenarios pass + 2
-   determinism checks.
-2. Show `docs/EVAL_BASELINE.md`: scoring P@1 = 6/6, decision counts
-   per day, scoping for RAG / digest LLM-as-judge in the next
-   iteration.
-3. Open `docs/PRODUCTION_ROADMAP.md`. Walk through the top three
-   sections in 30 seconds each:
-   - **Real Slack adapter** behind the `IngestionAdapter` interface,
-     OAuth + Events API + rate-limited backfill.
-   - **ITAR / SOC 2** with regional endpoints, audit logs, PII
-     redaction step around every LLM call.
-   - **Observability**: per-tenant cost dashboard sliced by Haiku /
-     Sonnet / Voyage. Nightly eval regression alerts.
-4. Close: "The architecture decouples ingestion, enrichment, scoring,
-   retrieval, and agent reasoning into independently testable
-   services. Each layer can scale or be swapped without touching the
-   others."
-
-## Backup demos (if time allows)
-
-- **Timeline view**: 5 days side-by-side for Sarah. You can see the
-  dominant topic shift from "thermal failure" (days 1-2) to "ECO
-  approval" (days 3-4) to "DVT exit + new gripper risk" (day 5).
-- **Decisions log**: 23 structured decisions extracted by Sonnet,
-  status badges, source message ids you can click back to.
-- **Advance Day button**: triggers the full pipeline (enrich →
-  decisions → digest) for the next day. Shows the worker doing real
-  work.
+- Terminal: `make eval`. 6/6 scoring scenarios + 2 determinism checks.
+  `docs/EVAL_BASELINE.md` shows targets for LLM-as-judge digest eval +
+  RAG retrieval eval (forward work).
+- Walk `docs/PRODUCTION_ROADMAP.md` top three sections in 30s each:
+  - **Real Slack adapter** behind `IngestionAdapter` interface; OAuth
+    + Events API + rate-limited backfill replacing
+    `synthesize_today_message`.
+  - **ITAR / SOC 2** with regional Anthropic endpoints, audit logs,
+    PII redaction step around every LLM call.
+  - **Observability** — per-tenant cost dashboard sliced by Haiku /
+    Sonnet / Voyage; nightly eval regression alerts.
+- Close with: "The dashboard is a read-only viewport on a pipeline
+  whose every layer is independently testable + swappable. Slack
+  webhook in, decisions + personalised digests out, Celery in the
+  middle, Postgres + pgvector underneath."

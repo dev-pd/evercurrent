@@ -1,6 +1,6 @@
 """Application settings, loaded from environment via pydantic-settings.
 
-The same Settings class is used by the FastAPI app and the Arq worker so
+The same Settings class is used by the FastAPI app and the Celery worker so
 both processes converge on a single source of truth for DB / Redis /
 LLM credentials. No globals — `get_settings()` is cached and injected.
 """

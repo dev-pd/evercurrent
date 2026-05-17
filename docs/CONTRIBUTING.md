@@ -46,7 +46,7 @@ and should be skipped (and called out in the subphase commit message).
 2. Restate the goal and the files you'll create / modify in your PR
    description.
 3. If a `.claude/skills/` skill matches (add-fastapi-route,
-   add-react-component, add-arq-task, add-llm-prompt, add-db-migration),
+   add-react-component, add-celery-task, add-llm-prompt, add-db-migration),
    follow that skill.
 4. New external dependencies require a paragraph of justification in
    the PR — the locked stack is deliberate.

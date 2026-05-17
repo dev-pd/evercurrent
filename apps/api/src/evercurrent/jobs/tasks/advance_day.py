@@ -1,4 +1,4 @@
-"""Arq task: advance the project simulation by one day."""
+"""Async impl behind a Celery task: advance the project simulation by one day."""
 
 from __future__ import annotations
 

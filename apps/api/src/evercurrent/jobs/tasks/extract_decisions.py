@@ -1,7 +1,7 @@
-"""Arq task: extract decisions from a day's messages.
+"""Async impl behind a Celery task: extract decisions from a day's messages.
 
 The implementation lives in `evercurrent.decisions.extractor`. This module
-wraps it for Arq scheduling.
+exposed to Celery via celery_tasks.py.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Arq task: tag all messages for a given day."""
+"""Async impl behind a Celery task: tag all messages for a given day."""
 
 from __future__ import annotations
 

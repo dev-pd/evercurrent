@@ -1,8 +1,8 @@
-"""Arq task: regenerate one user's digest for (day, phase).
+"""Async impl behind a Celery task: regenerate one user's digest for (day, phase).
 
-Per-user, idempotent — keyed on (project_id, user_id, day, phase). Arq
-gives us a job_id we hand back to the client, so the UI can poll
-/jobs/{id}/status if it wants instead of blocking the request.
+Per-user, idempotent — keyed on (project_id, user_id, day, phase). The
+Celery wrapper publishes a `digest.updated` SSE event on success so the
+dashboard refetches without polling.
 """
 
 from __future__ import annotations

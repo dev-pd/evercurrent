@@ -1,4 +1,4 @@
-"""Arq task: score + generate digest for every user on a given day."""
+"""Async impl behind a Celery task: score + generate digest for every user on a given day."""
 
 from __future__ import annotations
 

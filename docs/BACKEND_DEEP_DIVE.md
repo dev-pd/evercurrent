@@ -1,93 +1,122 @@
-# Backend deep dive — distributed pipeline, phase-aware retrieval
+# Backend deep dive — distributed pipeline, SSE, phase-aware retrieval
 
-This doc answers the backend architecture questions raised after the
-prototype was demoed. It complements `ARCHITECTURE.md` (which sketches
-boundaries) and `PRODUCTION_ROADMAP.md` (which sketches scale-out).
+The frontend is intentionally thin. Every interesting decision is in
+the backend. This doc walks the queue, the pub/sub fanout, the cached
+phase variants, and the cron-driven live stream.
 
-## 1. Where work happens — the distributed queue
+## 1. Where work happens — Celery + Redis
 
 ```
                 ┌──────────────┐
    HTTP client ─▶│   FastAPI    │  request path: fast, never blocks on LLM
                 │   (uvicorn)  │
                 └──────┬───────┘
-                       │ enqueue_job(…)
+                       │ task.delay(...)
                        ▼
                 ┌──────────────┐
-                │    Redis     │  Arq queue + heartbeat KV
+                │    Redis     │  Celery broker + result backend + pub/sub
                 └──────┬───────┘
-                       │ pop
+                       │ prefetch
                        ▼
                 ┌──────────────┐
-                │  Arq worker  │  LLM + DB heavy lifting
-                │  (1 .. N)    │  scales horizontally
+                │ Celery worker│  asyncio.run(<async impl>) in a fork pool
+                │  (1..N)      │  --concurrency=4 per replica
                 └──────┬───────┘
                        │ writes
                        ▼
                 ┌──────────────┐
                 │  Postgres 17 │  pgvector, JSONB, ARRAY
                 └──────────────┘
+
+       ┌──────────────┐
+       │ Celery beat  │  cron schedules: refresh_today @ 30s,
+       │              │  synthesize_today_message @ 60s
+       └──────┬───────┘
+              ▼
+       (enqueues onto the same Redis broker as the API)
 ```
 
-- API process never calls an LLM in the request path. It validates
-  input, persists scalar state (phase change, feedback), and pushes a
-  job onto Arq when the work is non-trivial.
-- Worker is its own Docker service (`worker` in compose). Today one
-  replica; scale by setting `--scale worker=N` or by changing the
-  compose replicas count. State is partitioned by job id so two
-  workers grabbing the same job is impossible.
+- API never calls an LLM in the request path. It validates input,
+  persists scalar state (phase change, feedback), and pushes a task
+  onto Celery when work is non-trivial.
+- Worker is its own Docker service (`worker` in compose). Scale via
+  `--scale worker=N` or by raising `--concurrency`.
+- Beat is a separate service (`beat`) with its own schedule file
+  (`/tmp/celerybeat-schedule`) so the non-root user can persist it.
 
-### Per-user rerank lives in the queue
+### Per-user re-rank flow
 
-`POST /digests/{user_id}/regenerate?day=N&project_id=P` enqueues the
-function `regenerate_user_digest` with a **deterministic** job id:
+`POST /digests/{user_id}/regenerate?day=N&project_id=P` calls
+`regenerate_user_digest.delay(...)` and returns 202 with a fresh
+Celery task id. The frontend polls `GET /jobs/{task_id}` until the
+status flips out of `pending` / `started` / `retry` (every click is
+a new task id — Celery does not dedup against completed results).
 
-```
-regen:{project_id}:{user_id}:{day}:{phase}
-```
-
-Arq deduplicates on job id, so a frenetic user clicking Regenerate
-five times queues one job, not five. The endpoint returns 202 with the
-job id; the frontend polls `GET /jobs/{job_id}` and renders a spinner
-until status flips to `complete`.
-
-Why deterministic ids matter at scale: in production we expect 10k+
-active users. Without dedup, a flapping web client could pump duplicate
-work into the queue and starve real load. With dedup, the queue depth is
-bounded by `users × days × phases` cells, not by click frequency.
+When the task finishes it publishes a `digest.updated` event onto
+`events:{project_id}` and the SSE relay pushes it to every connected
+dashboard. The browser invalidates `["digest", ...]` and refetches.
 
 ### Tasks registered today
 
-| Task                            | Triggered by                          | Tier   |
-|---------------------------------|---------------------------------------|--------|
-| `heartbeat`                     | smoke / liveness                      | —      |
-| `enrich_day`                    | seed + manual                         | Haiku  |
-| `generate_all_digests`          | seed + manual                         | Sonnet |
-| `extract_decisions_for_day`     | seed + manual                         | Sonnet |
-| `ingest_document`               | doc upload                            | Voyage |
-| `regenerate_user_digest`        | feedback / phase-switch (when needed) | Sonnet |
-| `advance_day`                   | not in UI now; reserved for ops       | mixed  |
+| Task                              | Trigger                            | Tier   |
+|-----------------------------------|------------------------------------|--------|
+| `heartbeat`                       | smoke / liveness                   | —      |
+| `enrich_day`                      | seed + cron                        | Haiku  |
+| `generate_all_digests`            | seed + manual                      | Sonnet |
+| `extract_decisions_for_day`       | seed + cron                        | Sonnet |
+| `ingest_document`                 | doc upload                         | Voyage |
+| `regenerate_user_digest`          | feedback / phase cold-start        | Sonnet |
+| `refresh_today`                   | beat cron / 30s                    | mixed  |
+| `synthesize_today_message`        | beat cron / 60s                    | Sonnet |
+| `advance_day`                     | reserved for ops                   | mixed  |
 
-Each task is a thin orchestrator. Business logic lives in
-`evercurrent.<module>.*` and is import-time independent of Arq, so the
-same code runs in tests + evals without a worker.
+Each Celery task is a thin sync wrapper that calls
+`asyncio.run(<async impl>)`. Async business logic stays where it
+lives in `evercurrent.<module>.*`; the worker runtime doesn't leak
+into domain code.
 
-## 2. Phase-aware retrieval
+## 2. Realtime — SSE over Redis pub/sub
 
-Two distinct phase tracks:
+No periodic polling. The browser opens one EventSource per dashboard
+mount; the server pushes when something actually changes.
 
-### Per-(user, day, phase) digests
+```
+Celery task body              FastAPI /events route               Browser
+─────────────────             ─────────────────────              ────────
+write digest row             redis.asyncio.subscribe              EventSource
+publish_event(                events:{project_id})                useEvents()
+  project_id, type,            │                                  │
+  payload)                     │ async for message:                │
+  │                            │   yield "event: update\n"        │
+  │                            │         "data: <json>\n\n"       │
+  ▼                            │                                  │
+redis.publish(                 ▼                                  ▼
+  "events:{id}", body) ───────► relay                              invalidate
+                                                                  TanStack Query
+```
 
-`digests` is now keyed `UNIQUE (user_id, day, phase)`. The
-`precompute_all_digests` step writes every cell at seed time —
-8 users × 5 days × 6 phases = 240 Sonnet calls. After that, phase
-switching is **purely a metadata flip** (`POST /projects/{id}/phase`)
-plus a query-key change on the client; the digest endpoint reads the
-matching precomputed row. No LLM call in the hot path.
+Heartbeat: `: keepalive\n\n` every 15s so proxies (nginx, ALB) don't
+kill idle connections. nginx already disables proxy_buffering for
+`/api/events` and `/api/agent/`.
 
-When a user clicks thumbs up/down, we *only* bump
-`user.topic_weights[topic]`. The next manual Regenerate, or the next
-scheduled precompute sweep, picks up the new weight. UI stays snappy.
+Event vocabulary:
+- `digest.updated {day, phase, user_id?}`
+- `message.synthesized {count}`
+- `phase.changed {phase}`
+- `decisions.updated`
+
+## 3. Phase-aware retrieval — two layers
+
+### Per-(user, day, phase) digest cache
+
+`digests` is `UNIQUE (user_id, day, phase)`. Seed precomputes every
+cell via `make precompute-digests` — 8 users × N days × 6 phases.
+After that, phase switch = a single Postgres write + one cached read.
+No LLM call in the hot path.
+
+A cold cell (phase variant never computed) triggers a queued
+regenerate from the dashboard and shows a "Showing cached X — Y
+variant building" banner while the task runs.
 
 ### Per-document phase scope
 
@@ -102,75 +131,82 @@ authoritative for:
 | Test report (thermal)  | DVT, PVT                          |
 | Test report (drop)     | DVT, PVT                          |
 
-`search_documents(..., phase=X)` filters with:
+`rag.retriever.search_documents(..., phase=X)` filters with
+`cardinality(d.phases) = 0 OR :phase = ANY(d.phases)`. The agent's
+`search_documents` tool passes the active phase, so retrieval stops
+surfacing test reports during the design phase.
 
-```sql
-(cardinality(d.phases) = 0 OR :phase = ANY(d.phases))
-```
+## 4. "Today" = calendar today
 
-Documents with empty `phases` are treated as universal (today only
-"other" kind hits that). The agent runner uses the active project phase
-when calling `search_documents`, so retrieval no longer surfaces a
-drop-test report when the project is in `design`.
+`project.start_date` (DATE) anchors the ordinal-day axis. Day N maps
+to `start_date + (N-1)`. `Project.today_day` computes today's ordinal
+from UTC wall clock; `refresh_today` rolls `current_day` forward
+every tick if reality has advanced past it.
 
-The Documents page exposes this directly: a phase chip per doc, an
-"active phase" highlight, and a toggle to show only docs that match
-the current phase.
+`/today` returns `live_day, live_date, start_date, phase,
+phase_concerns, message_count, last_message_at,
+last_digest_generated_at`. The UI renders calendar dates everywhere;
+the int day is an implementation detail.
 
-## 3. Idempotency + back-pressure
+The Slack stream is simulated by `synthesize_today_message` (Sonnet
+generates 2 phase-scoped messages per tick). In production this task
+is replaced by a Slack Events webhook handler that enqueues
+`enrich + nudge refresh` per inbound message. The 30s `refresh_today`
+cron stays as a backstop so debounced batches always flush.
 
-- DB writes are all upserts (`ON CONFLICT DO UPDATE`) keyed on natural
-  unique tuples: `(user_id, day, phase)` for digests, `(message_id)` for
-  tags, `(project_id, name)` for projects/users/channels.
-- Per-day digests survive worker restarts. If a worker dies mid-batch,
-  re-running the task replaces the affected cells but never duplicates
-  them.
+## 5. Idempotency + back-pressure
+
+- DB writes are all upserts (`ON CONFLICT DO UPDATE`) on natural
+  unique tuples: `(user_id, day, phase)` for digests,
+  `(message_id)` for tags, `(project_id, name)` for
+  projects/users/channels.
+- Per-day digests survive worker restarts. Re-running a task replaces
+  affected cells, never duplicates.
 - LLM client retries on `APIConnectionError`, `APITimeoutError`,
-  `RateLimitError`, and 5xx `APIStatusError`. Exponential backoff, 4
-  attempts, capped at 8s. Anthropic 4xx surfaces immediately so we don't
-  loop on bad input.
-- Voyage embedder mirrors the same retry policy.
+  `RateLimitError`, 5xx `APIStatusError`. Exponential backoff,
+  4 attempts, capped at 8s. 4xx surfaces immediately.
+- Voyage embedder mirrors the retry policy.
+- Celery defaults: `task_acks_late=True`,
+  `worker_prefetch_multiplier=1`, `task_default_retry_delay=5`,
+  `task_default_max_retries=2`.
 
-## 4. Boundaries that let this scale
+## 6. Boundaries that let this scale
 
 - **Adapters at the edge.** `LLMProvider`, `EmbeddingProvider`,
-  `Tagger`, `DigestGenerator` are Protocols. Swapping Anthropic for
-  a self-hosted model, or Voyage for OpenAI, is a one-file change.
-- **Repositories return domain models.** Nothing above the `db/` layer
-  imports SQLAlchemy. Refactoring storage (e.g. read replicas, sharding)
-  is contained.
-- **Scoring is pure Python.** No DB, no LLM. Trivially parallelisable
-  across users on the worker — eval scenarios in
-  `apps/api/tests/evals/test_scoring_eval.py` exercise it deterministically.
-- **Heuristic fallbacks.** Set `ANTHROPIC_API_KEY=` empty and the tagger
-  + digest generator fall back to deterministic rule-based output. CI,
-  evals, and demos all run without keys.
+  `Tagger`, `DigestGenerator` are Protocols. Swapping Anthropic /
+  Voyage is a one-file change.
+- **Repositories return domain models.** No SQLAlchemy above
+  `db/`. Refactoring storage is contained.
+- **Scoring is pure Python.** No DB, no LLM. Eval scenarios in
+  `tests/evals/test_scoring_eval.py` exercise it deterministically.
+- **Heuristic fallbacks.** With `ANTHROPIC_API_KEY` empty, the tagger
+  + digest generator emit deterministic markdown. CI runs without
+  keys.
 
-## 5. What this enables in product
+## 7. What this enables in product
 
-- Tenant scale: each project gets one row of `phase_concerns` and one
-  set of precomputed digests; the worker fans out per project. No
-  cross-project locking.
-- Real-time UI: phase swap is a single Postgres write. Feedback is a
-  single INSERT + JSONB update. Both are <10ms.
-- Predictable LLM spend: at 240 cells × $0.005/Sonnet call, one project
-  costs ~$1.20 to fully precompute. With prompt caching on the system
-  prompt + tool spec, that drops by ~70% in production.
-- Audit + replay: every Arq job + its parameters + result are recorded.
-  Re-running an old job id reproduces the exact same digest as long as
-  the seed message corpus hasn't moved.
+- Tenant scale: each project has one `phase_concerns` row + one
+  precomputed digest grid; the worker fans out per project.
+- Real-time UI: phase swap = single Postgres write. Feedback = one
+  INSERT + JSONB update. Both <10ms. Digest refresh ≤30s (cron) or
+  on push (SSE).
+- Predictable LLM spend: 8 users × ~7 days × 6 phases ≈ 336 cells at
+  ~$0.005/Sonnet call ≈ $1.70 to fully precompute one project.
+- Audit + replay: every Celery task records args + result. Re-running
+  an old task id reproduces the same digest if the seed corpus
+  hasn't moved.
 
-## 6. What's intentionally not done yet
+## 8. Deferred work
 
-- **Live notification on job completion.** Today the UI polls
-  `/jobs/{id}`. WebSocket or SSE would replace the poll loop;
-  infrastructure is there (the agent route already streams SSE).
-- **RBAC + multi-tenant scoping.** Repositories take a `project_id` but
-  we don't enforce an org boundary. Postgres RLS keyed on `org_id`
-  + a request-scoped context is the obvious next step.
-- **Cost dashboard.** Every LLM call logs `model`, `input_tokens`,
-  `output_tokens`, `latency_ms` via structlog. A nightly job rolling
-  these into Postgres is one more Arq task.
-- **Continuous embedding.** Documents re-embed on demand via
-  `ingest_document`. A change-data-capture path (Postgres LISTEN or a
-  trigger) would auto-enqueue ingest on every `documents` UPDATE.
+- **Celery → Temporal** when workflow durability + signals beat
+  Celery's chain/canvas semantics.
+- **WebSocket** replacing SSE if the UI grows bidirectional needs
+  (live cursor presence, multi-user editing).
+- **RBAC + multi-tenant scoping.** Repos take `project_id`; Postgres
+  RLS on `org_id` plus a request-scoped context is the next step.
+- **Cost dashboard.** Every LLM call already logs `model`,
+  `input_tokens`, `output_tokens`, `latency_ms` via structlog. A
+  nightly Celery task aggregating these is small.
+- **Continuous embedding via CDC.** Postgres `LISTEN` on documents
+  UPDATE triggers `ingest_document` instead of manual `make
+  ingest-docs`.

@@ -1,4 +1,4 @@
-"""Arq task modules.
+"""Celery task wrappers.
 
 Each task lives in its own file and is exported from this package so the
 worker module can register them by import.

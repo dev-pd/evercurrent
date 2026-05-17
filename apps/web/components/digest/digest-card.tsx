@@ -79,7 +79,9 @@ export function DigestCard() {
 
   const phaseMismatch = digest.data && currentPhase ? digest.data.phase !== currentPhase : false;
 
-  // Kick off the cold-start exactly once per (user, day, phase) cell.
+  // Cold-start the missing (user, day, phase) cell exactly once per
+  // selection. The ref is keyed on the cell coordinates so changing
+  // day/user/phase clears stale state.
   const seenMismatchKey = useRef<string | null>(null);
   useEffect(() => {
     if (!phaseMismatch || !currentPhase || !currentUserId) return;
@@ -89,9 +91,11 @@ export function DigestCard() {
     coldStart.mutate();
   }, [phaseMismatch, currentPhase, currentUserId, currentDay, coldStart]);
 
-  const generate = useMutation({
-    mutationFn: () => api.generateDigests(currentProjectId!, currentDay),
-  });
+  // Reset the ref when we land on a fresh cell so subsequent
+  // mismatches retrigger cold-start.
+  useEffect(() => {
+    seenMismatchKey.current = null;
+  }, [currentUserId, currentDay, currentPhase]);
 
   // Regenerate is fully queue-driven: API enqueues onto Celery + returns
   // a task_id; we poll /jobs/{id} until the worker finishes. The UI stays
@@ -147,30 +151,11 @@ export function DigestCard() {
   if (digest.isError) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>No digest yet for day {currentDay}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <p className="text-sm text-zinc-500">
-            Trigger generation; it will run in the worker (~10–60s depending on rate limits + day
-            size).
+        <CardContent className="p-6 text-sm text-zinc-500">
+          <p>
+            No digest cached for this (user, date, phase) yet. The worker will fill it on the next
+            30s cron tick, or you can press Regenerate above to enqueue immediately.
           </p>
-          <div>
-            <Button onClick={() => generate.mutate()} disabled={generate.isPending}>
-              {generate.isPending ? (
-                <>
-                  <Spinner size="xs" /> Enqueuing…
-                </>
-              ) : (
-                "Generate digests"
-              )}
-            </Button>
-          </div>
-          {generate.isSuccess && (
-            <p className="text-xs text-zinc-500">
-              Enqueued. Refresh in ~30s. job_id: {generate.data.job_id}
-            </p>
-          )}
         </CardContent>
       </Card>
     );
@@ -194,20 +179,21 @@ export function DigestCard() {
     <Card>
       <CardHeader className="flex flex-row items-start justify-between">
         <div>
-          <CardTitle>Day {data.day} briefing</CardTitle>
+          <CardTitle>Briefing</CardTitle>
           <p className="text-xs text-zinc-500">
             generated {new Date(data.generated_at).toLocaleString()}
             <span className="ml-2 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] tracking-wide text-zinc-700 uppercase">
-              phase: {data.phase}
+              phase {data.phase}
             </span>
             {regenerating && (
               <span className="ml-2 inline-flex">
                 <Spinner size="xs" label="Re-ranking…" />
               </span>
             )}
-            {showingMismatch && (
+            {showingMismatch && currentPhase && (
               <span className="ml-2 text-amber-700">
-                Showing cached {data.phase} — {currentPhase} variant building in the queue.
+                Showing cached {data.phase} digest while the {currentPhase} variant is queued
+                (~10s).
               </span>
             )}
           </p>
