@@ -8,7 +8,6 @@ import type { ReactNode } from "react";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/timeline", label: "Timeline" },
   { href: "/decisions", label: "Decisions" },
 ];
 

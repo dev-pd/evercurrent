@@ -141,10 +141,6 @@ def test_scoring_is_deterministic(seed_size: int) -> None:
     project = _make_project(scenario["project"])
     user = _make_user(scenario["user"])
     enriched = [_make_enriched(m) for m in scenario["messages"]]
-    first = [
-        em.enriched.message.id for em in score_messages_for_user(enriched, user, project)
-    ]
-    second = [
-        em.enriched.message.id for em in score_messages_for_user(enriched, user, project)
-    ]
+    first = [em.enriched.message.id for em in score_messages_for_user(enriched, user, project)]
+    second = [em.enriched.message.id for em in score_messages_for_user(enriched, user, project)]
     assert first == second

@@ -2,6 +2,7 @@
 
 import { ToolCallView } from "@/components/chat/tool-call-view";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { useAgent } from "@/hooks/use-agent";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -24,6 +25,8 @@ export function ChatPanel() {
     setInput("");
     void ask(value);
   };
+
+  const isStreaming = turns.some((t) => t.streaming);
 
   return (
     <div className="flex h-full w-[420px] shrink-0 flex-col border-l border-zinc-200 bg-white">
@@ -57,7 +60,11 @@ export function ChatPanel() {
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{turn.text}</ReactMarkdown>
                   </article>
                 )}
-                {turn.streaming && <p className="text-xs text-zinc-400">streaming…</p>}
+                {turn.streaming && (
+                  <div className="mt-1">
+                    <Spinner size="xs" label="streaming…" />
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -82,8 +89,9 @@ export function ChatPanel() {
           rows={3}
           className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:ring-2 focus:ring-zinc-950 focus:outline-none"
         />
-        <div className="mt-2 flex justify-end">
-          <Button size="sm" onClick={submit}>
+        <div className="mt-2 flex items-center justify-end gap-2">
+          {isStreaming && <Spinner size="xs" label="thinking…" />}
+          <Button size="sm" onClick={submit} disabled={isStreaming}>
             Send
           </Button>
         </div>

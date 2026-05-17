@@ -64,6 +64,13 @@ export const api = {
       generateDigestsSchema,
     );
   },
+  async regenerateDigest(userId: string, projectId: string, day: number): Promise<Digest> {
+    return request(
+      `/digests/${userId}/regenerate?day=${day}&project_id=${projectId}`,
+      { method: "POST" },
+      digestSchema,
+    );
+  },
   async postFeedback(args: {
     userId: string;
     messageId: string;
