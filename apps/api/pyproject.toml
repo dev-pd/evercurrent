@@ -73,17 +73,30 @@ extend-exclude = ["alembic/versions"]
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "D",       # pydocstyle — docstring style is opinionated; AGENTS.md governs
-    "COM812",  # missing trailing comma — handled by formatter
-    "ISC001",  # implicit string concat — conflicts with formatter
-    "TD",      # author/issue links in TODO comments
-    "FIX",     # forbid TODO/FIXME comments — too strict
-    "EM",      # forbids string literals in raise; noisy
+    "D",        # pydocstyle — docstring style is opinionated; AGENTS.md governs
+    "COM812",   # missing trailing comma — handled by formatter
+    "ISC001",   # implicit string concat — conflicts with formatter
+    "TD",       # author/issue links in TODO comments
+    "FIX",      # forbid TODO/FIXME comments — too strict
+    "EM",       # forbids string literals in raise; noisy
+    "TRY003",   # long messages outside exception class
+    "TC001",    # move first-party imports into TYPE_CHECKING
+    "TC002",    # move third-party imports into TYPE_CHECKING
+    "TC003",    # move stdlib imports into TYPE_CHECKING
+    "PLR0913",  # too many function args
+    "FBT001",   # boolean positional arg in function definition
+    "FBT002",   # boolean default value in function definition
+    "A005",     # module shadowing stdlib (we want `digest`, `decisions`, etc.)
+    "ANN401",   # dynamically-typed expressions (Any) — sometimes necessary
+    "S608",     # SQL injection — false positives on f-string SQL we own
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*" = ["S101", "PLR2004", "ANN", "INP001"]
 "src/evercurrent/main.py" = ["INP001"]
+"alembic/env.py" = ["INP001"]
+"alembic/versions/*.py" = ["INP001", "ANN", "RUF012"]
+"src/evercurrent/db/session.py" = ["PLW0603", "S101"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -99,6 +112,7 @@ line-ending = "lf"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+cache_dir = "/tmp/.pytest_cache"
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",

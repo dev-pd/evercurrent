@@ -16,4 +16,3 @@ htmlcov/
 !.env.example
 .DS_Store
 node_modules/
-tests/

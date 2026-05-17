@@ -19,7 +19,27 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
 ###############################################################################
-# Runtime
+# Dev (linting + tests + interactive use, ships all deps + source). Build via
+# `docker build --target dev` or compose with `target: dev`.
+###############################################################################
+FROM node:25-alpine AS dev
+
+RUN apk add --no-cache bash \
+ && npm install -g pnpm@latest
+
+WORKDIR /app
+
+# Pull deps + source from the builder so we don't reinstall.
+COPY --from=builder /app/node_modules /app/node_modules
+COPY --from=builder /app /app
+
+ENV NODE_ENV=development \
+    NEXT_TELEMETRY_DISABLED=1
+
+CMD ["pnpm", "dev"]
+
+###############################################################################
+# Runtime (production standalone server, no dev deps)
 ###############################################################################
 FROM node:25-alpine AS runtime
 

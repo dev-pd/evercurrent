@@ -1,10 +1,15 @@
-# EverCurrent — developer ergonomics. `make help` lists targets.
+# EverCurrent — developer ergonomics. Everything runs in docker. `make help`
+# lists targets.
+
 .DEFAULT_GOAL := help
 SHELL := /bin/bash
 
-API := apps/api
-WEB := apps/web
 COMPOSE := docker compose
+API_RUN := $(COMPOSE) run --rm api
+API_EXEC := $(COMPOSE) exec api
+# Web lint/format/test run against the `web-dev` profile (builder stage image
+# with full node_modules + source). `pnpm` is on PATH inside that image.
+WEB_RUN := $(COMPOSE) --profile dev run --rm web-dev
 
 .PHONY: help
 help:
@@ -26,6 +31,10 @@ down: ## Stop the stack (preserves volumes)
 down-v: ## Stop the stack AND wipe volumes (postgres + redis)
 	$(COMPOSE) down -v
 
+.PHONY: build
+build: ## Rebuild all images
+	$(COMPOSE) build
+
 .PHONY: logs
 logs: ## Tail logs from all services
 	$(COMPOSE) logs -f
@@ -34,63 +43,66 @@ logs: ## Tail logs from all services
 ps: ## Show container status
 	$(COMPOSE) ps
 
-# ----- Backend ----------------------------------------------------------------
-
-.PHONY: api
-api: ## Run the API outside docker (fastapi dev with hot reload)
-	cd $(API) && uv run fastapi dev src/evercurrent/main.py
+# ----- Backend (everything inside containers) ---------------------------------
 
 .PHONY: migrate
 migrate: ## Apply Alembic migrations against the running stack
-	$(COMPOSE) exec api alembic upgrade head
+	$(API_EXEC) alembic upgrade head
 
 .PHONY: migration
-migration: ## Create a new Alembic migration. Usage: make migration name="add foo table"
+migration: ## Create a new Alembic migration. Usage: make migration name="add foo"
 	@if [ -z "$(name)" ]; then echo "Usage: make migration name=\"<short description>\""; exit 1; fi
-	$(COMPOSE) exec api alembic revision --autogenerate -m "$(name)"
+	$(API_EXEC) alembic revision --autogenerate -m "$(name)"
 
 .PHONY: seed
 seed: ## Run the seed script inside the api container
-	$(COMPOSE) exec api python -m evercurrent.ingestion.seeder
+	$(API_EXEC) python -m evercurrent.ingestion.seeder
+
+.PHONY: seed-messages
+seed-messages: ## Load committed synthetic messages into the DB
+	$(API_EXEC) python -m evercurrent.ingestion.seeder --load-messages
+
+.PHONY: seed-docs
+seed-docs: ## Load committed project docs into the DB
+	$(API_EXEC) python -m evercurrent.ingestion.seeder --load-docs
 
 .PHONY: ingest-docs
-ingest-docs: ## Run RAG document ingestion
-	$(COMPOSE) exec api python -m evercurrent.rag.indexer --all
+ingest-docs: ## Run RAG document ingestion (chunk + embed + index)
+	$(API_EXEC) python -m evercurrent.rag.indexer --all
 
 .PHONY: generate-digests
 generate-digests: ## Generate digests for day=N. Usage: make generate-digests day=3
 	@if [ -z "$(day)" ]; then echo "Usage: make generate-digests day=<N>"; exit 1; fi
-	$(COMPOSE) exec api python -m evercurrent.digest.cli --day $(day)
+	$(API_EXEC) python -m evercurrent.digest.cli --day $(day)
 
-# ----- Frontend ---------------------------------------------------------------
+.PHONY: psql
+psql: ## Open a psql shell against the running postgres container
+	$(COMPOSE) exec postgres psql -U evercurrent -d evercurrent
 
-.PHONY: web
-web: ## Run the Next.js dev server outside docker
-	cd $(WEB) && pnpm dev
+.PHONY: shell-api
+shell-api: ## Drop into a Python shell inside the api container
+	$(API_EXEC) python
 
-# ----- Quality gates ----------------------------------------------------------
+.PHONY: shell-bash
+shell-bash: ## Drop into bash inside the api container
+	$(API_EXEC) bash
+
+# ----- Quality gates (inside containers) --------------------------------------
 
 .PHONY: lint
-lint: ## ruff + ty (api) and eslint + prettier check (web)
-	cd $(API) && uv run ruff check && uv run ty check
-	cd $(WEB) && pnpm lint && pnpm format:check && pnpm typecheck
+lint: ## ruff + ty (api) and eslint + prettier check (web), all inside docker
+	$(API_RUN) sh -c "ruff check && ty check"
+	$(WEB_RUN) sh -c "pnpm lint && pnpm format:check && pnpm typecheck"
 
 .PHONY: fmt
-fmt: ## ruff format (api) + prettier write (web)
-	cd $(API) && uv run ruff format && uv run ruff check --fix
-	cd $(WEB) && pnpm format
+fmt: ## ruff format + ruff --fix (api) and prettier (web), inside docker
+	$(API_RUN) sh -c "ruff format && ruff check --fix"
+	$(WEB_RUN) sh -c "pnpm format"
 
 .PHONY: test
 test: ## Health/ready unit tests (api). Web has no traditional tests by policy.
-	cd $(API) && uv run pytest tests/unit -v
+	$(API_RUN) pytest tests/unit -v
 
 .PHONY: eval
 eval: ## Eval harness (RAG, scoring, digest, decisions)
-	cd $(API) && uv run pytest tests/evals -v -s --no-cov
-
-# ----- Pre-commit -------------------------------------------------------------
-
-.PHONY: pre-commit
-pre-commit: ## Install + run pre-commit hooks across all files
-	pre-commit install
-	pre-commit run --all-files
+	$(API_RUN) pytest tests/evals -v -s --no-cov

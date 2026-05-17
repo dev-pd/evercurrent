@@ -10,21 +10,35 @@ reasoning across team docs and chatter.
 
 ## Quickstart
 
+Everything runs in docker. Only Docker Desktop is required on the host.
+
 ```bash
-# 1. Prereqs: Docker Desktop, plus (for local non-container dev) uv, pnpm, Node 25+
-# 2. Copy env template and fill in your API keys
+# 1. Copy env template and fill in your API keys
 cp .env.example .env
 #    edit .env: ANTHROPIC_API_KEY=..., VOYAGE_API_KEY=...
-# 3. Bring up the full stack (postgres + redis + api + worker + web + nginx)
-docker compose up --build
+# 2. Build + bring up the full stack
+make up                    # = docker compose up -d --build
+# 3. Apply DB migrations (creates schema + pgvector extension)
+make migrate
 # 4. Open the unified entry point
-#       http://localhost           # nginx routes / -> web, /api/* -> api
-#       http://localhost:3000      # direct Next.js dev port
-#       http://localhost:8000/health  # direct API healthcheck
+#       http://localhost:8080            # nginx routes / -> web, /api/* -> api
+#       http://localhost:8080/api/health # API healthcheck through nginx
 ```
 
-`docker compose down` cleans up. `docker compose down -v` also removes the
-Postgres and Redis volumes.
+Only `nginx` is exposed on the host (port `8080`). `postgres`, `redis`, `api`,
+`worker`, and `web` are internal to the docker network. To reach them, use
+`docker compose exec <service> ...` (or the `make` helpers below).
+
+Useful one-liners:
+
+- `make ps` — container status
+- `make logs` — tail all service logs
+- `make psql` — psql shell into postgres
+- `make shell-bash` — bash shell in the api container
+- `make lint` — ruff + ty + eslint + prettier + tsc, all inside docker
+- `make test` — pytest health/ready unit tests inside docker
+- `make down` — stop stack (preserves volumes)
+- `make down-v` — stop stack and wipe volumes
 
 ## Layout
 
