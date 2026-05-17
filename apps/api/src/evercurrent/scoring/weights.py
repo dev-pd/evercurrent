@@ -18,7 +18,10 @@ class Weights:
             Urgency.LOW: 0.0,
             Urgency.MEDIUM: 2.0,
             Urgency.HIGH: 5.0,
-            Urgency.CRITICAL: 10.0,
+            # Critical sits above role_direct + cross_functional so an
+            # enterprise-wide line-stop surfaces even when the user has no
+            # direct stake.
+            Urgency.CRITICAL: 20.0,
         },
     )
     phase_match: float = 4.0  # tag.topic appears in project.phase_concerns

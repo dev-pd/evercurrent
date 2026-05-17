@@ -1,0 +1,184 @@
+[
+  {
+    "name": "pure_role_match_mech_eng_sees_thermal_failure",
+    "project": {
+      "current_phase": "DVT",
+      "phase_concerns": {
+        "DVT": ["thermal margin", "yield rate", "test failures"]
+      }
+    },
+    "user": {
+      "role": "mech_eng",
+      "owned_subsystems": ["chassis", "mounting"],
+      "owned_parts": ["BRK-A1"],
+      "topic_weights": {}
+    },
+    "messages": [
+      {
+        "id": "m1",
+        "text": "Thermal cycling unit 7 failed at chassis temp 91C.",
+        "tag": { "topic": "quality_issue", "urgency": "high",
+                 "affected_roles": ["mech_eng", "qa"],
+                 "entities": ["chassis", "BRK-A1"] }
+      },
+      {
+        "id": "m2",
+        "text": "FYI lunch is ordered.",
+        "tag": { "topic": "fyi", "urgency": "low",
+                 "affected_roles": [], "entities": [] }
+      }
+    ],
+    "expected_top_id": "m1"
+  },
+  {
+    "name": "cross_functional_supplier_strike_lands_for_mech_owner",
+    "project": {
+      "current_phase": "DVT",
+      "phase_concerns": {
+        "DVT": ["thermal margin", "yield rate", "test failures"]
+      }
+    },
+    "user": {
+      "role": "mech_eng",
+      "owned_subsystems": ["chassis"],
+      "owned_parts": ["AL-6063-T5"],
+      "topic_weights": {}
+    },
+    "messages": [
+      {
+        "id": "m1",
+        "text": "Supplier ExtruCo on strike — AL-6063-T5 extrusion 3wks inventory.",
+        "tag": { "topic": "supply_chain_disruption", "urgency": "high",
+                 "affected_roles": ["supply_chain", "pm"],
+                 "entities": ["ExtruCo", "AL-6063-T5"] }
+      },
+      {
+        "id": "m2",
+        "text": "Casual chatter about coffee.",
+        "tag": { "topic": "fyi", "urgency": "low",
+                 "affected_roles": [], "entities": [] }
+      }
+    ],
+    "expected_top_id": "m1"
+  },
+  {
+    "name": "phase_match_pvt_user_sees_supplier_quality_first",
+    "project": {
+      "current_phase": "PVT",
+      "phase_concerns": {
+        "PVT": ["supplier quality", "first article", "manufacturing yield"]
+      }
+    },
+    "user": {
+      "role": "qa",
+      "owned_subsystems": ["thermal_testing"],
+      "owned_parts": [],
+      "topic_weights": {}
+    },
+    "messages": [
+      {
+        "id": "m1",
+        "text": "Supplier issue: AlumWest first article inspection failed on a sample.",
+        "tag": { "topic": "supplier_issue", "urgency": "high",
+                 "affected_roles": ["supply_chain", "qa"],
+                 "entities": ["AlumWest"] }
+      },
+      {
+        "id": "m2",
+        "text": "Drop test on unit 5 passes spec.",
+        "tag": { "topic": "test_result", "urgency": "low",
+                 "affected_roles": ["qa"], "entities": ["drop test"] }
+      }
+    ],
+    "expected_top_id": "m1"
+  },
+  {
+    "name": "feedback_weight_overrides_baseline",
+    "project": {
+      "current_phase": "DVT",
+      "phase_concerns": {
+        "DVT": ["thermal margin"]
+      }
+    },
+    "user": {
+      "role": "pm",
+      "owned_subsystems": ["risk_register"],
+      "owned_parts": [],
+      "topic_weights": { "eco": 5.0 }
+    },
+    "messages": [
+      {
+        "id": "m1",
+        "text": "ECO-178 fast-track opens.",
+        "tag": { "topic": "eco", "urgency": "medium",
+                 "affected_roles": ["pm"], "entities": ["ECO-178"] }
+      },
+      {
+        "id": "m2",
+        "text": "Thermal anomaly on unit 9 — minor.",
+        "tag": { "topic": "thermal", "urgency": "medium",
+                 "affected_roles": ["qa"], "entities": ["chassis"] }
+      }
+    ],
+    "expected_top_id": "m1"
+  },
+  {
+    "name": "urgency_critical_beats_role_match",
+    "project": {
+      "current_phase": "DVT",
+      "phase_concerns": { "DVT": ["thermal margin"] }
+    },
+    "user": {
+      "role": "mech_eng",
+      "owned_subsystems": ["chassis"],
+      "owned_parts": [],
+      "topic_weights": {}
+    },
+    "messages": [
+      {
+        "id": "m1",
+        "text": "Production halt — line stop scenario detected.",
+        "tag": { "topic": "supply_chain_disruption", "urgency": "critical",
+                 "affected_roles": ["supply_chain", "pm"],
+                 "entities": ["supplier"] }
+      },
+      {
+        "id": "m2",
+        "text": "Bracket re-fab continuing.",
+        "tag": { "topic": "mechanical", "urgency": "low",
+                 "affected_roles": ["mech_eng"],
+                 "entities": ["bracket"] }
+      }
+    ],
+    "expected_top_id": "m1"
+  },
+  {
+    "name": "firmware_for_firmware_role",
+    "project": {
+      "current_phase": "DVT",
+      "phase_concerns": { "DVT": ["firmware"] }
+    },
+    "user": {
+      "role": "firmware",
+      "owned_subsystems": ["motor_firmware"],
+      "owned_parts": [],
+      "topic_weights": {}
+    },
+    "messages": [
+      {
+        "id": "m1",
+        "text": "PR #214 fixes retry off-by-one.",
+        "tag": { "topic": "firmware_bug", "urgency": "high",
+                 "affected_roles": ["firmware", "ee"],
+                 "entities": ["motor driver"] }
+      },
+      {
+        "id": "m2",
+        "text": "Drop test report attached.",
+        "tag": { "topic": "test_result", "urgency": "low",
+                 "affected_roles": ["qa"], "entities": ["drop test"] }
+      }
+    ],
+    "expected_top_id": "m1"
+  }
+]

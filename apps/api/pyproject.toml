@@ -92,7 +92,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*" = ["S101", "PLR2004", "ANN", "INP001"]
+"tests/**/*" = ["S101", "PLR2004", "ANN", "INP001", "T201", "PLR0915", "C901"]
 "src/evercurrent/main.py" = ["INP001"]
 "alembic/env.py" = ["INP001"]
 "src/evercurrent/jobs/tasks/*.py" = ["PLC0415"]

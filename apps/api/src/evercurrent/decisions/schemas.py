@@ -22,7 +22,7 @@ def _coerce_dt(v: object) -> dt.datetime:
     if isinstance(v, dt.datetime):
         return v
     if isinstance(v, str):
-        parsed = dt.datetime.fromisoformat(v.replace("Z", "+00:00"))
+        parsed = dt.datetime.fromisoformat(v)
         if parsed.tzinfo is None:
             parsed = parsed.replace(tzinfo=dt.UTC)
         return parsed
