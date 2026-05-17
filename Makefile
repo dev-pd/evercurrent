@@ -55,8 +55,18 @@ migration: ## Create a new Alembic migration. Usage: make migration name="add fo
 	$(API_EXEC) alembic revision --autogenerate -m "$(name)"
 
 .PHONY: seed
-seed: ## Run the seed script inside the api container
+seed: ## Full seed: project, users, channels, messages, docs
+	$(API_EXEC) python -m evercurrent.ingestion.seeder --all
+
+.PHONY: seed-base
+seed-base: ## Seed only project + users + channels
 	$(API_EXEC) python -m evercurrent.ingestion.seeder
+
+.PHONY: reset
+reset: ## Drop + recreate the schema + rerun the full seed
+	$(API_EXEC) alembic downgrade base
+	$(API_EXEC) alembic upgrade head
+	$(API_EXEC) python -m evercurrent.ingestion.seeder --all
 
 .PHONY: seed-messages
 seed-messages: ## Load committed synthetic messages into the DB

@@ -1,0 +1,77 @@
+[
+  {
+    "client_id": "d1-001",
+    "channel": "#qa-testing",
+    "author_username": "lin",
+    "ts": "2026-05-11T09:14:00+00:00",
+    "text": "Thermal cycling unit 7 failed last night — chassis temp probe at the motor mount hit 91°C at full-load cycle 142. Spec is 85°C max. Pulling unit for teardown this morning."
+  },
+  {
+    "client_id": "d1-002",
+    "channel": "#qa-testing",
+    "author_username": "lin",
+    "ts": "2026-05-11T09:16:00+00:00",
+    "thread_root_id": "d1-001",
+    "text": "Adding @sarah and @raj — looks load-side, not cell-side. Margin shrinking. Need root cause before DVT exit review next week."
+  },
+  {
+    "client_id": "d1-003",
+    "channel": "#mech-design",
+    "author_username": "sarah",
+    "ts": "2026-05-11T09:42:00+00:00",
+    "thread_root_id": "d1-001",
+    "text": "Looking now. Chassis bracket has limited heat-spreading area where the motor flange clamps. Could be conduction-limited, not airflow. Will measure with the IR cam."
+  },
+  {
+    "client_id": "d1-004",
+    "channel": "#supply-chain",
+    "author_username": "mei",
+    "ts": "2026-05-11T10:05:00+00:00",
+    "text": "Heads-up: aluminum extrusion AL-6063-T5 supplier (ExtruCo) issued a force majeure this morning — labor strike at the Akron mill, indefinite duration. We have ~3 weeks of inventory at current build rate. Sourcing alternates."
+  },
+  {
+    "client_id": "d1-005",
+    "channel": "#supply-chain",
+    "author_username": "carlos",
+    "ts": "2026-05-11T10:18:00+00:00",
+    "thread_root_id": "d1-004",
+    "text": "Reached out to two alternates (MetalPro, AlumWest). MetalPro can meet our spec but lead time is 6 weeks. AlumWest 3 weeks but tolerance band is +/- 0.15mm vs our +/- 0.10mm. ECO needed if we go AlumWest."
+  },
+  {
+    "client_id": "d1-006",
+    "channel": "#general",
+    "author_username": "david",
+    "ts": "2026-05-11T10:33:00+00:00",
+    "text": "Both items are now on the risk register. Daily standup at 4pm. Sarah owns thermal root cause; Mei owns sourcing path. Need a recommended ECO direction by EOD Thursday."
+  },
+  {
+    "client_id": "d1-007",
+    "channel": "#electrical",
+    "author_username": "tom",
+    "ts": "2026-05-11T13:21:00+00:00",
+    "text": "Firmware regression: motor driver F-state recovery on overcurrent trip is hitting an off-by-one in the retry counter. Drives go into latch-off after 3 retries instead of the spec'd 5. Patch in PR #214."
+  },
+  {
+    "client_id": "d1-008",
+    "channel": "#electrical",
+    "author_username": "raj",
+    "ts": "2026-05-11T14:02:00+00:00",
+    "thread_root_id": "d1-007",
+    "text": "Will retest with Lin's thermal rig once #214 merges. If the overcurrent is being triggered by the thermal margin compression, we may be chasing one root cause not two."
+  },
+  {
+    "client_id": "d1-009",
+    "channel": "#mech-design",
+    "author_username": "priya",
+    "ts": "2026-05-11T15:10:00+00:00",
+    "text": "FYI gripper-motor mount also uses an extrusion piece from the same family. If ExtruCo strike drags, we may need to qualify a second source on that part too."
+  },
+  {
+    "client_id": "d1-010",
+    "channel": "#qa-testing",
+    "author_username": "lin",
+    "ts": "2026-05-11T17:45:00+00:00",
+    "thread_root_id": "d1-001",
+    "text": "Teardown shows discoloration on the bracket boss face directly under the motor flange. Heat is concentrated, not distributed. Matches Sarah's hypothesis. Drop test on unit 5 still passing — keeping that on schedule."
+  }
+]

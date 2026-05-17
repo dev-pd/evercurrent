@@ -31,19 +31,21 @@ DocumentKindField = Annotated[DocumentKind, BeforeValidator(_coerce_kind)]
 
 
 class Document(BaseModel):
-    model_config = ConfigDict(strict=True, from_attributes=True)
+    # `from_attributes` reads `obj.metadata_` on ORM rows because SQLAlchemy
+    # reserves `obj.metadata` for the table registry; the alias bridges them.
+    model_config = ConfigDict(strict=True, from_attributes=True, populate_by_name=True)
 
     id: uuid.UUID
     project_id: uuid.UUID
     kind: DocumentKindField
     title: Annotated[str, Field(min_length=1, max_length=255)]
     body: str
-    metadata: dict[str, object] = Field(default_factory=dict)
+    metadata: dict[str, object] = Field(default_factory=dict, alias="metadata_")
     created_at: dt.datetime
 
 
 class DocumentChunk(BaseModel):
-    model_config = ConfigDict(strict=True, from_attributes=True)
+    model_config = ConfigDict(strict=True, from_attributes=True, populate_by_name=True)
 
     id: uuid.UUID
     document_id: uuid.UUID
@@ -51,5 +53,5 @@ class DocumentChunk(BaseModel):
     section_path: str | None = None
     text: str
     embedding: list[float] | None = None
-    metadata: dict[str, object] = Field(default_factory=dict)
+    metadata: dict[str, object] = Field(default_factory=dict, alias="metadata_")
     created_at: dt.datetime
