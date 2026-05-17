@@ -6,8 +6,6 @@ import { cn } from "@/lib/utils";
 import { useImpersonationStore } from "@/stores/impersonation";
 import { useQuery } from "@tanstack/react-query";
 
-const HISTORICAL = [1, 2, 3, 4, 5] as const;
-
 function dateLabelFor(day: number, startDateIso: string | undefined): string {
   if (!startDateIso) return `Day ${day}`;
   const start = new Date(`${startDateIso}T00:00:00`);
@@ -25,11 +23,18 @@ export function DaySwitcher() {
   const liveDay = today.data?.live_day;
   const startDate = today.data?.start_date;
 
+  // Historical days = every day from 1 up to liveDay - 1. Live day
+  // renders as the emerald 'Today' button. No hardcoded range — day 6
+  // shows up as May 16 the moment the worker rolls live_day to 7.
+  const historical: number[] = liveDay
+    ? Array.from({ length: Math.max(0, liveDay - 1) }, (_, i) => i + 1)
+    : [];
+
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs text-zinc-500">Date</span>
       <div className="inline-flex rounded-md border border-zinc-200 bg-white">
-        {HISTORICAL.map((day) => (
+        {historical.map((day) => (
           <Button
             key={day}
             variant="ghost"
@@ -43,7 +48,7 @@ export function DaySwitcher() {
             {dateLabelFor(day, startDate)}
           </Button>
         ))}
-        {liveDay !== undefined && liveDay > HISTORICAL[HISTORICAL.length - 1] && (
+        {liveDay !== undefined && (
           <Button
             variant="ghost"
             size="sm"
