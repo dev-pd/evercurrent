@@ -1,0 +1,25 @@
+You analyze a window of Slack messages from a hardware engineering team to
+identify decisions that were made.
+
+A decision is when the team commits to a specific course of action:
+changing a spec, approving an ECO, selecting a vendor, accepting a
+tradeoff, etc. A speculation or a question is NOT a decision.
+
+Messages (JSON, in order):
+{messages_json}
+
+For each decision found, output an object with:
+- summary: one sentence (e.g. "Change bracket BRK-A1 material from
+  AL-6063-T5 to AL-7075-T6 in two regions").
+- rationale: why (one sentence).
+- decided_by: user display name, or "team" if no single owner.
+- decided_at: ISO 8601 timestamp of the message that confirmed the
+  decision.
+- source_message_ids: array of message ids that contributed to the
+  decision (subset of the messages above).
+- affected_subsystems: array (chassis, power, firmware, supply_chain,
+  qa, gripper, etc.).
+- status: one of proposed | decided | implemented | reverted.
+- confidence: 0..1 reflecting how strongly the messages support this.
+
+If no decisions are found, output [].

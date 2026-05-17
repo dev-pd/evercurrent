@@ -15,6 +15,9 @@ log = structlog.get_logger(__name__)
 
 
 async def advance_day(ctx: dict[str, Any], project_id: str) -> dict[str, Any]:
+    from evercurrent.decisions.extractor import extract_decisions_for_day
+    from evercurrent.digest.generator import generate_all_digests_for_day
+
     project_uuid = uuid.UUID(project_id)
     async with session_scope() as session:
         projects = ProjectRepository(session)
@@ -26,7 +29,18 @@ async def advance_day(ctx: dict[str, Any], project_id: str) -> dict[str, Any]:
         await projects.set_current_day(project_uuid, new_day)
         await session.commit()
 
-    log.info("simulation.advance", project_id=project_id, day=new_day)
-    await enrich_day(ctx, project_id, new_day)
-    # extract_decisions_for_day and generate_all_digests wired in phase 6+7.
-    return {"day": new_day}
+    log.info("simulation.advance.day_bumped", project_id=project_id, day=new_day)
+
+    enrich_result = await enrich_day(ctx, project_id, new_day)
+    decisions = await extract_decisions_for_day(project_uuid, new_day)
+    digests = await generate_all_digests_for_day(project_uuid, new_day)
+
+    log.info(
+        "simulation.advance.done",
+        project_id=project_id,
+        day=new_day,
+        tagged=enrich_result.get("tagged", 0),
+        decisions=decisions,
+        digests=digests,
+    )
+    return {"day": new_day, "tagged": enrich_result.get("tagged", 0), "digests": digests}
