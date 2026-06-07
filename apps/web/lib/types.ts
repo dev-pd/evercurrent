@@ -5,8 +5,8 @@ export const projectSchema = z.object({
   name: z.string(),
   current_phase: z.string(),
   current_day: z.number().int(),
-  phase_concerns: z.record(z.array(z.string())),
-  milestones: z.array(z.record(z.string())),
+  phase_concerns: z.record(z.string(), z.array(z.string())),
+  milestones: z.array(z.record(z.string(), z.string())),
 });
 export type Project = z.infer<typeof projectSchema>;
 
@@ -18,7 +18,7 @@ export const userSchema = z.object({
   role: z.string(),
   owned_subsystems: z.array(z.string()),
   owned_parts: z.array(z.string()),
-  topic_weights: z.record(z.number()),
+  topic_weights: z.record(z.string(), z.number()),
 });
 export type User = z.infer<typeof userSchema>;
 
@@ -68,7 +68,7 @@ export type GenerateDigestsResponse = z.infer<typeof generateDigestsSchema>;
 
 export const feedbackResponseSchema = z.object({
   user_id: z.string().uuid(),
-  topic_weights: z.record(z.number()),
+  topic_weights: z.record(z.string(), z.number()),
 });
 export type FeedbackResponse = z.infer<typeof feedbackResponseSchema>;
 
@@ -86,7 +86,7 @@ export type Document = z.infer<typeof documentSchema>;
 export const jobStatusSchema = z.object({
   job_id: z.string(),
   status: z.string(),
-  result: z.record(z.unknown()).nullable().optional(),
+  result: z.record(z.string(), z.unknown()).nullable().optional(),
   enqueue_time: z.string().nullable().optional(),
   start_time: z.string().nullable().optional(),
   finish_time: z.string().nullable().optional(),
@@ -105,10 +105,3 @@ export const todaySchema = z.object({
   last_digest_generated_at: z.string().nullable(),
 });
 export type Today = z.infer<typeof todaySchema>;
-
-export type AgentEventType = "text_delta" | "tool_use_start" | "tool_use_result" | "done" | "close";
-
-export interface AgentEvent {
-  type: AgentEventType;
-  data: Record<string, unknown>;
-}

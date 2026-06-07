@@ -116,7 +116,4 @@ export const api = {
   async listDecisions(_projectId: string): Promise<Decision[]> {
     return request("/decisions", undefined, z.array(decisionSchema));
   },
-  agentChatUrl(projectId: string): string {
-    return `${BASE_URL}/agent/chat?project_id=${projectId}`;
-  },
 };
