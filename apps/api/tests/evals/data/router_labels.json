@@ -1,0 +1,652 @@
+[
+  {
+    "id": "r01",
+    "message_text": "Decided: switching BRK-A1 from AL-6063-T5 to AL-7075-T6 on the bracket. FEA confirms thermal margin holds. ECO-178 drafted.",
+    "channel": "#mech-design",
+    "author_role": "mech",
+    "expected": {
+      "topic": "eco",
+      "urgency": "high",
+      "entities": ["BRK-A1", "AL-6063-T5", "AL-7075-T6", "ECO-178"],
+      "affected_roles": ["mech", "supply"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r02",
+    "message_text": "Thermal cycling failed on unit 7 at chassis temp 91C. Spec is 85. Bracket boss face is the hot spot.",
+    "channel": "#qa-testing",
+    "author_role": "qa",
+    "expected": {
+      "topic": "thermal_margin",
+      "urgency": "high",
+      "entities": ["chassis", "bracket"],
+      "affected_roles": ["mech", "qa"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r03",
+    "message_text": "ExtruCo strike confirmed. AL-6063-T5 extrusion stuck at 3 weeks of inventory. Pulling AlumWest forward as backup.",
+    "channel": "#supply-chain",
+    "author_role": "supply",
+    "expected": {
+      "topic": "supply_chain",
+      "urgency": "critical",
+      "entities": ["ExtruCo", "AL-6063-T5", "AlumWest"],
+      "affected_roles": ["supply", "mech", "pm"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r04",
+    "message_text": "AlumWest first article inspection cleared at 6:42am. Tolerance +/- 0.07mm against spec 0.10mm. Re-fab unblocked.",
+    "channel": "#qa-testing",
+    "author_role": "qa",
+    "expected": {
+      "topic": "supplier_qual",
+      "urgency": "normal",
+      "entities": ["AlumWest"],
+      "affected_roles": ["supply", "qa", "mech"],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r05",
+    "message_text": "Anyone know what the torque spec is for the M4 screws on the gripper mount? Spec sheet only lists M5 and up.",
+    "channel": "#mech-design",
+    "author_role": "mech",
+    "expected": {
+      "topic": "question",
+      "urgency": "normal",
+      "entities": ["gripper", "M4"],
+      "affected_roles": ["mech"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r06",
+    "message_text": "PR #221 merged — BMS hysteresis tightened 8C to 5C. Bench tested overnight, no chatter.",
+    "channel": "#firmware",
+    "author_role": "fw",
+    "expected": {
+      "topic": "firmware",
+      "urgency": "normal",
+      "entities": ["PR #221", "BMS"],
+      "affected_roles": ["fw", "ee"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r07",
+    "message_text": "Gripper arm vibration at 4150 RPM overlaps with motor mount torque spec. Three mentions this week, no one has reacted.",
+    "channel": "#mech-design",
+    "author_role": "em",
+    "expected": {
+      "topic": "risk",
+      "urgency": "high",
+      "entities": ["gripper", "motor mount", "4150 RPM"],
+      "affected_roles": ["mech", "ee"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r08",
+    "message_text": "FYI lunch is ordered for 12:30. Conf room A.",
+    "channel": "#general",
+    "author_role": "em",
+    "expected": {
+      "topic": null,
+      "urgency": "low",
+      "entities": [],
+      "affected_roles": [],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r09",
+    "message_text": "Done with the FEA writeup on the new bracket. Numbers attached.",
+    "channel": "#mech-design",
+    "author_role": "mech",
+    "expected": {
+      "topic": "status_update",
+      "urgency": "low",
+      "entities": ["bracket"],
+      "affected_roles": ["mech"],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r10",
+    "message_text": "Need PM sign-off on the ECO-178 schedule slip — if Mei can't source the new alloy by Friday we will miss DVT exit.",
+    "channel": "#supply-chain",
+    "author_role": "supply",
+    "expected": {
+      "topic": "milestone_risk",
+      "urgency": "critical",
+      "entities": ["ECO-178", "DVT"],
+      "affected_roles": ["pm", "supply", "mech"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r11",
+    "message_text": "Carlos qualified PrecisionCoat for AL-7075 finishing. Approved supplier list updated.",
+    "channel": "#supply-chain",
+    "author_role": "supply",
+    "expected": {
+      "topic": "supplier_qual",
+      "urgency": "low",
+      "entities": ["PrecisionCoat", "AL-7075"],
+      "affected_roles": ["supply"],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r12",
+    "message_text": "Quick question: are we still doing the demo at 3pm? Calendar says 4.",
+    "channel": "#general",
+    "author_role": "em",
+    "expected": {
+      "topic": "question",
+      "urgency": "low",
+      "entities": [],
+      "affected_roles": [],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r13",
+    "message_text": "Risk: ExtruCo strike could extend into next sprint. If it does, AlumWest may not have capacity for both extrusion and finishing. Need a fallback plan.",
+    "channel": "#supply-chain",
+    "author_role": "pm",
+    "expected": {
+      "topic": "supply_chain",
+      "urgency": "high",
+      "entities": ["ExtruCo", "AlumWest"],
+      "affected_roles": ["supply", "pm"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r14",
+    "message_text": "Going with the Texas Instruments LMR16030 for the buck converter. Lower BOM, qualified part, in-stock.",
+    "channel": "#electrical",
+    "author_role": "ee",
+    "expected": {
+      "topic": "eco",
+      "urgency": "normal",
+      "entities": ["LMR16030", "Texas Instruments"],
+      "affected_roles": ["ee", "supply"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r15",
+    "message_text": "Drop test report from unit 5 attached. All pass.",
+    "channel": "#qa-testing",
+    "author_role": "qa",
+    "expected": {
+      "topic": "test_result",
+      "urgency": "low",
+      "entities": ["drop test"],
+      "affected_roles": ["qa"],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r16",
+    "message_text": "Should we move the EMC pre-scan from week 7 to week 6? Lab availability is tight.",
+    "channel": "#electrical",
+    "author_role": "ee",
+    "expected": {
+      "topic": "question",
+      "urgency": "normal",
+      "entities": ["EMC"],
+      "affected_roles": ["ee", "pm"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r17",
+    "message_text": "Just confirmed: ECO-178 approved. Mei has the sourcing path. Sarah is fast-tracking the redesign drawing.",
+    "channel": "#mech-design",
+    "author_role": "pm",
+    "expected": {
+      "topic": "eco",
+      "urgency": "high",
+      "entities": ["ECO-178"],
+      "affected_roles": ["mech", "supply", "pm"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r18",
+    "message_text": "Heading out for the day. Picking up the BMS firmware patch first thing tomorrow.",
+    "channel": "#firmware",
+    "author_role": "fw",
+    "expected": {
+      "topic": "status_update",
+      "urgency": "low",
+      "entities": ["BMS"],
+      "affected_roles": ["fw"],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r19",
+    "message_text": "Production halt — line stop scenario detected on the BMS firmware. Disabling pack 4. All-hands at 2pm.",
+    "channel": "#firmware",
+    "author_role": "fw",
+    "expected": {
+      "topic": "blocker",
+      "urgency": "critical",
+      "entities": ["BMS", "pack 4"],
+      "affected_roles": ["fw", "ee", "qa", "pm"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r20",
+    "message_text": "Reminder: phase gate review Friday. Slide deck owner is David.",
+    "channel": "#general",
+    "author_role": "pm",
+    "expected": {
+      "topic": "milestone",
+      "urgency": "normal",
+      "entities": ["phase gate"],
+      "affected_roles": ["pm"],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r21",
+    "message_text": "Risk on the cable routing — there is no service loop for the harness near the rear panel. We will not be able to swap cards in the field.",
+    "channel": "#mech-design",
+    "author_role": "mech",
+    "expected": {
+      "topic": "risk",
+      "urgency": "high",
+      "entities": ["cable harness", "rear panel"],
+      "affected_roles": ["mech", "ee"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r22",
+    "message_text": "Approved: BMS hysteresis 5C tighten. Lin signed off on the test plan.",
+    "channel": "#firmware",
+    "author_role": "pm",
+    "expected": {
+      "topic": "firmware",
+      "urgency": "normal",
+      "entities": ["BMS"],
+      "affected_roles": ["fw", "qa"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r23",
+    "message_text": "Who owns the gripper interface spec? I am tracing a torque mismatch and can't find a current revision.",
+    "channel": "#mech-design",
+    "author_role": "mech",
+    "expected": {
+      "topic": "question",
+      "urgency": "normal",
+      "entities": ["gripper"],
+      "affected_roles": ["mech"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r24",
+    "message_text": "Coffee in the kitchen.",
+    "channel": "#general",
+    "author_role": "em",
+    "expected": {
+      "topic": null,
+      "urgency": "low",
+      "entities": [],
+      "affected_roles": [],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r25",
+    "message_text": "Blocker: lab firmware loader is locked out. Cannot flash motor controller boards. Need IT.",
+    "channel": "#firmware",
+    "author_role": "fw",
+    "expected": {
+      "topic": "blocker",
+      "urgency": "high",
+      "entities": ["motor controller"],
+      "affected_roles": ["fw"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r26",
+    "message_text": "Mei here. AlumWest can start extrusion Monday. Cost premium is 12 percent over ExtruCo. Acceptable given timeline?",
+    "channel": "#supply-chain",
+    "author_role": "supply",
+    "expected": {
+      "topic": "supply_chain",
+      "urgency": "high",
+      "entities": ["AlumWest", "ExtruCo"],
+      "affected_roles": ["supply", "pm"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r27",
+    "message_text": "Re-ran the FEA with the new alloy. Margin at the boss face is now 12% above worst-case load.",
+    "channel": "#mech-design",
+    "author_role": "mech",
+    "expected": {
+      "topic": "status_update",
+      "urgency": "normal",
+      "entities": ["FEA"],
+      "affected_roles": ["mech"],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r28",
+    "message_text": "Pulled the BOM rev C. AL-6063-T5 still listed against BRK-A1. Needs updating to AL-7075-T6 before procurement releases.",
+    "channel": "#supply-chain",
+    "author_role": "supply",
+    "expected": {
+      "topic": "bom",
+      "urgency": "high",
+      "entities": ["BOM", "BRK-A1", "AL-6063-T5", "AL-7075-T6"],
+      "affected_roles": ["supply", "mech"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r29",
+    "message_text": "Lin: we should add an explicit thermal soak test before DVT exit. The cycling data is borderline.",
+    "channel": "#qa-testing",
+    "author_role": "qa",
+    "expected": {
+      "topic": "test_plan",
+      "urgency": "high",
+      "entities": ["thermal soak", "DVT"],
+      "affected_roles": ["qa", "mech"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r30",
+    "message_text": "Does anyone know the wire gauge spec for the new harness? I have 18 AWG but the spec might call for 16.",
+    "channel": "#electrical",
+    "author_role": "ee",
+    "expected": {
+      "topic": "question",
+      "urgency": "normal",
+      "entities": ["harness"],
+      "affected_roles": ["ee"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r31",
+    "message_text": "Status: motor controller bench bring-up done. Moving to vibration test next.",
+    "channel": "#firmware",
+    "author_role": "fw",
+    "expected": {
+      "topic": "status_update",
+      "urgency": "low",
+      "entities": ["motor controller"],
+      "affected_roles": ["fw"],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r32",
+    "message_text": "Decided to skip the optional secondary fuse on rev C. Procurement headache, low marginal safety gain.",
+    "channel": "#electrical",
+    "author_role": "ee",
+    "expected": {
+      "topic": "eco",
+      "urgency": "normal",
+      "entities": ["rev C"],
+      "affected_roles": ["ee", "supply"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r33",
+    "message_text": "PRD section 3.2 — torque spec on the drive coupling — looks wrong. Sarah, can you confirm the number against the original calc?",
+    "channel": "#mech-design",
+    "author_role": "ee",
+    "expected": {
+      "topic": "question",
+      "urgency": "normal",
+      "entities": ["PRD", "drive coupling"],
+      "affected_roles": ["mech", "ee"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r34",
+    "message_text": "Risk: we don't have a thermal model for the new bracket near the BMS pack. If the alloy conducts more heat into the pack we may need to re-derate.",
+    "channel": "#mech-design",
+    "author_role": "mech",
+    "expected": {
+      "topic": "risk",
+      "urgency": "high",
+      "entities": ["bracket", "BMS", "AL-7075"],
+      "affected_roles": ["mech", "ee", "fw"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r35",
+    "message_text": "Happy birthday Tom!",
+    "channel": "#general",
+    "author_role": "em",
+    "expected": {
+      "topic": null,
+      "urgency": "low",
+      "entities": [],
+      "affected_roles": [],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r36",
+    "message_text": "We will go with the Bosch SMV sensor for the IMU. Lower noise floor, fits our envelope.",
+    "channel": "#electrical",
+    "author_role": "ee",
+    "expected": {
+      "topic": "eco",
+      "urgency": "normal",
+      "entities": ["Bosch SMV", "IMU"],
+      "affected_roles": ["ee", "fw"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r37",
+    "message_text": "Blocker: cannot reproduce the motor stall bug on the bench. Need the failing serial number from the field.",
+    "channel": "#firmware",
+    "author_role": "fw",
+    "expected": {
+      "topic": "blocker",
+      "urgency": "high",
+      "entities": ["motor stall"],
+      "affected_roles": ["fw", "qa"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r38",
+    "message_text": "Heads up: AlumWest will be on PTO next week. Order anything you need today.",
+    "channel": "#supply-chain",
+    "author_role": "supply",
+    "expected": {
+      "topic": "supply_chain",
+      "urgency": "normal",
+      "entities": ["AlumWest"],
+      "affected_roles": ["supply", "mech"],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r39",
+    "message_text": "Decided to standardise on M4x10 socket caps across the frame. One BOM line instead of three.",
+    "channel": "#mech-design",
+    "author_role": "mech",
+    "expected": {
+      "topic": "eco",
+      "urgency": "low",
+      "entities": ["M4x10"],
+      "affected_roles": ["mech", "supply"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r40",
+    "message_text": "Reviewed the thermal report. Anomaly count is up from last cycle. Filing under watch-list.",
+    "channel": "#qa-testing",
+    "author_role": "qa",
+    "expected": {
+      "topic": "test_result",
+      "urgency": "normal",
+      "entities": ["thermal report"],
+      "affected_roles": ["qa", "mech"],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r41",
+    "message_text": "Risk: the new aluminum supplier hasn't been through our PPAP. If we ship before PPAP we are out of process.",
+    "channel": "#supply-chain",
+    "author_role": "supply",
+    "expected": {
+      "topic": "risk",
+      "urgency": "high",
+      "entities": ["AlumWest", "PPAP"],
+      "affected_roles": ["supply", "qa", "pm"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r42",
+    "message_text": "Ack — looking at the gripper interface spec now. Will post the current rev in the thread.",
+    "channel": "#mech-design",
+    "author_role": "mech",
+    "expected": {
+      "topic": "status_update",
+      "urgency": "low",
+      "entities": ["gripper"],
+      "affected_roles": ["mech"],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r43",
+    "message_text": "Question: do we need to re-spin the PCB if we move the IMU? The footprint is bigger.",
+    "channel": "#electrical",
+    "author_role": "ee",
+    "expected": {
+      "topic": "question",
+      "urgency": "high",
+      "entities": ["PCB", "IMU"],
+      "affected_roles": ["ee"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r44",
+    "message_text": "FYI the lab is open until 10pm tonight if anyone needs after-hours bench time.",
+    "channel": "#general",
+    "author_role": "em",
+    "expected": {
+      "topic": null,
+      "urgency": "low",
+      "entities": [],
+      "affected_roles": [],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r45",
+    "message_text": "Blocker on the firmware side — the new motor controller silicon hangs after 30 min. Vendor case open.",
+    "channel": "#firmware",
+    "author_role": "fw",
+    "expected": {
+      "topic": "blocker",
+      "urgency": "critical",
+      "entities": ["motor controller"],
+      "affected_roles": ["fw", "ee"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r46",
+    "message_text": "Going with PrecisionCoat for the AL-7075 finishing. Approved, lead time fits.",
+    "channel": "#supply-chain",
+    "author_role": "supply",
+    "expected": {
+      "topic": "eco",
+      "urgency": "normal",
+      "entities": ["PrecisionCoat", "AL-7075"],
+      "affected_roles": ["supply", "mech"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r47",
+    "message_text": "Status: PVT planning kickoff at 10. Cal will own the test matrix.",
+    "channel": "#general",
+    "author_role": "pm",
+    "expected": {
+      "topic": "status_update",
+      "urgency": "normal",
+      "entities": ["PVT"],
+      "affected_roles": ["pm", "qa"],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r48",
+    "message_text": "Risk: the BMS thermal model assumes AL-6063. If the alloy switch closes, the model is invalid until re-run.",
+    "channel": "#firmware",
+    "author_role": "fw",
+    "expected": {
+      "topic": "risk",
+      "urgency": "high",
+      "entities": ["BMS", "AL-6063"],
+      "affected_roles": ["fw", "mech"],
+      "should_create_card": true
+    }
+  },
+  {
+    "id": "r49",
+    "message_text": "Who has bench 3 booked Friday afternoon? Need it for thermal soak.",
+    "channel": "#qa-testing",
+    "author_role": "qa",
+    "expected": {
+      "topic": "question",
+      "urgency": "low",
+      "entities": ["bench 3"],
+      "affected_roles": ["qa"],
+      "should_create_card": false
+    }
+  },
+  {
+    "id": "r50",
+    "message_text": "Decided: cutting the secondary IMU. We will rely on the primary for DVT. Re-evaluate at PVT.",
+    "channel": "#electrical",
+    "author_role": "ee",
+    "expected": {
+      "topic": "eco",
+      "urgency": "high",
+      "entities": ["IMU", "DVT", "PVT"],
+      "affected_roles": ["ee", "fw", "qa"],
+      "should_create_card": true
+    }
+  }
+]

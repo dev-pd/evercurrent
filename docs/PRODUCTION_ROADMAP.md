@@ -184,3 +184,71 @@ flowchart LR
 4. RAG eval set with 12+ Q/A pairs to baseline P@5.
 5. Behavioural signal capture (click + dwell) — needed to train the
    ranker.
+
+## What ships next post-take-home
+
+The phased list below is roughly two-week chunks each. Order picked so
+each lands a visible product feature and each builds on the previous.
+
+### 1. Linker agent + cross-source edges (week 1)
+
+A Sonnet agent that runs per new Card. Calls `search_documents`,
+`search_messages`, `query_decisions` to find semantic neighbours.
+Persists `(from, to, edge_type, confidence)` rows. Unlocks the
+"impact preview" sidebar on every Card. Phase doc already exists at
+`docs/phases/PHASE_*` (deferred from take-home scope).
+
+### 2. Chat agent on the dashboard (weeks 2-3)
+
+Open-question Q+A over the org's data. Tools: `search_documents`,
+`search_messages`, `query_decisions`, `query_cards`,
+`get_user_context`, `get_thread_context`. Streamed answer, inline
+tool-call inspector, per-user transcript persistence, citation
+rendering. The deferral reason is in `docs/DECISIONS.md` ADR-008 —
+Router + Digest prove the agentic thesis; Chat adds another ~3 days
+of UI + retrieval re-rank work.
+
+### 3. Timeline / Gantt + critical-path what-if (week 4)
+
+Horizontal bands for phases, diamonds for milestones, dots for
+decisions plotted at `decided_at`. Arrows from agent-inferred
+dependencies. Drag a milestone -> live SSE recompute via the
+existing `impact/critical_path.py` topological sort. Pure visual
+addition; backend data is already there.
+
+### 4. AWS deploy (week 5)
+
+The architecture diagram in §"AWS deployment" above is the spec.
+ECS Fargate for api/worker/web, RDS Postgres 17 with pgvector,
+ElastiCache Redis, Secrets Manager, ALB sticky sessions for SSE.
+First production org gets `region=us-east`, `itar=false`. Real Slack
+app review + Drive verification happen during this phase.
+
+### 5. GitHub + Jira + Email connectors (weeks 6-7)
+
+Each is a new module under `connectors/` implementing the same
+Protocol: `oauth_url`, `oauth_callback`, `backfill`, `webhook_handler`,
+`pull_latest`. GitHub webhook is PR events. Jira is issue events.
+Email is per-user Gmail OAuth with opt-in. Per source, ~2 days of
+work; the shape is locked.
+
+### 6. Phase agent ("ready for DVT exit?") + Personalizer (week 8)
+
+The Phase agent reads open decisions + risks for the active phase,
+judges whether the gate criteria are met, lists the gap. Sonnet,
+tool-using, runs on demand from the dashboard.
+
+The Personalizer is a weekly cron Sonnet pass over a user's feedback
+log (thumbs up/down on digest items, dwell, ignored). Rewrites the
+`topic_weights` per-user. Pure ranking model; no UI change.
+
+### 7. The post-MVP polish — chat history, audit page, weekly summary
+
+- Chat answer transcripts persisted, searchable.
+- Audit page exposing the `audit_log` rows: every LLM call, every
+  ingest event, every notification sent. Searchable, exportable for
+  SOC 2.
+- Weekly Sunday-evening email digest as the cheaper fallback channel.
+
+After this list the "agent product" becomes the "agent platform" —
+every new connector or screen ships against the same infra.

@@ -1,184 +1,362 @@
 [
   {
-    "name": "pure_role_match_mech_eng_sees_thermal_failure",
-    "project": {
-      "current_phase": "DVT",
-      "phase_concerns": {
-        "DVT": ["thermal margin", "yield rate", "test failures"]
-      }
+    "id": "s01",
+    "name": "thermal_failure_lands_for_mech_owner",
+    "expected_rank": 0,
+    "member": {
+      "member_role": "mech",
+      "owned_subsystems": ["chassis", "bracket"],
+      "topic_weights": {},
+      "author_role": "qa",
+      "phase_concerns": ["thermal_margin", "yield_rate"]
     },
-    "user": {
-      "role": "mech_eng",
-      "owned_subsystems": ["chassis", "mounting"],
-      "owned_parts": ["BRK-A1"],
-      "topic_weights": {}
-    },
-    "messages": [
-      {
-        "id": "m1",
-        "text": "Thermal cycling unit 7 failed at chassis temp 91C.",
-        "tag": { "topic": "quality_issue", "urgency": "high",
-                 "affected_roles": ["mech_eng", "qa"],
-                 "entities": ["chassis", "BRK-A1"] }
-      },
-      {
-        "id": "m2",
-        "text": "FYI lunch is ordered.",
-        "tag": { "topic": "fyi", "urgency": "low",
-                 "affected_roles": [], "entities": [] }
-      }
-    ],
-    "expected_top_id": "m1"
+    "message": {
+      "topic": "thermal_margin",
+      "entities": ["chassis", "bracket"],
+      "urgency": "high",
+      "affected_roles": ["mech", "qa"]
+    }
   },
   {
-    "name": "cross_functional_supplier_strike_lands_for_mech_owner",
-    "project": {
-      "current_phase": "DVT",
-      "phase_concerns": {
-        "DVT": ["thermal margin", "yield rate", "test failures"]
-      }
-    },
-    "user": {
-      "role": "mech_eng",
+    "id": "s02",
+    "name": "lunch_chatter_floors",
+    "expected_rank": 19,
+    "member": {
+      "member_role": "mech",
       "owned_subsystems": ["chassis"],
-      "owned_parts": ["AL-6063-T5"],
-      "topic_weights": {}
+      "topic_weights": {},
+      "author_role": "em",
+      "phase_concerns": ["thermal_margin"]
     },
-    "messages": [
-      {
-        "id": "m1",
-        "text": "Supplier ExtruCo on strike — AL-6063-T5 extrusion 3wks inventory.",
-        "tag": { "topic": "supply_chain_disruption", "urgency": "high",
-                 "affected_roles": ["supply_chain", "pm"],
-                 "entities": ["ExtruCo", "AL-6063-T5"] }
-      },
-      {
-        "id": "m2",
-        "text": "Casual chatter about coffee.",
-        "tag": { "topic": "fyi", "urgency": "low",
-                 "affected_roles": [], "entities": [] }
-      }
-    ],
-    "expected_top_id": "m1"
+    "message": {
+      "topic": "fyi",
+      "entities": [],
+      "urgency": "low",
+      "affected_roles": []
+    }
   },
   {
-    "name": "phase_match_pvt_user_sees_supplier_quality_first",
-    "project": {
-      "current_phase": "PVT",
-      "phase_concerns": {
-        "PVT": ["supplier quality", "first article", "manufacturing yield"]
-      }
+    "id": "s03",
+    "name": "critical_production_halt_dominates",
+    "expected_rank": 0,
+    "member": {
+      "member_role": "fw",
+      "owned_subsystems": ["bms_firmware"],
+      "topic_weights": {},
+      "author_role": "fw",
+      "phase_concerns": ["firmware"]
     },
-    "user": {
-      "role": "qa",
-      "owned_subsystems": ["thermal_testing"],
-      "owned_parts": [],
-      "topic_weights": {}
-    },
-    "messages": [
-      {
-        "id": "m1",
-        "text": "Supplier issue: AlumWest first article inspection failed on a sample.",
-        "tag": { "topic": "supplier_issue", "urgency": "high",
-                 "affected_roles": ["supply_chain", "qa"],
-                 "entities": ["AlumWest"] }
-      },
-      {
-        "id": "m2",
-        "text": "Drop test on unit 5 passes spec.",
-        "tag": { "topic": "test_result", "urgency": "low",
-                 "affected_roles": ["qa"], "entities": ["drop test"] }
-      }
-    ],
-    "expected_top_id": "m1"
+    "message": {
+      "topic": "blocker",
+      "entities": ["BMS", "pack 4"],
+      "urgency": "critical",
+      "affected_roles": ["fw", "ee", "qa", "pm"]
+    }
   },
   {
-    "name": "feedback_weight_overrides_baseline",
-    "project": {
-      "current_phase": "DVT",
-      "phase_concerns": {
-        "DVT": ["thermal margin"]
-      }
+    "id": "s04",
+    "name": "supplier_strike_cross_functional_hits_mech",
+    "expected_rank": 1,
+    "member": {
+      "member_role": "mech",
+      "owned_subsystems": ["chassis", "AL-6063-T5"],
+      "topic_weights": {},
+      "author_role": "supply",
+      "phase_concerns": ["thermal_margin"]
     },
-    "user": {
-      "role": "pm",
-      "owned_subsystems": ["risk_register"],
-      "owned_parts": [],
-      "topic_weights": { "eco": 5.0 }
-    },
-    "messages": [
-      {
-        "id": "m1",
-        "text": "ECO-178 fast-track opens.",
-        "tag": { "topic": "eco", "urgency": "medium",
-                 "affected_roles": ["pm"], "entities": ["ECO-178"] }
-      },
-      {
-        "id": "m2",
-        "text": "Thermal anomaly on unit 9 — minor.",
-        "tag": { "topic": "thermal", "urgency": "medium",
-                 "affected_roles": ["qa"], "entities": ["chassis"] }
-      }
-    ],
-    "expected_top_id": "m1"
+    "message": {
+      "topic": "supply_chain",
+      "entities": ["ExtruCo", "AL-6063-T5", "AlumWest"],
+      "urgency": "high",
+      "affected_roles": ["supply", "pm"]
+    }
   },
   {
-    "name": "urgency_critical_beats_role_match",
-    "project": {
-      "current_phase": "DVT",
-      "phase_concerns": { "DVT": ["thermal margin"] }
-    },
-    "user": {
-      "role": "mech_eng",
-      "owned_subsystems": ["chassis"],
-      "owned_parts": [],
-      "topic_weights": {}
-    },
-    "messages": [
-      {
-        "id": "m1",
-        "text": "Production halt — line stop scenario detected.",
-        "tag": { "topic": "supply_chain_disruption", "urgency": "critical",
-                 "affected_roles": ["supply_chain", "pm"],
-                 "entities": ["supplier"] }
-      },
-      {
-        "id": "m2",
-        "text": "Bracket re-fab continuing.",
-        "tag": { "topic": "mechanical", "urgency": "low",
-                 "affected_roles": ["mech_eng"],
-                 "entities": ["bracket"] }
-      }
-    ],
-    "expected_top_id": "m1"
-  },
-  {
-    "name": "firmware_for_firmware_role",
-    "project": {
-      "current_phase": "DVT",
-      "phase_concerns": { "DVT": ["firmware"] }
-    },
-    "user": {
-      "role": "firmware",
+    "id": "s05",
+    "name": "firmware_pr_for_firmware_role",
+    "expected_rank": 2,
+    "member": {
+      "member_role": "fw",
       "owned_subsystems": ["motor_firmware"],
-      "owned_parts": [],
-      "topic_weights": {}
+      "topic_weights": {},
+      "author_role": "fw",
+      "phase_concerns": ["firmware"]
     },
-    "messages": [
-      {
-        "id": "m1",
-        "text": "PR #214 fixes retry off-by-one.",
-        "tag": { "topic": "firmware_bug", "urgency": "high",
-                 "affected_roles": ["firmware", "ee"],
-                 "entities": ["motor driver"] }
-      },
-      {
-        "id": "m2",
-        "text": "Drop test report attached.",
-        "tag": { "topic": "test_result", "urgency": "low",
-                 "affected_roles": ["qa"], "entities": ["drop test"] }
-      }
-    ],
-    "expected_top_id": "m1"
+    "message": {
+      "topic": "firmware",
+      "entities": ["PR #221", "BMS"],
+      "urgency": "normal",
+      "affected_roles": ["fw", "ee"]
+    }
+  },
+  {
+    "id": "s06",
+    "name": "phase_concern_match_pulls_in",
+    "expected_rank": 4,
+    "member": {
+      "member_role": "qa",
+      "owned_subsystems": ["thermal_testing"],
+      "topic_weights": {},
+      "author_role": "qa",
+      "phase_concerns": ["thermal_margin", "supplier_quality"]
+    },
+    "message": {
+      "topic": "supplier_quality",
+      "entities": ["AlumWest"],
+      "urgency": "normal",
+      "affected_roles": ["qa"]
+    }
+  },
+  {
+    "id": "s07",
+    "name": "topic_weight_boost_carries_ECO",
+    "expected_rank": 1,
+    "member": {
+      "member_role": "pm",
+      "owned_subsystems": ["risk_register"],
+      "topic_weights": {"eco": 0.9},
+      "author_role": "mech",
+      "phase_concerns": []
+    },
+    "message": {
+      "topic": "eco",
+      "entities": ["ECO-178"],
+      "urgency": "normal",
+      "affected_roles": ["pm"]
+    }
+  },
+  {
+    "id": "s08",
+    "name": "negative_topic_weight_demotes_firmware_for_mech",
+    "expected_rank": 13,
+    "member": {
+      "member_role": "mech",
+      "owned_subsystems": ["chassis"],
+      "topic_weights": {"firmware": -0.5},
+      "author_role": "fw",
+      "phase_concerns": []
+    },
+    "message": {
+      "topic": "firmware",
+      "entities": ["BMS"],
+      "urgency": "normal",
+      "affected_roles": ["fw"]
+    }
+  },
+  {
+    "id": "s09",
+    "name": "high_urgency_general_news_lands_mid_tier",
+    "expected_rank": 7,
+    "member": {
+      "member_role": "ee",
+      "owned_subsystems": ["pcb_rev_c"],
+      "topic_weights": {},
+      "author_role": "pm",
+      "phase_concerns": ["test_coverage"]
+    },
+    "message": {
+      "topic": "milestone_risk",
+      "entities": ["phase gate"],
+      "urgency": "high",
+      "affected_roles": ["pm"]
+    }
+  },
+  {
+    "id": "s10",
+    "name": "owned_part_entity_match_pulls_into_top3",
+    "expected_rank": 2,
+    "member": {
+      "member_role": "mech",
+      "owned_subsystems": ["BRK-A1"],
+      "topic_weights": {},
+      "author_role": "supply",
+      "phase_concerns": []
+    },
+    "message": {
+      "topic": "bom",
+      "entities": ["BOM", "BRK-A1", "AL-7075-T6"],
+      "urgency": "high",
+      "affected_roles": ["supply", "mech"]
+    }
+  },
+  {
+    "id": "s11",
+    "name": "cross_functional_hit_without_role_match",
+    "expected_rank": 6,
+    "member": {
+      "member_role": "ee",
+      "owned_subsystems": ["BMS"],
+      "topic_weights": {},
+      "author_role": "fw",
+      "phase_concerns": []
+    },
+    "message": {
+      "topic": "firmware",
+      "entities": ["BMS"],
+      "urgency": "normal",
+      "affected_roles": ["fw"]
+    }
+  },
+  {
+    "id": "s12",
+    "name": "noise_with_no_signals_bottoms_out",
+    "expected_rank": 18,
+    "member": {
+      "member_role": "mech",
+      "owned_subsystems": ["chassis"],
+      "topic_weights": {},
+      "author_role": "em",
+      "phase_concerns": []
+    },
+    "message": {
+      "topic": "status_update",
+      "entities": ["FEA"],
+      "urgency": "low",
+      "affected_roles": ["mech"]
+    }
+  },
+  {
+    "id": "s13",
+    "name": "ppap_risk_hits_supply_owner",
+    "expected_rank": 0,
+    "member": {
+      "member_role": "supply",
+      "owned_subsystems": ["AlumWest"],
+      "topic_weights": {},
+      "author_role": "supply",
+      "phase_concerns": ["supplier_quality"]
+    },
+    "message": {
+      "topic": "risk",
+      "entities": ["AlumWest", "PPAP"],
+      "urgency": "high",
+      "affected_roles": ["supply", "qa", "pm"]
+    }
+  },
+  {
+    "id": "s14",
+    "name": "low_urgency_question_about_unrelated_subsystem",
+    "expected_rank": 15,
+    "member": {
+      "member_role": "fw",
+      "owned_subsystems": ["motor_firmware"],
+      "topic_weights": {},
+      "author_role": "ee",
+      "phase_concerns": []
+    },
+    "message": {
+      "topic": "question",
+      "entities": ["bench 3"],
+      "urgency": "low",
+      "affected_roles": ["qa"]
+    }
+  },
+  {
+    "id": "s15",
+    "name": "cable_routing_risk_for_mech_designer",
+    "expected_rank": 1,
+    "member": {
+      "member_role": "mech",
+      "owned_subsystems": ["cable_harness", "rear_panel"],
+      "topic_weights": {},
+      "author_role": "mech",
+      "phase_concerns": ["serviceability"]
+    },
+    "message": {
+      "topic": "risk",
+      "entities": ["cable harness", "rear panel"],
+      "urgency": "high",
+      "affected_roles": ["mech", "ee"]
+    }
+  },
+  {
+    "id": "s16",
+    "name": "qa_test_plan_change_for_qa_lead",
+    "expected_rank": 3,
+    "member": {
+      "member_role": "qa",
+      "owned_subsystems": ["thermal_testing"],
+      "topic_weights": {},
+      "author_role": "qa",
+      "phase_concerns": ["test_coverage"]
+    },
+    "message": {
+      "topic": "test_plan",
+      "entities": ["thermal soak", "DVT"],
+      "urgency": "high",
+      "affected_roles": ["qa", "mech"]
+    }
+  },
+  {
+    "id": "s17",
+    "name": "broad_milestone_announcement_normal_urgency",
+    "expected_rank": 11,
+    "member": {
+      "member_role": "ee",
+      "owned_subsystems": ["pcb_rev_c"],
+      "topic_weights": {},
+      "author_role": "pm",
+      "phase_concerns": []
+    },
+    "message": {
+      "topic": "status_update",
+      "entities": ["PVT"],
+      "urgency": "normal",
+      "affected_roles": ["pm", "qa"]
+    }
+  },
+  {
+    "id": "s18",
+    "name": "fyi_with_owned_entity_lifts_a_bit",
+    "expected_rank": 9,
+    "member": {
+      "member_role": "supply",
+      "owned_subsystems": ["AlumWest"],
+      "topic_weights": {},
+      "author_role": "supply",
+      "phase_concerns": []
+    },
+    "message": {
+      "topic": "supply_chain",
+      "entities": ["AlumWest"],
+      "urgency": "low",
+      "affected_roles": ["supply", "mech"]
+    }
+  },
+  {
+    "id": "s19",
+    "name": "decision_on_imu_for_firmware_owner",
+    "expected_rank": 4,
+    "member": {
+      "member_role": "fw",
+      "owned_subsystems": ["motor_firmware"],
+      "topic_weights": {},
+      "author_role": "ee",
+      "phase_concerns": ["firmware"]
+    },
+    "message": {
+      "topic": "eco",
+      "entities": ["IMU", "DVT", "PVT"],
+      "urgency": "high",
+      "affected_roles": ["ee", "fw", "qa"]
+    }
+  },
+  {
+    "id": "s20",
+    "name": "weighted_topic_boost_pulls_fyi_into_mid",
+    "expected_rank": 10,
+    "member": {
+      "member_role": "pm",
+      "owned_subsystems": [],
+      "topic_weights": {"status_update": 0.6},
+      "author_role": "pm",
+      "phase_concerns": []
+    },
+    "message": {
+      "topic": "status_update",
+      "entities": ["PVT"],
+      "urgency": "low",
+      "affected_roles": ["pm"]
+    }
   }
 ]

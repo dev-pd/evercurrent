@@ -1,87 +1,128 @@
 # EverCurrent — Eval Baseline
 
-`make eval` runs the scoring + determinism suite against committed
-seed data with the default weights and the prompts in
-`apps/api/src/evercurrent/{enrichment,digest,decisions}/prompts/`.
+## What this document is
 
-## Scoring engine
+A reference card for the four offline evals that measure the AI quality
+of the system. The contract:
 
-| Metric                   | Result            | Notes                              |
-|--------------------------|-------------------|------------------------------------|
-| Scenarios passing top-1  | **6 / 6**         | `tests/evals/data/scoring_scenarios.json` |
-| Determinism (10 / 100)   | **stable**        | identical rankings across runs     |
+- The evals live under `apps/api/tests/evals/`.
+- `make eval` runs all four; `make eval-router`, `make eval-scoring`,
+  `make eval-rag`, `make eval-digest` run them individually.
+- Results land in `apps/api/tests/evals/reports/<isoformat>_<name>.json`.
+- Baselines are **reference numbers, not gates**. A baseline miss logs
+  to stderr but does not fail the test. CI does not run `make eval`
+  for reasons covered in `docs/DECISIONS.md` ADR-013.
+- Ground truth is hand-labelled. Generating ground truth with another
+  LLM produces a circular signal — see Phase 12 spec, "Common pitfalls."
 
-Covered: pure role match, cross-functional dependency match (synonym
-map), phase weight shift (DVT → PVT), per-user feedback override,
-critical urgency dominating role + dep, firmware-specific role.
-Investigation triggers: any scenario regression > 0; non-determinism
-(state leak in scoring).
+## The four evals
 
-## RAG retrieval (forward work)
+| Eval     | What it measures                              | Dataset                  | Cost per run |
+|----------|-----------------------------------------------|--------------------------|--------------|
+| router   | Haiku tag accuracy per field                  | 50 hand-labelled msgs    | ~$0.02       |
+| scoring  | Pure-Python ranking against expectations      | 20 scenarios             | $0           |
+| rag      | pgvector retrieval quality                    | 30 Q + 8 corpus docs     | ~$0.01       |
+| digest   | Sonnet writer judged by Sonnet on a rubric    | 5 personas               | ~$0.50       |
 
-Voyage free-tier (3 RPM) exceeds our retry budget. Attach a payment
-method to dash.voyageai.com or wait between batches.
+Total for a full `make eval` run: roughly $0.55 in API spend.
 
-| Metric            | Target  | Notes                                       |
-|-------------------|---------|---------------------------------------------|
-| Precision @ 5     | ≥ 0.85  | doc-kind hit in top 5                       |
-| MRR               | ≥ 0.70  | first matching chunk rank, 1/N              |
-| Keyword presence  | ≥ 0.80  | expected_keywords present in top-1 chunk    |
+## Metric table
 
-Eval data file `tests/evals/data/rag_qa.json` to be populated with
-12+ question/source pairs.
+| Eval     | Metric                          | Baseline target | How it's computed                                       |
+|----------|---------------------------------|-----------------|---------------------------------------------------------|
+| router   | topic accuracy                  | >= 0.85         | substring containment vs expected; 50 rows              |
+| router   | urgency accuracy                | >= 0.90         | exact-match on the 4-value Literal                      |
+| router   | entities jaccard                | >= 0.60         | case-insensitive set jaccard, averaged                  |
+| router   | affected_roles jaccard          | >= 0.70         | case-insensitive set jaccard, averaged                  |
+| router   | should_create_card accuracy     | >= 0.85         | exact bool match                                        |
+| scoring  | spearman rank correlation       | >= 0.80         | expected vs actual rank of the focus msg in 20 distractors |
+| rag      | precision@5                     | >= 0.70         | fraction of top-5 chunks in the expected doc set        |
+| rag      | mean reciprocal rank            | >= 0.55         | 1 / rank of first expected doc                          |
+| digest   | mean relevance (rubric 0-5)     | >= 4.0          | Sonnet-as-judge on member fit + topic coverage          |
+| digest   | mean citation correctness (0-5) | >= 4.0          | judge checks every cited id appears in input set        |
+| digest   | mean voice second person (0-5)  | >= 4.0          | judge checks tone, terseness, "you" voice               |
+| digest   | mean length budget (0-5)        | >= 4.0          | judge checks 250-400 word target + 3-section structure  |
 
-## Digest quality (LLM-as-judge, forward work)
-
-Sonnet against a 4-dimension rubric — personalisation, prioritisation,
-actionability, citation accuracy. Target each ≥ 4.0 / 5 averaged
-across 3-5 personas. Citation accuracy also checked programmatically
-(parse `[msg_<id>]` references against the source set the user saw).
-
-Today's digests are LLM-generated and personalisation is empirically
-visible — Sarah Chen leads with the ECO-178 thread she authored,
-Mei Tanaka leads with AlumWest sourcing. Quantifying it via judge is
-the next eval iteration.
-
-## Decision extraction
-
-Sonnet produces ~5 decisions per day. Confidence range 0.45–0.95.
-Field-accuracy / hallucination rate metrics will be added with a
-hand-labelled `decision_truth.json` in the next eval iteration.
-
-Today the only structural assertion is: every extracted decision
-cites at least one real message id from the corresponding day's
-message bucket. Violations would surface as `decisions.invalid_entry`
-warnings in the worker log.
-
-## Reproducing the numbers
+## How to run
 
 ```bash
-cp .env.example .env   # fill ANTHROPIC_API_KEY (+ VOYAGE_API_KEY for RAG)
-make up                # postgres + redis + api + worker + beat + web + nginx
-make migrate
-make seed              # historical days 1-5
-# The Celery beat scheduler starts immediately:
-#  - refresh_today @ 30s: enrich -> digest -> extract decisions for
-#    project.current_day (rolled forward to wall-clock today)
-#  - synthesize_today_message @ 60s: Sonnet writes 2 phase-scoped
-#    messages
-# After a few minutes you'll have today's digest cache + ongoing flow.
-make eval              # scoring + determinism (fast, no LLM, no keys)
+# All four, with API keys (real LLM calls)
+export ANTHROPIC_API_KEY=sk-ant-...
+export VOYAGE_API_KEY=pa-...
+make eval
+
+# Just the deterministic one (no keys needed)
+make eval-scoring
+
+# Just the router (Haiku only, cheap)
+make eval-router
+
+# Just the digest (Sonnet writer + Sonnet judge — the expensive one)
+make eval-digest
+
+# Just the RAG retrieval (Voyage + testcontainers Postgres)
+make eval-rag
 ```
 
-`make eval` does NOT run end-to-end LLM / embedding evals by default
-— that's reserved for the forward-work entries above. The default
-suite is fast, deterministic, and runs without API keys.
+Without `ANTHROPIC_API_KEY`, the router and digest evals skip with a
+clear reason. Without `VOYAGE_API_KEY`, the RAG eval skips. The
+scoring eval has zero external dependencies and always runs.
 
-## When to investigate
+## How to interpret
 
-- Scoring regression > 0 scenarios → check `scoring/engine.py` or
-  `scoring/weights.py` (likely a weight was tuned).
-- Digest citation accuracy < 0.95 → check
-  `digest/prompts/generate.txt` citation instructions and the
-  `[msg_XXX]` extraction logic in `digest-card.tsx::humaniseCitations`.
-- Decision recall < 0.7 → revisit `decisions/prompts/extract.txt`
-  (the confidence floor at 0.4 may be dropping borderline truths).
-- RAG P@5 < 0.85 → likely a chunker change. Inspect `rag/chunker.py`
-  and re-baseline with `make ingest-docs`.
+- A baseline miss is a signal to look. Open the printed per-row table,
+  find the lowest-scoring rows, and read the prompt + actual output.
+  Most regressions are prompt drift in a single field (`topic` slug
+  changes, `affected_roles` vocabulary widens). Fix the prompt or
+  re-label the dataset, not the metric.
+- A passing baseline is not a quality guarantee. The router can hit
+  0.90 urgency accuracy and still be subtly wrong on the long tail.
+  Pair the numbers with a human read of `reports/` once a release.
+- The digest eval uses LLM-as-judge. Treat the absolute value with
+  caution; the *trend* across runs is the signal. A 4.2 today and 3.9
+  next week with no code change is noise. A 4.2 dropping to 2.5 is a
+  real regression in prompt or context.
+
+## What we DO NOT test
+
+- **String-match assertions on LLM output.** "the digest must contain
+  the word 'thermal'" is a brittle test that breaks every time the
+  model is upgraded. The eval is the rubric, not the literal.
+- **Per-PR eval in CI.** Cost (Sonnet judge x 5 scenarios is ~$0.50
+  per PR) and nondeterminism (the same prompt scores 4.1 on one run,
+  4.3 on the next) would make the gate noisy and expensive. Evals are
+  a release tool, not a per-commit tool. See `docs/DECISIONS.md`
+  ADR-013.
+- **End-to-end "the dashboard renders correctly" assertions.** Those
+  are covered by manual demo rehearsal and the unit tests on
+  `/health` + `/ready`. Per `AGENTS.md` §11 we do not write further
+  integration or component tests.
+
+## Datasets
+
+Hand-labelled JSON files live in `apps/api/tests/evals/data/`:
+
+- `router_labels.json` — 50 messages in hardware-team voice
+- `scoring_scenarios.json` — 20 (member, message) pairs with expected
+  relative rank
+- `rag_questions.json` + `rag_corpus/*.md` — 30 questions and 8
+  Markdown documents (ECO, FAI report, firmware notes, supplier
+  strategy, DVT exit plan, gripper risk, EMC pre-scan, phase gate)
+- `digest_scenarios.json` — 5 (member + project + top-N scored items)
+  contexts, plus expected critical topics for the judge
+
+The judge rubric is at `apps/api/tests/evals/judge_prompts/digest_rubric.txt`.
+
+## When the numbers will be revisited
+
+- After a model upgrade (Sonnet 4.6 -> 4.7): re-baseline once, document
+  the delta.
+- After a prompt change in `routing/prompts/`, `digest/prompts/`, or
+  `cards/prompts/`: re-run the affected eval, update the printed
+  table here if the new number is the new baseline.
+- After a scoring weight change in `scoring/weights.py`: re-run
+  `make eval-scoring`.
+- After a chunker change in `rag/chunker.py`: re-run `make eval-rag`.
+
+A run cadence of "weekly + on tag" is the right rhythm. Daily is too
+expensive; only-on-demand lets regressions land unnoticed.

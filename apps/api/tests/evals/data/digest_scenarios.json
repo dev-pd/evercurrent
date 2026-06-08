@@ -1,0 +1,316 @@
+[
+  {
+    "id": "d01",
+    "name": "sarah_mech_dvt_day4",
+    "member": {
+      "display_name": "Sarah Chen",
+      "role": "mech",
+      "timezone": "America/Los_Angeles",
+      "owned_subsystems": ["chassis", "BRK-A1", "bracket"],
+      "topic_weights": {"eco": 0.3, "thermal_margin": 0.4}
+    },
+    "project": {
+      "name": "Warehouse Robot v2",
+      "current_phase": "DVT",
+      "phase_concerns": ["thermal_margin", "test_coverage", "supplier_quality"]
+    },
+    "day_index": 4,
+    "top_scored_items": [
+      {
+        "message_id": "11111111-1111-4111-8111-111111111111",
+        "score": 0.95,
+        "topic": "eco",
+        "urgency": "high",
+        "channel": "#mech-design",
+        "author": "Sarah Chen",
+        "text": "Decided: switching BRK-A1 from AL-6063-T5 to AL-7075-T6. FEA confirms thermal margin holds. ECO-178 drafted.",
+        "posted_at": "2026-06-06T13:14:00Z"
+      },
+      {
+        "message_id": "22222222-2222-4222-8222-222222222222",
+        "score": 0.92,
+        "topic": "milestone_risk",
+        "urgency": "critical",
+        "channel": "#supply-chain",
+        "author": "Mei Tanaka",
+        "text": "Need PM sign-off on the ECO-178 schedule slip — if Mei can't source the new alloy by Friday we will miss DVT exit.",
+        "posted_at": "2026-06-07T01:42:00Z"
+      },
+      {
+        "message_id": "33333333-3333-4333-8333-333333333333",
+        "score": 0.78,
+        "topic": "supplier_qual",
+        "urgency": "normal",
+        "channel": "#qa-testing",
+        "author": "Lin Wong",
+        "text": "AlumWest first article inspection cleared at 6:42am. Tolerance +/- 0.07mm against spec 0.10mm. Re-fab unblocked.",
+        "posted_at": "2026-06-07T13:42:00Z"
+      },
+      {
+        "message_id": "44444444-4444-4444-8444-444444444444",
+        "score": 0.65,
+        "topic": "risk",
+        "urgency": "high",
+        "channel": "#mech-design",
+        "author": "David Park",
+        "text": "Gripper arm vibration at 4150 RPM overlaps with motor mount torque spec. Three mentions this week, no one has reacted.",
+        "posted_at": "2026-06-07T15:10:00Z"
+      },
+      {
+        "message_id": "55555555-5555-4555-8555-555555555555",
+        "score": 0.42,
+        "topic": "supplier_qual",
+        "urgency": "low",
+        "channel": "#supply-chain",
+        "author": "Mei Tanaka",
+        "text": "Carlos qualified PrecisionCoat for AL-7075 finishing. Approved supplier list updated.",
+        "posted_at": "2026-06-07T16:30:00Z"
+      }
+    ],
+    "open_cards": [
+      {
+        "card_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "kind": "decision",
+        "summary": "ECO-178 switches BRK-A1 to AL-7075-T6",
+        "status": "open",
+        "affected_subsystems": ["chassis", "BRK-A1"]
+      },
+      {
+        "card_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "kind": "risk",
+        "summary": "Gripper resonance at 4150 RPM overlaps motor mount torque spec",
+        "status": "open",
+        "affected_subsystems": ["motor_mount", "gripper"]
+      }
+    ],
+    "expected_critical_topics": ["eco", "ECO-178", "milestone_risk", "DVT"]
+  },
+  {
+    "id": "d02",
+    "name": "mei_supply_dvt_day4",
+    "member": {
+      "display_name": "Mei Tanaka",
+      "role": "supply",
+      "timezone": "America/Los_Angeles",
+      "owned_subsystems": ["AlumWest", "ExtruCo", "BOM"],
+      "topic_weights": {"supply_chain": 0.5, "supplier_qual": 0.4}
+    },
+    "project": {
+      "name": "Warehouse Robot v2",
+      "current_phase": "DVT",
+      "phase_concerns": ["supplier_quality", "thermal_margin"]
+    },
+    "day_index": 4,
+    "top_scored_items": [
+      {
+        "message_id": "11111111-1111-4111-8111-aaaaaaaaaaaa",
+        "score": 0.98,
+        "topic": "supply_chain",
+        "urgency": "critical",
+        "channel": "#supply-chain",
+        "author": "Mei Tanaka",
+        "text": "ExtruCo strike confirmed. AL-6063-T5 extrusion stuck at 3 weeks of inventory. Pulling AlumWest forward as backup.",
+        "posted_at": "2026-06-05T18:00:00Z"
+      },
+      {
+        "message_id": "22222222-2222-4222-8222-bbbbbbbbbbbb",
+        "score": 0.90,
+        "topic": "supplier_qual",
+        "urgency": "normal",
+        "channel": "#qa-testing",
+        "author": "Lin Wong",
+        "text": "AlumWest first article inspection cleared at 6:42am. Tolerance +/- 0.07mm against spec 0.10mm.",
+        "posted_at": "2026-06-07T13:42:00Z"
+      },
+      {
+        "message_id": "33333333-3333-4333-8333-cccccccccccc",
+        "score": 0.84,
+        "topic": "risk",
+        "urgency": "high",
+        "channel": "#supply-chain",
+        "author": "David Park",
+        "text": "Risk: the new aluminum supplier hasn't been through our PPAP. If we ship before PPAP we are out of process.",
+        "posted_at": "2026-06-07T14:10:00Z"
+      },
+      {
+        "message_id": "44444444-4444-4444-8444-dddddddddddd",
+        "score": 0.71,
+        "topic": "supply_chain",
+        "urgency": "high",
+        "channel": "#supply-chain",
+        "author": "Mei Tanaka",
+        "text": "Mei here. AlumWest can start extrusion Monday. Cost premium is 12 percent over ExtruCo. Acceptable given timeline?",
+        "posted_at": "2026-06-07T16:00:00Z"
+      }
+    ],
+    "open_cards": [
+      {
+        "card_id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "kind": "risk",
+        "summary": "AlumWest PPAP pending — risk of shipping out of process",
+        "status": "open",
+        "affected_subsystems": ["AlumWest", "PPAP"]
+      }
+    ],
+    "expected_critical_topics": ["ExtruCo", "AlumWest", "PPAP", "supply_chain"]
+  },
+  {
+    "id": "d03",
+    "name": "tom_fw_dvt_day4",
+    "member": {
+      "display_name": "Tom Reyes",
+      "role": "fw",
+      "timezone": "America/Los_Angeles",
+      "owned_subsystems": ["bms_firmware", "motor_firmware"],
+      "topic_weights": {"firmware": 0.4}
+    },
+    "project": {
+      "name": "Warehouse Robot v2",
+      "current_phase": "DVT",
+      "phase_concerns": ["firmware", "thermal_margin"]
+    },
+    "day_index": 4,
+    "top_scored_items": [
+      {
+        "message_id": "11111111-1111-4111-8111-eeeeeeeeeeee",
+        "score": 0.97,
+        "topic": "blocker",
+        "urgency": "critical",
+        "channel": "#firmware",
+        "author": "Tom Reyes",
+        "text": "Blocker on the firmware side — the new motor controller silicon hangs after 30 min. Vendor case open.",
+        "posted_at": "2026-06-07T15:00:00Z"
+      },
+      {
+        "message_id": "22222222-2222-4222-8222-ffffffffffff",
+        "score": 0.83,
+        "topic": "firmware",
+        "urgency": "normal",
+        "channel": "#firmware",
+        "author": "Tom Reyes",
+        "text": "PR #221 merged — BMS hysteresis tightened 8C to 5C. Bench tested overnight, no chatter.",
+        "posted_at": "2026-06-06T19:00:00Z"
+      },
+      {
+        "message_id": "33333333-3333-4333-8333-aaaabbbbcccc",
+        "score": 0.72,
+        "topic": "risk",
+        "urgency": "high",
+        "channel": "#firmware",
+        "author": "Tom Reyes",
+        "text": "Risk: the BMS thermal model assumes AL-6063. If the alloy switch closes, the model is invalid until re-run.",
+        "posted_at": "2026-06-07T16:30:00Z"
+      }
+    ],
+    "open_cards": [
+      {
+        "card_id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        "kind": "decision",
+        "summary": "BMS hysteresis 8C to 5C lands in v0.9.2",
+        "status": "open",
+        "affected_subsystems": ["bms_firmware"]
+      }
+    ],
+    "expected_critical_topics": ["motor controller", "BMS", "hysteresis", "blocker"]
+  },
+  {
+    "id": "d04",
+    "name": "lin_qa_pvt_day1",
+    "member": {
+      "display_name": "Lin Wong",
+      "role": "qa",
+      "timezone": "America/Los_Angeles",
+      "owned_subsystems": ["thermal_testing", "drop_test"],
+      "topic_weights": {"test_result": 0.3, "supplier_qual": 0.3}
+    },
+    "project": {
+      "name": "Warehouse Robot v2",
+      "current_phase": "PVT",
+      "phase_concerns": ["supplier_quality", "first_article", "manufacturing_yield"]
+    },
+    "day_index": 1,
+    "top_scored_items": [
+      {
+        "message_id": "11111111-1111-4111-8111-1234567890ab",
+        "score": 0.91,
+        "topic": "supplier_qual",
+        "urgency": "high",
+        "channel": "#qa-testing",
+        "author": "Lin Wong",
+        "text": "Supplier issue: AlumWest first article inspection failed on a sample.",
+        "posted_at": "2026-06-08T15:00:00Z"
+      },
+      {
+        "message_id": "22222222-2222-4222-8222-1234567890ab",
+        "score": 0.75,
+        "topic": "test_plan",
+        "urgency": "high",
+        "channel": "#qa-testing",
+        "author": "Lin Wong",
+        "text": "Lin: we should add an explicit thermal soak test before DVT exit. The cycling data is borderline.",
+        "posted_at": "2026-06-07T20:00:00Z"
+      }
+    ],
+    "open_cards": [],
+    "expected_critical_topics": ["AlumWest", "supplier", "thermal soak"]
+  },
+  {
+    "id": "d05",
+    "name": "david_pm_dvt_gate_week",
+    "member": {
+      "display_name": "David Park",
+      "role": "pm",
+      "timezone": "America/Los_Angeles",
+      "owned_subsystems": ["risk_register"],
+      "topic_weights": {"milestone_risk": 0.5, "eco": 0.3}
+    },
+    "project": {
+      "name": "Warehouse Robot v2",
+      "current_phase": "DVT",
+      "phase_concerns": ["thermal_margin", "yield_rate", "test_coverage"]
+    },
+    "day_index": 5,
+    "top_scored_items": [
+      {
+        "message_id": "11111111-1111-4111-8111-aaaaaaaabbbb",
+        "score": 0.94,
+        "topic": "milestone_risk",
+        "urgency": "critical",
+        "channel": "#supply-chain",
+        "author": "Mei Tanaka",
+        "text": "Need PM sign-off on the ECO-178 schedule slip — if Mei can't source the new alloy by Friday we will miss DVT exit.",
+        "posted_at": "2026-06-07T01:42:00Z"
+      },
+      {
+        "message_id": "22222222-2222-4222-8222-bbbbbbbbcccc",
+        "score": 0.88,
+        "topic": "blocker",
+        "urgency": "critical",
+        "channel": "#firmware",
+        "author": "Tom Reyes",
+        "text": "Production halt — line stop scenario detected on the BMS firmware. Disabling pack 4. All-hands at 2pm.",
+        "posted_at": "2026-06-07T18:30:00Z"
+      },
+      {
+        "message_id": "33333333-3333-4333-8333-ccccccccdddd",
+        "score": 0.65,
+        "topic": "risk",
+        "urgency": "high",
+        "channel": "#supply-chain",
+        "author": "Mei Tanaka",
+        "text": "Risk: ExtruCo strike could extend into next sprint. If it does, AlumWest may not have capacity.",
+        "posted_at": "2026-06-07T17:00:00Z"
+      }
+    ],
+    "open_cards": [
+      {
+        "card_id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        "kind": "risk",
+        "summary": "ECO-178 schedule slip may miss DVT exit",
+        "status": "open",
+        "affected_subsystems": ["chassis", "schedule"]
+      }
+    ],
+    "expected_critical_topics": ["DVT exit", "ECO-178", "production halt", "BMS"]
+  }
+]

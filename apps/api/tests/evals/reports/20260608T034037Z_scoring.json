@@ -1,0 +1,111 @@
+{
+  "name": "scoring",
+  "generated_at": "2026-06-08T03:40:37.055244+00:00",
+  "n_scenarios": 20,
+  "metrics": {
+    "spearman_rho": 0.7723420397526374,
+    "mean_abs_rank_delta": 4.75
+  },
+  "per_scenario": [
+    {
+      "id": "s01",
+      "expected_rank": 0,
+      "actual_rank": 0
+    },
+    {
+      "id": "s02",
+      "expected_rank": 19,
+      "actual_rank": 9
+    },
+    {
+      "id": "s03",
+      "expected_rank": 0,
+      "actual_rank": 0
+    },
+    {
+      "id": "s04",
+      "expected_rank": 1,
+      "actual_rank": 0
+    },
+    {
+      "id": "s05",
+      "expected_rank": 2,
+      "actual_rank": 0
+    },
+    {
+      "id": "s06",
+      "expected_rank": 4,
+      "actual_rank": 0
+    },
+    {
+      "id": "s07",
+      "expected_rank": 1,
+      "actual_rank": 0
+    },
+    {
+      "id": "s08",
+      "expected_rank": 13,
+      "actual_rank": 8
+    },
+    {
+      "id": "s09",
+      "expected_rank": 7,
+      "actual_rank": 1
+    },
+    {
+      "id": "s10",
+      "expected_rank": 2,
+      "actual_rank": 0
+    },
+    {
+      "id": "s11",
+      "expected_rank": 6,
+      "actual_rank": 1
+    },
+    {
+      "id": "s12",
+      "expected_rank": 18,
+      "actual_rank": 1
+    },
+    {
+      "id": "s13",
+      "expected_rank": 0,
+      "actual_rank": 0
+    },
+    {
+      "id": "s14",
+      "expected_rank": 15,
+      "actual_rank": 9
+    },
+    {
+      "id": "s15",
+      "expected_rank": 1,
+      "actual_rank": 0
+    },
+    {
+      "id": "s16",
+      "expected_rank": 3,
+      "actual_rank": 0
+    },
+    {
+      "id": "s17",
+      "expected_rank": 11,
+      "actual_rank": 1
+    },
+    {
+      "id": "s18",
+      "expected_rank": 9,
+      "actual_rank": 0
+    },
+    {
+      "id": "s19",
+      "expected_rank": 4,
+      "actual_rank": 1
+    },
+    {
+      "id": "s20",
+      "expected_rank": 10,
+      "actual_rank": 0
+    }
+  ]
+}

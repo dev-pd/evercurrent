@@ -108,8 +108,24 @@ e2e: ## Playwright E2E (needs the stack running: make up first)
 	$(WEB_RUN) pnpm e2e
 
 .PHONY: eval
-eval: ## Eval harness (Anthropic key required)
+eval: ## Eval harness: router + scoring + rag + digest
 	$(API_RUN) pytest tests/evals -v -s --no-cov
+
+.PHONY: eval-router
+eval-router: ## Router eval only (ANTHROPIC_API_KEY required)
+	$(API_RUN) pytest tests/evals/eval_router.py -v -s --no-cov
+
+.PHONY: eval-scoring
+eval-scoring: ## Scoring eval only (no API keys needed)
+	$(API_RUN) pytest tests/evals/eval_scoring.py -v -s --no-cov
+
+.PHONY: eval-rag
+eval-rag: ## RAG eval only (VOYAGE_API_KEY required; testcontainers Postgres)
+	$(API_RUN) pytest tests/evals/eval_rag.py -v -s --no-cov
+
+.PHONY: eval-digest
+eval-digest: ## Digest LLM-as-judge eval only (ANTHROPIC_API_KEY required)
+	$(API_RUN) pytest tests/evals/eval_digest.py -v -s --no-cov
 
 # ----- Dev utilities ---------------------------------------------------------
 

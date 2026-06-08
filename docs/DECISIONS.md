@@ -495,6 +495,133 @@ CI caches the image in a setup step.
 
 ---
 
+## ADR-019 — In-process MCP client over a separate MCP server process
+
+**Context.** The MCP protocol envisions tools running in a separate
+server process the agent connects to over stdio or HTTP. For the
+take-home we ship the same tool definitions but the dispatch happens
+in-process via `InProcessMCPClient`.
+
+**Decision.** In-process. The tool functions
+(`search_documents`, `search_messages`, `get_thread_context`,
+`get_user_context`, `query_cards`) live under `mcp/tools/`. A small
+`InProcessMCPClient` calls them directly, passing the FastAPI
+`AsyncSession` so RLS context is preserved.
+
+**Why.**
+
+- **Simpler ops.** One process to run, one set of logs to read, no
+  IPC failure modes during a demo.
+- **Same dispatch table.** The tool registry is identical to what a
+  remote MCP server would expose. Promoting to a separate process is
+  a configuration flip + a transport adapter; the call sites do not
+  change.
+- **Take-home scope.** A separate process adds operational complexity
+  without changing what we can demo.
+
+**Trade-offs.** Cannot share the tool layer with Claude Desktop or a
+third-party MCP client today. Acceptable for the demo; documented as
+roadmap.
+
+**When we'd revisit.** When a second client (Claude Desktop, a
+customer's own LLM) needs the tools — move the registry behind a
+FastMCP server, keep the in-process client as a thin shim.
+
+---
+
+## ADR-020 — Per-bot Slack token encryption via Fernet, derived from app secret
+
+**Context.** Per-tenant Slack bot tokens must be encrypted at rest.
+Options: AWS KMS per tenant, application-level encryption with a
+single key, or store plaintext (no).
+
+**Decision.** Application-level Fernet (`cryptography` library), key
+material derived from `CONNECTOR_SECRET_KEY` in env. Each `connectors`
+row stores the encrypted token in `credentials_secret`.
+
+**Why.**
+
+- **Single key material.** Take-home runs locally; managing per-tenant
+  KMS contexts is overkill.
+- **Standard primitive.** Fernet is authenticated symmetric encryption.
+  Well-audited, hard to misuse.
+- **Roadmap-clean.** Moving to KMS is a swap inside the encrypt /
+  decrypt helpers; no schema change.
+
+**Trade-offs.** A leaked `CONNECTOR_SECRET_KEY` decrypts every tenant's
+token. In production, per-tenant KMS contexts close that risk; for the
+take-home it is acceptable and explicitly noted.
+
+**When we'd revisit.** Day 1 of multi-tenant production. KMS context
+keyed by `org_id`; rotate quarterly.
+
+---
+
+## ADR-021 — Celery `autoretry_for=(Exception,) + retry_backoff=True`
+
+**Context.** Background tasks talk to Slack (rate limit), Anthropic
+(rate limit, 529 overload), Voyage (free-tier RPM cap), Postgres
+(connection drops). Each has its own retry shape; bespoke try / except
+loops per task is duplicated code.
+
+**Decision.** Default Celery task decorator carries
+`autoretry_for=(Exception,)`, `retry_backoff=True`, `retry_backoff_max=60`,
+`retry_jitter=True`, `max_retries=5`. Specific tasks that should NOT
+retry (e.g. permanent-failure DB writes) override with
+`autoretry_for=()`.
+
+**Why.**
+
+- **Deterministic recovery on transient errors.** Slack 429,
+  Anthropic 529, network blips all bounce back through exponential
+  backoff + jitter without any task-specific code.
+- **Less surface area.** One decorator instead of try / except in every
+  task. Easier to audit.
+- **Idempotency contract.** Tasks are already idempotent at the DB
+  layer (unique constraints, upserts). Retry is safe.
+
+**Trade-offs.** A genuine permanent failure (e.g. a 400 from Anthropic
+on a malformed prompt) retries five times before surfacing. We catch
+that with a separate `is_retryable` check inside the LLM client; tasks
+re-raise as `permanent` so Celery does not retry.
+
+**When we'd revisit.** When task volume hits the level where
+unnecessary retries become a cost line. Switch to per-class retry
+policies then.
+
+---
+
+## ADR-022 — Digest fan-out via Beat-driven minute scan with timezone math
+
+**Context.** Each user has a local 08:00 digest cron. Naïve approach:
+register one Beat schedule per user. We have N users, that is N
+schedules, with state drift when users change timezones.
+
+**Decision.** One Beat schedule that ticks every minute. The
+`schedule_digests` task scans active memberships, computes each
+member's current local time, and enqueues `generate_digest` for any
+member whose clock just crossed 08:00 since the previous tick.
+
+**Why.**
+
+- **No per-user scheduler state.** Adding or removing a user is a
+  membership row change; the scheduler picks it up on the next tick.
+- **Timezone changes are free.** The check is computed each tick from
+  the live `org_memberships.timezone` value.
+- **Idempotent.** The `(member, day_index)` UNIQUE on `digests`
+  prevents a duplicate even if a tick fires twice.
+- **One ticking task, easy to reason about.** The audit log for "when
+  did Sarah's digest fire?" is one Celery task row.
+
+**Trade-offs.** The scan is O(active memberships) per minute. At a
+take-home demo scale this is trivial; at 100k users a partitioned
+scan or per-timezone bucket is the next step.
+
+**When we'd revisit.** Above ~10k active memberships, partition the
+scan by timezone offset so the work per tick is bounded.
+
+---
+
 ## Decisions to revisit before the interview
 
 Stub list of things we punted on and want to be honest about:

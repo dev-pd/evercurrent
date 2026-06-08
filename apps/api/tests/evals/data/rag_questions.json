@@ -1,0 +1,152 @@
+[
+  {
+    "id": "q01",
+    "question": "What is the new alloy specified for the BRK-A1 bracket?",
+    "expected_docs": ["01_eco_178", "04_supplier_strategy"]
+  },
+  {
+    "id": "q02",
+    "question": "Why did ECO-178 change the bracket material?",
+    "expected_docs": ["01_eco_178"]
+  },
+  {
+    "id": "q03",
+    "question": "Did the AlumWest first article inspection pass?",
+    "expected_docs": ["02_alumwest_fai"]
+  },
+  {
+    "id": "q04",
+    "question": "What is the chassis temperature spec for DVT?",
+    "expected_docs": ["05_dvt_exit_plan", "01_eco_178"]
+  },
+  {
+    "id": "q05",
+    "question": "Which PR landed the BMS hysteresis change?",
+    "expected_docs": ["03_bms_firmware"]
+  },
+  {
+    "id": "q06",
+    "question": "What did the BMS hysteresis change from and to?",
+    "expected_docs": ["03_bms_firmware"]
+  },
+  {
+    "id": "q07",
+    "question": "What was the failure on the motor controller retry loop?",
+    "expected_docs": ["03_bms_firmware"]
+  },
+  {
+    "id": "q08",
+    "question": "Is AlumWest PPAP complete for AL-7075-T6?",
+    "expected_docs": ["04_supplier_strategy", "02_alumwest_fai"]
+  },
+  {
+    "id": "q09",
+    "question": "Why is ExtruCo not supplying right now?",
+    "expected_docs": ["04_supplier_strategy"]
+  },
+  {
+    "id": "q10",
+    "question": "What is the cost premium of switching to AlumWest?",
+    "expected_docs": ["04_supplier_strategy"]
+  },
+  {
+    "id": "q11",
+    "question": "Who is the qualified supplier for AL-7075 finishing?",
+    "expected_docs": ["04_supplier_strategy", "01_eco_178"]
+  },
+  {
+    "id": "q12",
+    "question": "List the criteria to exit DVT.",
+    "expected_docs": ["05_dvt_exit_plan"]
+  },
+  {
+    "id": "q13",
+    "question": "Who owns the thermal soak test at DVT exit?",
+    "expected_docs": ["05_dvt_exit_plan"]
+  },
+  {
+    "id": "q14",
+    "question": "When is the thermal soak test scheduled?",
+    "expected_docs": ["05_dvt_exit_plan"]
+  },
+  {
+    "id": "q15",
+    "question": "What is the gripper resonance frequency?",
+    "expected_docs": ["06_gripper_risk"]
+  },
+  {
+    "id": "q16",
+    "question": "Why is the gripper resonance a risk to the motor mount?",
+    "expected_docs": ["06_gripper_risk"]
+  },
+  {
+    "id": "q17",
+    "question": "Which buck converter was chosen for rev C?",
+    "expected_docs": ["07_emc_prescan"]
+  },
+  {
+    "id": "q18",
+    "question": "What is the EMC pre-scan frequency range for motor driving?",
+    "expected_docs": ["07_emc_prescan"]
+  },
+  {
+    "id": "q19",
+    "question": "Why are we skipping the secondary fuse on rev C?",
+    "expected_docs": ["07_emc_prescan"]
+  },
+  {
+    "id": "q20",
+    "question": "What is on the phase gate review agenda?",
+    "expected_docs": ["08_phase_gate_review"]
+  },
+  {
+    "id": "q21",
+    "question": "Who is presenting supplier sourcing at the phase gate?",
+    "expected_docs": ["08_phase_gate_review"]
+  },
+  {
+    "id": "q22",
+    "question": "What decisions are pending at the phase gate review?",
+    "expected_docs": ["08_phase_gate_review"]
+  },
+  {
+    "id": "q23",
+    "question": "Which parts are affected by ECO-178?",
+    "expected_docs": ["01_eco_178"]
+  },
+  {
+    "id": "q24",
+    "question": "Is BRK-A2 included in the alloy change?",
+    "expected_docs": ["01_eco_178"]
+  },
+  {
+    "id": "q25",
+    "question": "What tolerance did AlumWest hit on the first article?",
+    "expected_docs": ["02_alumwest_fai"]
+  },
+  {
+    "id": "q26",
+    "question": "Does the BMS thermal model assume AL-6063?",
+    "expected_docs": ["03_bms_firmware", "01_eco_178"]
+  },
+  {
+    "id": "q27",
+    "question": "What is the risk if ExtruCo strike extends?",
+    "expected_docs": ["04_supplier_strategy", "05_dvt_exit_plan"]
+  },
+  {
+    "id": "q28",
+    "question": "What is the lab availability concern for EMC pre-scan?",
+    "expected_docs": ["07_emc_prescan"]
+  },
+  {
+    "id": "q29",
+    "question": "How long is the bench motor soak target?",
+    "expected_docs": ["05_dvt_exit_plan"]
+  },
+  {
+    "id": "q30",
+    "question": "Who owns the gripper subsystem?",
+    "expected_docs": ["06_gripper_risk"]
+  }
+]
