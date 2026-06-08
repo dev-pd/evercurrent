@@ -134,10 +134,6 @@ class User(Base):
 
     project: Mapped[Project] = relationship(back_populates="users")
     messages: Mapped[list[Message]] = relationship(back_populates="author")
-    digests: Mapped[list[Digest]] = relationship(
-        back_populates="user",
-        cascade="all, delete-orphan",
-    )
     feedback: Mapped[list[Feedback]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
@@ -398,34 +394,50 @@ class Decision(Base):
 
 
 class Digest(Base):
+    """Phase 8 digests: one row per (project_member, day_index).
+
+    Replaces the legacy (user_id, day, phase) shape. Citations are split
+    into `card_ids` and `message_ids` arrays so the dashboard does not
+    have to re-parse markdown.
+    """
+
     __tablename__ = "digests"
 
     id: Mapped[uuid.UUID] = _uuid_pk()
-    user_id: Mapped[uuid.UUID] = mapped_column(
+    org_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
+        ForeignKey("orgs.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
-    project_id: Mapped[uuid.UUID] = mapped_column(
+    project_member_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("projects.id", ondelete="CASCADE"),
+        ForeignKey("org_memberships.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
-    day: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    phase: Mapped[str] = mapped_column(String(32), nullable=False)
+    day_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    phase: Mapped[str] = mapped_column(Text, nullable=False)
     content_md: Mapped[str] = mapped_column(Text, nullable=False)
-    item_message_ids: Mapped[list[str]] = mapped_column(
+    card_ids: Mapped[list[uuid.UUID]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)),
+        nullable=False,
+        server_default="{}",
+    )
+    message_ids: Mapped[list[uuid.UUID]] = mapped_column(
         ARRAY(UUID(as_uuid=True)),
         nullable=False,
         server_default="{}",
     )
     generated_at: Mapped[dt.datetime] = _ts_default()
 
-    user: Mapped[User] = relationship(back_populates="digests")
-
-    __table_args__ = (Index("ix_digests_user_day_phase", "user_id", "day", "phase", unique=True),)
+    __table_args__ = (
+        Index(
+            "digests_member_day_unique",
+            "project_member_id",
+            "day_index",
+            unique=True,
+        ),
+        Index("digests_org_idx", "org_id"),
+    )
 
 
 class Feedback(Base):
@@ -714,6 +726,72 @@ class CardSource(Base):
         ),
         Index("card_sources_card_idx", "card_id"),
         Index("card_sources_lookup_idx", "source_kind", "source_id"),
+    )
+
+
+# -----------------------------------------------------------------------------
+# Notifications + subscriptions (Phase 11)
+# -----------------------------------------------------------------------------
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("orgs.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    membership_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("org_memberships.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    kind: Mapped[str] = mapped_column(Text, nullable=False)
+    value: Mapped[str | None] = mapped_column(Text, nullable=True)
+    enabled: Mapped[bool] = mapped_column(nullable=False, server_default="true")
+    created_at: Mapped[dt.datetime] = _ts_default()
+
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('morning_digest','urgent_immediate','weekly_summary',"
+            "'mention','decision_affecting_subsystem')",
+            name="ck_subscriptions_kind",
+        ),
+        Index("subscriptions_membership_idx", "membership_id"),
+    )
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("orgs.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    membership_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("org_memberships.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    kind: Mapped[str] = mapped_column(Text, nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    channel: Mapped[str] = mapped_column(Text, nullable=False)
+    sent_at: Mapped[dt.datetime] = _ts_default()
+    opened_at: Mapped[dt.datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+    )
+    clicked_at: Mapped[dt.datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+    )
+
+    __table_args__ = (
+        Index("notifications_org_idx", "org_id"),
     )
 
 

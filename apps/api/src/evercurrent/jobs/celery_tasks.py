@@ -14,7 +14,6 @@ from typing import Any
 import structlog
 
 from evercurrent.jobs.celery_app import celery_app
-from evercurrent.realtime import publish_event
 
 log = structlog.get_logger(__name__)
 
@@ -33,13 +32,6 @@ def heartbeat() -> str:
     import datetime as dt
 
     return dt.datetime.now(dt.UTC).isoformat()
-
-
-@celery_app.task(name="evercurrent.generate_all_digests")
-def generate_all_digests(project_id: str, day: int) -> dict[str, Any]:
-    from evercurrent.jobs.tasks.generate_digests import generate_all_digests as impl
-
-    return _run(impl({}, project_id, day))
 
 
 @celery_app.task(name="evercurrent.ingest_document")
@@ -86,23 +78,72 @@ def renew_drive_watches() -> dict[str, Any]:
     return _run(impl())
 
 
-@celery_app.task(name="evercurrent.regenerate_user_digest")
-def regenerate_user_digest(
-    project_id: str,
-    user_id: str,
-    day: int,
-    phase: str | None = None,
+@celery_app.task(name="evercurrent.generate_digest_for_member")
+def generate_digest_for_member(
+    project_member_id: str,
+    day_index: int,
+    phase: str,
+    force: bool = False,
 ) -> dict[str, Any]:
-    from evercurrent.jobs.tasks.regenerate_user_digest import regenerate_user_digest as impl
-
-    result = _run(impl({}, project_id, user_id, day, phase))
-    publish_event(
-        project_id,
-        "digest.updated",
-        {"user_id": user_id, "day": day, "phase": phase},
+    from evercurrent.jobs.tasks.generate_digest_for_member import (
+        generate_digest_for_member as impl,
     )
-    return result
+
+    return _run(impl({}, project_member_id, day_index, phase, force))
+
+
+@celery_app.task(name="evercurrent.enqueue_due_digests_now")
+def enqueue_due_digests_now() -> list[dict[str, Any]]:
+    from evercurrent.digest.scheduler import enqueue_due_digests_now as impl
+
+    return _run(impl())
 
 
 def _new_task_id() -> str:
     return str(_uuid.uuid4())
+
+
+@celery_app.task(
+    name="evercurrent.deliver_digest_dm",
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
+    max_retries=5,
+)
+def deliver_digest_dm(
+    self: Any,
+    digest_id: str,
+    force_quiet: bool = False,
+) -> dict[str, Any]:
+    from evercurrent.jobs.tasks.deliver_digest import deliver_digest_dm_task as impl
+    from evercurrent.notify.slack_deliver import SlackRateLimitedError
+
+    try:
+        return _run(impl({}, digest_id, force_quiet))
+    except SlackRateLimitedError as exc:
+        raise self.retry(exc=exc) from exc
+
+
+@celery_app.task(
+    name="evercurrent.deliver_urgent_dm",
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
+    max_retries=5,
+)
+def deliver_urgent_dm(
+    self: Any,
+    card_id: str,
+    membership_id: str,
+) -> dict[str, Any]:
+    from evercurrent.jobs.tasks.deliver_urgent import deliver_urgent_dm_task as impl
+    from evercurrent.notify.slack_deliver import SlackRateLimitedError
+
+    try:
+        return _run(impl({}, card_id, membership_id))
+    except SlackRateLimitedError as exc:
+        raise self.retry(exc=exc) from exc

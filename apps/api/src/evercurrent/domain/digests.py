@@ -27,15 +27,18 @@ FeedbackSignalField = Annotated[FeedbackSignal, BeforeValidator(_coerce_signal)]
 
 
 class Digest(BaseModel):
+    """Phase 8 digest domain model: per (project_member, day_index)."""
+
     model_config = ConfigDict(strict=True, from_attributes=True)
 
     id: uuid.UUID
-    user_id: uuid.UUID
-    project_id: uuid.UUID
-    day: Annotated[int, Field(ge=1)]
-    phase: Annotated[str, Field(min_length=1, max_length=32)]
+    org_id: uuid.UUID
+    project_member_id: uuid.UUID
+    day_index: Annotated[int, Field(ge=0)]
+    phase: Annotated[str, Field(min_length=1, max_length=64)]
     content_md: str
-    item_message_ids: list[uuid.UUID] = Field(default_factory=list)
+    card_ids: list[uuid.UUID] = Field(default_factory=list)
+    message_ids: list[uuid.UUID] = Field(default_factory=list)
     generated_at: dt.datetime
 
 

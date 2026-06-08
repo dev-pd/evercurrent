@@ -11,6 +11,7 @@ mocking path trivial in tests.
 from __future__ import annotations
 
 import asyncio
+import json
 from typing import Any
 
 import httpx
@@ -188,10 +189,14 @@ class SlackClient:
         text: str,
         username: str | None = None,
         icon_emoji: str | None = None,
+        blocks: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {"channel": channel, "text": text}
         if username is not None:
             payload["username"] = username
         if icon_emoji is not None:
             payload["icon_emoji"] = icon_emoji
+        if blocks is not None:
+            # Slack wants `blocks` as JSON-encoded when posting via form data.
+            payload["blocks"] = json.dumps(blocks)
         return await self._post("chat.postMessage", payload)

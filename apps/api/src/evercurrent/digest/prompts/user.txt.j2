@@ -1,0 +1,34 @@
+Member: {{ member.display_name }} (role: {{ member.role }})
+Owned subsystems: {{ member.owned_subsystems | join(", ") or "(none)" }}
+Project: {{ project.name }}  |  Phase: {{ project.current_phase }}
+Phase concerns: {{ project.phase_concerns | join(", ") or "(none)" }}
+Day index: {{ day_index }}
+
+==== TOP SCORED ITEMS (most-relevant messages, ranked) ====
+{% if top_scored_items %}{% for item in top_scored_items %}
+- [msg:{{ item.message_id }}] score={{ "%.2f"|format(item.score) }} topic={{ item.topic or "?" }} urgency={{ item.urgency or "?" }}
+  by {{ item.author or "?" }} in #{{ item.channel or "?" }} at {{ item.posted_at.isoformat() }}
+  "{{ item.text }}"
+{% endfor %}{% else %}
+(no scored items for today)
+{% endif %}
+
+==== OPEN KNOWLEDGE CARDS AFFECTING YOUR SUBSYSTEMS ====
+{% if open_cards %}{% for card in open_cards %}
+- [card:{{ card.card_id }}] {{ card.kind }} ({{ card.status }}) — {{ card.summary }}
+  subsystems: {{ card.affected_subsystems | join(", ") or "(none)" }}
+  updated_at={{ card.updated_at.isoformat() }}
+{% endfor %}{% else %}
+(no open cards on your subsystems)
+{% endif %}
+
+==== PRIOR DIGESTS (last few days, for continuity) ====
+{% if prior_digests %}{% for pd in prior_digests %}
+--- Day {{ pd.day_index }} ---
+{{ pd.content_md }}
+{% endfor %}{% else %}
+(none)
+{% endif %}
+
+Write today's digest in the exact JSON shape from the system prompt.
+Only cite IDs that appear above. Stay under 400 words.

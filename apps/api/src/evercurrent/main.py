@@ -23,6 +23,7 @@ from evercurrent.api.routes.feedback import router as feedback_router
 from evercurrent.api.routes.jobs import router as jobs_router
 from evercurrent.api.routes.me import router as me_router
 from evercurrent.api.routes.projects import router as projects_router
+from evercurrent.api.routes.subscriptions import router as subscriptions_router
 from evercurrent.api.routes.today import router as today_router
 from evercurrent.api.routes.webhooks import router as webhooks_router
 from evercurrent.auth.auth0 import Auth0Verifier
@@ -110,6 +111,7 @@ def create_app() -> FastAPI:
     app.include_router(today_router)
     app.include_router(connectors_router)
     app.include_router(cards_router)
+    app.include_router(subscriptions_router)
 
     Instrumentator(
         excluded_handlers=["/metrics", "/health"],

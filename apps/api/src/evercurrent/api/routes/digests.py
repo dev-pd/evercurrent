@@ -1,129 +1,144 @@
-"""Digest routes."""
+"""Digest routes.
+
+`GET /api/v1/digests/today` — read-through cache. Returns the latest
+cached digest for the current member; if it is older than today (the
+member's local today), kicks off a regen in the background.
+
+`POST /api/v1/digests/regenerate` — enqueue a forced regen for the
+current member + today. Returns the Celery `job_id`. The dashboard
+listens on the SSE stream for `digest_ready` to refresh.
+"""
 
 from __future__ import annotations
 
 import uuid
-from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
+import structlog
+from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel, ConfigDict
 
-from evercurrent.api.deps import SessionDep
-from evercurrent.api.schemas import DigestItem, DigestResponse, GenerateDigestsResponse
-from evercurrent.db.repositories import (
-    DigestRepository,
-    MessageRepository,
-    ProjectRepository,
-    UserRepository,
+from evercurrent.auth.deps import CurrentUserDep, SessionDep
+from evercurrent.digest import repository as digest_repo
+from evercurrent.digest.scheduler import (
+    day_index_for_member,
+    project_phase_for_member,
 )
-from evercurrent.domain.digests import Digest as DigestDomain
-from evercurrent.jobs.celery_tasks import (
-    generate_all_digests as celery_generate_all_digests,
-)
-from evercurrent.jobs.celery_tasks import (
-    regenerate_user_digest as celery_regenerate_user_digest,
-)
+from evercurrent.jobs.celery_tasks import generate_digest_for_member
+from evercurrent.realtime import publish_event
 
-router = APIRouter(prefix="/digests", tags=["digests"])
+log = structlog.get_logger(__name__)
+
+router = APIRouter(prefix="/api/v1/digests", tags=["digests"])
 
 
-async def _build_response(digest: DigestDomain, session: AsyncSession) -> DigestResponse:
-    """Hydrate item_message_ids with channel + author + text + tag."""
-    msgs = MessageRepository(session)
-    users = UserRepository(session)
-    items: list[DigestItem] = []
-    for mid in digest.item_message_ids:
-        enriched = await msgs.get_enriched(mid)
-        if enriched is None:
-            continue
-        author = await users.get_by_id(enriched.message.author_id)
-        items.append(
-            DigestItem(
-                id=enriched.message.id,
-                channel=enriched.channel_name,
-                author_username=enriched.author_username,
-                author_display_name=author.display_name if author else enriched.author_username,
-                day=enriched.message.day,
-                ts=enriched.message.ts,
-                text=enriched.message.text,
-                topic=enriched.tag.topic if enriched.tag else None,
-                urgency=enriched.tag.urgency.value if enriched.tag else None,
-            ),
+class DigestTodayResponse(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    id: uuid.UUID
+    project_member_id: uuid.UUID
+    day_index: int
+    phase: str
+    content_md: str
+    card_ids: list[uuid.UUID]
+    message_ids: list[uuid.UUID]
+    generated_at: str
+    is_stale: bool
+
+
+class RegenerateResponse(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    job_id: str
+    project_member_id: uuid.UUID
+    day_index: int
+
+
+@router.get("/today", response_model=DigestTodayResponse)
+async def get_today(
+    session: SessionDep,
+    user: CurrentUserDep,
+) -> DigestTodayResponse:
+    today_idx = await day_index_for_member(
+        session,
+        project_member_id=user.membership_id,
+        org_id=user.org_id,
+    )
+    phase = await project_phase_for_member(session, org_id=user.org_id)
+
+    latest = await digest_repo.get_latest_for_member(
+        session,
+        project_member_id=user.membership_id,
+    )
+    if latest is None:
+        # First-ever read: fire a fresh generate for today and 404. The
+        # dashboard will reload via the SSE `digest_ready` event.
+        generate_digest_for_member.delay(
+            str(user.membership_id),
+            today_idx,
+            phase,
+            force=False,
         )
-    return DigestResponse(
-        id=digest.id,
-        user_id=digest.user_id,
-        day=digest.day,
-        phase=digest.phase,
-        content_md=digest.content_md,
-        item_message_ids=digest.item_message_ids,
-        items=items,
-        generated_at=digest.generated_at,
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="digest not yet generated; regen enqueued",
+        )
+
+    is_stale = latest.day_index < today_idx
+    if is_stale:
+        generate_digest_for_member.delay(
+            str(user.membership_id),
+            today_idx,
+            phase,
+            force=False,
+        )
+
+    return DigestTodayResponse(
+        id=latest.id,
+        project_member_id=latest.project_member_id,
+        day_index=latest.day_index,
+        phase=latest.phase,
+        content_md=latest.content_md,
+        card_ids=latest.card_ids,
+        message_ids=latest.message_ids,
+        generated_at=latest.generated_at.isoformat(),
+        is_stale=is_stale,
     )
 
 
 @router.post(
-    "/generate",
-    response_model=GenerateDigestsResponse,
+    "/regenerate",
+    response_model=RegenerateResponse,
     status_code=status.HTTP_202_ACCEPTED,
 )
-async def generate(
+async def regenerate(
     session: SessionDep,
-    day: Annotated[int, Query(ge=1)],
-    project_id: Annotated[uuid.UUID, Query()],
-) -> GenerateDigestsResponse:
-    project = await ProjectRepository(session).get_by_id(project_id)
-    if project is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="project not found")
-    result = celery_generate_all_digests.delay(str(project_id), day)
-    return GenerateDigestsResponse(job_id=result.id, day=day)
-
-
-@router.post(
-    "/{user_id}/regenerate",
-    response_model=GenerateDigestsResponse,
-    status_code=status.HTTP_202_ACCEPTED,
-)
-async def regenerate_for_user(
-    user_id: uuid.UUID,
-    session: SessionDep,
-    day: Annotated[int, Query(ge=1)],
-    project_id: Annotated[uuid.UUID, Query()],
-) -> GenerateDigestsResponse:
-    """Enqueue a per-user regenerate task onto Celery.
-
-    Each call produces a fresh task_id — Celery doesn't dedup against
-    completed results, so re-clicks always re-run.
-    """
-    project = await ProjectRepository(session).get_by_id(project_id)
-    if project is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="project not found")
-    result = celery_regenerate_user_digest.delay(
-        str(project_id),
-        str(user_id),
-        day,
-        project.current_phase,
+    user: CurrentUserDep,
+) -> RegenerateResponse:
+    today_idx = await day_index_for_member(
+        session,
+        project_member_id=user.membership_id,
+        org_id=user.org_id,
     )
-    return GenerateDigestsResponse(job_id=result.id, day=day)
+    phase = await project_phase_for_member(session, org_id=user.org_id)
+    result = generate_digest_for_member.delay(
+        str(user.membership_id),
+        today_idx,
+        phase,
+        force=True,
+    )
 
+    publish_event(
+        user.org_id,
+        "digest_regen_enqueued",
+        {
+            "project_member_id": str(user.membership_id),
+            "day_index": today_idx,
+            "job_id": result.id,
+        },
+    )
 
-@router.get("/{user_id}", response_model=DigestResponse)
-async def get_digest(
-    user_id: uuid.UUID,
-    session: SessionDep,
-    day: Annotated[int, Query(ge=1)],
-    project_id: Annotated[uuid.UUID | None, Query()] = None,
-) -> DigestResponse:
-    """Return the precomputed digest for (user, day, project.current_phase)."""
-    repo = DigestRepository(session)
-    phase: str | None = None
-    if project_id is not None:
-        project = await ProjectRepository(session).get_by_id(project_id)
-        if project is not None:
-            phase = project.current_phase
-    digest = await repo.get(user_id, day, phase=phase)
-    if digest is None and phase is not None:
-        digest = await repo.get(user_id, day)
-    if digest is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="digest not found")
-    return await _build_response(digest, session)
+    return RegenerateResponse(
+        job_id=result.id,
+        project_member_id=user.membership_id,
+        day_index=today_idx,
+    )

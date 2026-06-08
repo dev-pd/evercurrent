@@ -10,7 +10,6 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func, select
 
 from evercurrent.api.deps import SessionDep
-from evercurrent.db.models import Digest as DigestModel
 from evercurrent.db.models import Message as MessageModel
 from evercurrent.db.repositories import ProjectRepository
 
@@ -51,14 +50,10 @@ async def get_today(
     )
     msg_count, last_message_at = msg_count_row.one()
 
-    digest_row = await session.execute(
-        select(func.max(DigestModel.generated_at)).where(
-            DigestModel.project_id == project_id,
-            DigestModel.day == project.current_day,
-            DigestModel.phase == project.current_phase,
-        ),
-    )
-    last_digest_at = digest_row.scalar_one_or_none()
+    # Phase 8 redefined `digests` to (project_member, day_index); there is
+    # no project-wide "last digest" timestamp anymore. The dashboard now
+    # shows per-member generated_at via /digests/today instead.
+    last_digest_at = None
 
     return TodayResponse(
         project_id=project.id,
