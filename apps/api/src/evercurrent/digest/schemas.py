@@ -15,7 +15,39 @@ import datetime as dt
 import uuid
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
+
+
+def _coerce_uuid(v: object) -> uuid.UUID:
+    if isinstance(v, uuid.UUID):
+        return v
+    if isinstance(v, str):
+        return uuid.UUID(v)
+    msg = f"cannot coerce {type(v).__name__} to UUID"
+    raise TypeError(msg)
+
+
+def _coerce_uuid_list(v: object) -> list[uuid.UUID]:
+    if not isinstance(v, list):
+        msg = f"expected list, got {type(v).__name__}"
+        raise TypeError(msg)
+    return [_coerce_uuid(item) for item in v]
+
+
+def _coerce_uuid_dict(v: object) -> dict[str, list[uuid.UUID]]:
+    if not isinstance(v, dict):
+        msg = f"expected dict, got {type(v).__name__}"
+        raise TypeError(msg)
+    out: dict[str, list[uuid.UUID]] = {}
+    for k, vals in v.items():
+        out[str(k)] = _coerce_uuid_list(vals)
+    return out
+
+
+UUIDList = Annotated[list[uuid.UUID], BeforeValidator(_coerce_uuid_list)]
+UUIDDict = Annotated[
+    dict[str, list[uuid.UUID]], BeforeValidator(_coerce_uuid_dict),
+]
 
 
 class MemberProfile(BaseModel):
@@ -96,11 +128,15 @@ SectionBucketT = Literal["top_priority", "watch_outs", "fyi"]
 
 
 class DigestDraft(BaseModel):
-    """Sonnet's structured output for one digest."""
+    """Sonnet's structured output for one digest.
+
+    Strict on field types; UUID fields accept string forms via the
+    `_coerce_uuid` BeforeValidators because the model emits JSON strings.
+    """
 
     model_config = ConfigDict(strict=True)
 
     content_md: Annotated[str, Field(min_length=20)]
-    card_ids: list[uuid.UUID] = Field(default_factory=list)
-    message_ids: list[uuid.UUID] = Field(default_factory=list)
-    section_buckets: dict[str, list[uuid.UUID]] = Field(default_factory=dict)
+    card_ids: UUIDList = Field(default_factory=list)
+    message_ids: UUIDList = Field(default_factory=list)
+    section_buckets: UUIDDict = Field(default_factory=dict)

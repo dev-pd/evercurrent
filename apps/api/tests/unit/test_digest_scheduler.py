@@ -18,6 +18,7 @@ from freezegun import freeze_time
 import evercurrent.digest.agent as agent_mod
 import evercurrent.digest.repository as repo_mod
 from evercurrent.digest.scheduler import members_due_at
+from evercurrent.digest.schemas import MemberProfile, ProjectSnapshot
 from evercurrent.domain.digests import Digest
 
 
@@ -29,13 +30,13 @@ def _make_membership(tz_name: str) -> dict[str, Any]:
     }
 
 
-@freeze_time("2026-06-07 16:00:00")  # 16:00 UTC -> 08:00 PST, 01:00 JST, 16:00 UTC
+@freeze_time("2026-06-07 15:00:00")  # 15:00 UTC -> 08:00 PDT (Los Angeles, DST)
 def test_beat_emits_one_task_per_member_at_8am_local() -> None:
     utc_member = _make_membership("UTC")
     pst_member = _make_membership("America/Los_Angeles")
     jst_member = _make_membership("Asia/Tokyo")
 
-    now_utc = dt.datetime(2026, 6, 7, 16, 0, tzinfo=dt.UTC)
+    now_utc = dt.datetime(2026, 6, 7, 15, 0, tzinfo=dt.UTC)
 
     due = members_due_at(
         now_utc,
@@ -149,8 +150,6 @@ async def test_force_regen_replaces_existing(
         _session: Any,
         _mid: uuid.UUID,
     ) -> tuple[Any, uuid.UUID]:
-        from evercurrent.digest.schemas import MemberProfile
-
         return (
             MemberProfile(
                 project_member_id=member_id,
@@ -167,8 +166,6 @@ async def test_force_regen_replaces_existing(
         return None
 
     async def fake_load_project(*_args: Any, **_kwargs: Any) -> Any:
-        from evercurrent.digest.schemas import ProjectSnapshot
-
         return ProjectSnapshot(
             project_id=uuid.UUID(int=0),
             name="Test",
