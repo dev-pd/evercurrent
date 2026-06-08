@@ -118,6 +118,45 @@ ngrok: ## Expose port 8000 publicly for Slack/Drive webhooks (needs `ngrok` on P
 	@command -v ngrok >/dev/null 2>&1 || { echo "Install ngrok: brew install ngrok/ngrok/ngrok"; exit 1; }
 	ngrok http 8000
 
+# ----- Monitoring (opt-in profile) -------------------------------------------
+
+.PHONY: up-monitor
+up-monitor: ## Start stack + monitoring (prometheus + loki + promtail + grafana)
+	$(COMPOSE) --profile monitor up -d --build
+
+.PHONY: monitor
+monitor: ## Open Grafana in browser
+	@open http://localhost:3001 || xdg-open http://localhost:3001 || echo "Visit http://localhost:3001"
+
+.PHONY: logs-pretty
+logs-pretty: ## Tail api logs and pretty-print structlog JSON
+	@command -v jq >/dev/null 2>&1 || { echo "Install jq: brew install jq"; exit 1; }
+	$(COMPOSE) logs -f api worker beat | grep --line-buffered -E '^\S+\s+\|' | sed -u 's/^[^|]*| //' | jq -r 'select(.event != null) | "\(.timestamp // "") \(.level // "info" | ascii_upcase | .[0:4]) \(.event) \(. | del(.timestamp, .level, .event) | to_entries | map("\(.key)=\(.value)") | join(" "))"' 2>/dev/null
+
+.PHONY: prune
+prune: ## DESTRUCTIVE: nuke containers + volumes + dangling images for this project
+	$(COMPOSE) --profile dev --profile monitor down -v --remove-orphans
+	docker system prune -f
+	@echo "Pruned. Run 'make up' or 'make up-monitor' to start fresh."
+
+# ----- Slack demo -----------------------------------------------------------
+
+.PHONY: slack-seed
+slack-seed: ## Post hardware-team demo messages to your Slack workspace
+	@if [ -z "$$SLACK_DEMO_BOT_TOKEN" ]; then \
+		echo "ERROR: SLACK_DEMO_BOT_TOKEN not set."; \
+		echo ""; \
+		echo "1. Go to https://api.slack.com/apps and create an app"; \
+		echo "2. OAuth & Permissions -> add Bot Token Scopes: chat:write, channels:history, groups:history"; \
+		echo "3. Install to workspace, copy 'Bot User OAuth Token' (xoxb-...)"; \
+		echo "4. Create channels: #mech-design, #qa-testing, #supply-chain, #general"; \
+		echo "5. Invite the bot to each channel: /invite @<your-app>"; \
+		echo "6. export SLACK_DEMO_BOT_TOKEN=xoxb-..."; \
+		echo "7. make slack-seed"; \
+		exit 1; \
+	fi
+	$(API_RUN) python -m apps.api.seed_data.slack_seed
+
 .PHONY: install-hooks
 install-hooks: ## Install pre-commit git hooks
 	pre-commit install

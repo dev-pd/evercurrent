@@ -168,8 +168,67 @@ services:
       - web_dev_node_modules:/app/node_modules
       - web_dev_next:/app/.next
 
+  # ----- Monitoring stack (opt-in: docker compose --profile monitor up) ------
+  prometheus:
+    profiles: ["monitor"]
+    image: prom/prometheus:v3.0.1
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    ports:
+      - "9090:9090"
+
+  loki:
+    profiles: ["monitor"]
+    image: grafana/loki:3.3.2
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes:
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+
+  promtail:
+    profiles: ["monitor"]
+    image: grafana/promtail:3.3.2
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./monitoring/promtail/promtail.yml:/etc/promtail/promtail.yml:ro
+    command: ["-config.file=/etc/promtail/promtail.yml"]
+    depends_on:
+      - loki
+
+  grafana:
+    profiles: ["monitor"]
+    image: grafana/grafana:11.4.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_DEFAULT_THEME: dark
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+      - loki
+
 volumes:
   postgres_data:
   redis_data:
   web_dev_node_modules:
   web_dev_next:
+  prometheus_data:
+  loki_data:
+  grafana_data:

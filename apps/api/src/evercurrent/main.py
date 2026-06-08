@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import text
 
 from evercurrent.api.middleware import RequestIDMiddleware
@@ -107,6 +108,10 @@ def create_app() -> FastAPI:
     app.include_router(jobs_router)
     app.include_router(today_router)
     app.include_router(connectors_router)
+
+    Instrumentator(
+        excluded_handlers=["/metrics", "/health"],
+    ).instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
     return app
 

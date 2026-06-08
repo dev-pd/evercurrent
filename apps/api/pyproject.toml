@@ -39,6 +39,8 @@ dependencies = [
 
     # Observability
     "structlog>=24.4",
+    "prometheus-fastapi-instrumentator>=7.0",
+    "prometheus-client>=0.21",
 ]
 
 [dependency-groups]
