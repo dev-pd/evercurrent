@@ -444,5 +444,50 @@ class Feedback(Base):
     __table_args__ = (CheckConstraint("signal IN (-1, 1)", name="ck_feedback_signal"),)
 
 
+# -----------------------------------------------------------------------------
+# Multi-tenancy (Phase 2)
+# -----------------------------------------------------------------------------
+
+
+class Org(Base):
+    __tablename__ = "orgs"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    auth0_org_id: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    plan: Mapped[str] = mapped_column(Text, nullable=False, server_default="free")
+    region: Mapped[str] = mapped_column(Text, nullable=False, server_default="us-east")
+    itar: Mapped[bool] = mapped_column(
+        nullable=False,
+        server_default="false",
+    )
+    created_at: Mapped[dt.datetime] = _ts_default()
+
+
+class OrgMembership(Base):
+    __tablename__ = "org_memberships"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("orgs.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    auth0_user_id: Mapped[str] = mapped_column(Text, nullable=False, index=True)
+    slack_user_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    display_name: Mapped[str] = mapped_column(Text, nullable=False)
+    email: Mapped[str] = mapped_column(Text, nullable=False)
+    role: Mapped[str] = mapped_column(Text, nullable=False, server_default="member")
+    timezone: Mapped[str] = mapped_column(Text, nullable=False, server_default="UTC")
+    quiet_start: Mapped[dt.time | None] = mapped_column(nullable=True)
+    quiet_end: Mapped[dt.time | None] = mapped_column(nullable=True)
+    created_at: Mapped[dt.datetime] = _ts_default()
+
+    __table_args__ = (
+        CheckConstraint("role IN ('admin','member')", name="org_memberships_role_check"),
+        Index("org_memberships_unique", "org_id", "auth0_user_id", unique=True),
+    )
+
+
 # Used by Alembic via target_metadata.
 metadata = Base.metadata

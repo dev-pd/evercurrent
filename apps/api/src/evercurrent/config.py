@@ -42,6 +42,31 @@ class Settings(BaseSettings):
     # Frontend
     next_public_api_url: str = "/api"
 
+    # Auth0 (Phase 2)
+    auth0_domain: str | None = None
+    auth0_audience: str = "https://api.evercurrent.local"
+    auth0_client_id: str | None = None
+    auth0_client_secret: str | None = None
+    auth0_webhook_secret: str | None = None
+
+    # Slack (Phase 3)
+    slack_client_id: str | None = None
+    slack_client_secret: str | None = None
+    slack_signing_secret: str | None = None
+
+    # Google Drive (Phase 10)
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
+    google_redirect_uri: str = (
+        "http://localhost:8000/api/v1/connectors/drive/oauth/callback"
+    )
+
+    # Webhook public URL (ngrok in dev)
+    webhook_public_url: str | None = None
+
+    # Crypto: 32-byte base64 Fernet key used to encrypt connector tokens
+    connector_secret_key: str | None = None
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

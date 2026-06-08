@@ -32,6 +32,11 @@ dependencies = [
     "anthropic>=0.40",
     "voyageai>=0.3",
 
+    # Auth
+    "python-jose[cryptography]>=3.3",
+    "httpx>=0.27",
+    "cryptography>=44",  # used by python-jose + connector token encryption
+
     # Observability
     "structlog>=24.4",
 ]

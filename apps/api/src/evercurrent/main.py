@@ -18,10 +18,14 @@ from evercurrent.api.routes.documents import router as documents_router
 from evercurrent.api.routes.events import router as events_router
 from evercurrent.api.routes.feedback import router as feedback_router
 from evercurrent.api.routes.jobs import router as jobs_router
+from evercurrent.api.routes.me import router as me_router
 from evercurrent.api.routes.projects import router as projects_router
 from evercurrent.api.routes.today import router as today_router
+from evercurrent.api.routes.webhooks import router as webhooks_router
+from evercurrent.auth.auth0 import Auth0Verifier
 from evercurrent.config import get_settings
 from evercurrent.db.session import dispose_engine, get_sessionmaker, init_engine
+from evercurrent.tenancy.middleware import TenancyLoggingMiddleware
 
 
 def _configure_logging(level: str) -> None:
@@ -38,13 +42,23 @@ def _configure_logging(level: str) -> None:
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     _configure_logging(settings.log_level)
     init_engine()
+    if settings.auth0_domain:
+        app.state.auth0_verifier = Auth0Verifier(
+            domain=settings.auth0_domain,
+            audience=settings.auth0_audience,
+        )
+    else:
+        app.state.auth0_verifier = None
     try:
         yield
     finally:
+        verifier: Auth0Verifier | None = app.state.auth0_verifier
+        if verifier is not None:
+            await verifier.aclose()
         await dispose_engine()
 
 
@@ -59,6 +73,7 @@ def create_app() -> FastAPI:
     app.state.settings = settings
 
     app.add_middleware(RequestIDMiddleware)
+    app.add_middleware(TenancyLoggingMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -81,6 +96,8 @@ def create_app() -> FastAPI:
             checks["db"] = "ok"
         return {"status": "ok", "checks": checks}
 
+    app.include_router(me_router)
+    app.include_router(webhooks_router)
     app.include_router(projects_router)
     app.include_router(digests_router)
     app.include_router(feedback_router)
