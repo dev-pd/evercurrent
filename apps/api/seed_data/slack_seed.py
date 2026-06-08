@@ -5,10 +5,13 @@ Run from the repo root:
     SLACK_DEMO_BOT_TOKEN=xoxb-... uv run --project apps/api \
         python -m apps.api.seed_data.slack_seed
 
-The script expects channels `#mech-design`, `#qa-testing`,
-`#supply-chain`, and `#general` to exist and the bot to be invited
-(`/invite @evercurrent` in each). Sleeps between posts to stay under
-the `chat.postMessage` rate limit.
+The script will:
+1. Ensure each channel exists (creates if missing).
+2. Join the bot to each channel.
+3. Post the seed corpus.
+
+Required bot scopes: `chat:write`, `channels:manage`,
+`channels:join`, `channels:read`.
 """
 
 from __future__ import annotations
@@ -17,7 +20,7 @@ import asyncio
 import os
 import sys
 from dataclasses import dataclass
-from typing import Final
+from typing import Any, Final, cast
 
 import structlog
 
@@ -26,20 +29,22 @@ from evercurrent.connectors.slack.client import SlackAPIError, SlackClient
 log = structlog.get_logger(__name__)
 
 POST_DELAY_SECONDS: Final[float] = 0.25
+CHANNELS: Final[tuple[str, ...]] = (
+    "mech-design",
+    "qa-testing",
+    "supply-chain",
+    "general",
+)
 
 
 @dataclass(frozen=True)
 class SeedMessage:
-    """A single message in the seed corpus."""
-
     channel: str
     author: str
     icon_emoji: str
     text: str
 
 
-# A hand-written hardware-team day. Order is intentional: a supplier
-# disruption ripples through mech-design, qa-testing, and general by EOD.
 SEED_CORPUS: tuple[SeedMessage, ...] = (
     SeedMessage(
         channel="#supply-chain",
@@ -76,7 +81,7 @@ SEED_CORPUS: tuple[SeedMessage, ...] = (
         author="Sarah (mech)",
         icon_emoji=":wrench:",
         text=(
-            "Heads up — if AlumWest CTE shifts more than 5%% we'll need "
+            "Heads up — if AlumWest CTE shifts more than 5% we'll need "
             "to revisit the rib pitch on ECO-178. Watching Lin's numbers."
         ),
     ),
@@ -95,7 +100,7 @@ SEED_CORPUS: tuple[SeedMessage, ...] = (
         author="Lin (qa)",
         icon_emoji=":mag:",
         text=(
-            "AlumWest FAI cleared at +2.1%% CTE. Inside the rib pitch "
+            "AlumWest FAI cleared at +2.1% CTE. Inside the rib pitch "
             "envelope. Signing off on the swap. ECO-178 stays on track."
         ),
     ),
@@ -111,9 +116,41 @@ SEED_CORPUS: tuple[SeedMessage, ...] = (
 )
 
 
+async def _ensure_channel(client: SlackClient, name: str) -> str:
+    """Create the channel if missing, join the bot, return channel id."""
+    existing = await client.list_all_channels()
+    for ch in existing:
+        if ch.name == name:
+            cid = ch.id
+            try:
+                await cast(Any, client)._post("conversations.join", {"channel": cid})
+            except SlackAPIError as exc:
+                log.info("slack.seed.join_skip", channel=name, reason=exc.error)
+            return cid
+
+    try:
+        resp = await cast(Any, client)._post(
+            "conversations.create",
+            {"name": name, "is_private": "false"},
+        )
+        cid = cast(str, resp["channel"]["id"])
+        log.info("slack.seed.created", channel=name, id=cid)
+        return cid
+    except SlackAPIError as exc:
+        log.error("slack.seed.create_failed", channel=name, error=exc.error)
+        raise
+
+
 async def post_seed(bot_token: str) -> None:
     client = SlackClient(bot_token=bot_token)
     try:
+        log.info("slack.seed.ensuring_channels", channels=list(CHANNELS))
+        for name in CHANNELS:
+            try:
+                await _ensure_channel(client, name)
+            except SlackAPIError:
+                continue
+
         for msg in SEED_CORPUS:
             try:
                 await client.chat_post_message(

@@ -18,6 +18,10 @@ from starlette.responses import RedirectResponse
 
 from evercurrent.auth.deps import CurrentUserDep, SessionDep
 from evercurrent.config import get_settings
+from evercurrent.connectors.drive import install as drive_install
+from evercurrent.connectors.drive.client import DriveClient
+from evercurrent.connectors.drive.watch import register_watch
+from evercurrent.connectors.drive.webhook import discover_folders
 from evercurrent.connectors.slack import install as slack_install
 from evercurrent.connectors.slack.crypto import TokenVault
 from evercurrent.db import models
@@ -48,6 +52,20 @@ class ChannelTogglePayload(BaseModel):
     model_config = ConfigDict(strict=True)
 
     ingest: bool
+
+
+class DriveFolderSummary(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    id: str
+    name: str
+
+
+class DriveFolderSelection(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    ingest: bool = True
+    name: str | None = None
 
 
 def _vault() -> TokenVault:
@@ -134,6 +152,108 @@ async def slack_oauth_callback(
     log.info("slack.install.callback_complete", connector_id=str(connector_id))
 
     return RedirectResponse(url="/connectors", status_code=status.HTTP_302_FOUND)
+
+
+@router.post("/drive/install")
+async def drive_install_start(current_user: CurrentUserDep) -> InstallResponse:
+    settings = get_settings()
+    if settings.google_client_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="google_client_id not configured",
+        )
+    url = drive_install.build_install_url(
+        org_id=current_user.org_id,
+        settings=settings,
+    )
+    return InstallResponse(redirect_url=url)
+
+
+@router.get("/drive/oauth/callback")
+async def drive_oauth_callback(
+    session: SessionDep,
+    code: Annotated[str, Query(min_length=1)],
+    state: Annotated[str, Query(min_length=1)],
+) -> RedirectResponse:
+    settings = get_settings()
+    try:
+        connector_id = await drive_install.exchange_and_persist(
+            session=session,
+            settings=settings,
+            vault=_vault(),
+            code=code,
+            state_token=state,
+            installed_by_membership_id=None,
+        )
+    except drive_install.InstallStateError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    await session.commit()
+    log.info("drive.install.callback_complete", connector_id=str(connector_id))
+
+    return RedirectResponse(url="/connectors", status_code=status.HTTP_302_FOUND)
+
+
+@router.get("/{connector_id}/folders")
+async def list_drive_folders(
+    connector_id: uuid.UUID,
+    session: SessionDep,
+    current_user: CurrentUserDep,
+) -> list[DriveFolderSummary]:
+    connector = await session.get(models.Connector, connector_id)
+    if connector is None or connector.org_id != current_user.org_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="connector not found",
+        )
+    folders = await discover_folders(
+        session=session,
+        settings=get_settings(),
+        vault=_vault(),
+        connector_id=connector_id,
+    )
+    return [DriveFolderSummary(**f) for f in folders]
+
+
+@router.post("/{connector_id}/folders/{folder_id}")
+async def select_drive_folder(
+    connector_id: uuid.UUID,
+    folder_id: str,
+    payload: DriveFolderSelection,
+    session: SessionDep,
+    current_user: CurrentUserDep,
+) -> dict[str, str]:
+    """Register a watch on the chosen folder + persist a connector_channels row."""
+    connector = await session.get(models.Connector, connector_id)
+    if connector is None or connector.org_id != current_user.org_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="connector not found",
+        )
+    settings = get_settings()
+    vault = _vault()
+    import json as _json
+
+    blob = vault.decrypt(connector.credentials_secret)
+    token_payload = _json.loads(blob)
+    access_token = str(token_payload["access_token"])
+    client = DriveClient(access_token=access_token)
+    try:
+        record = await register_watch(
+            session=session,
+            settings=settings,
+            drive_client=client,
+            connector_id=connector_id,
+            folder_id=folder_id,
+            folder_name=payload.name,
+        )
+    finally:
+        await client.aclose()
+    await session.commit()
+    return {"channel_id": record.channel_id, "folder_id": folder_id}
 
 
 @router.post("/{connector_id}/channels/{external_id}")

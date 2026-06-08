@@ -1,0 +1,13 @@
+Project phase: {{ project_phase }}
+
+Channel: #{{ channel }}
+Author: {{ author_display_name }} ({{ author_role }})
+{% if thread_parent_text %}
+Thread parent:
+{{ thread_parent_text }}
+---
+{% endif %}
+Message:
+{{ message_text }}
+
+Classify this message. Return JSON only.

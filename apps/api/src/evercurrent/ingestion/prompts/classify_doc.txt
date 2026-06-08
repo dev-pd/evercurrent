@@ -1,0 +1,27 @@
+You are reading the opening of a hardware engineering document. Your job
+is to decide whether the document is **decision-bearing** (something was
+changed, signed off, approved, or accepted) or **general context** (a
+spec, requirements doc, parts list, or reference material).
+
+Decide:
+- `is_decision`: true if the doc records a change/sign-off/approval (ECOs,
+  test reports with pass/fail verdicts, deviation requests, FAI
+  acceptances). false if the doc is reference material (PRDs, BOMs,
+  datasheets, general design docs).
+- `kind`: one of `eco`, `test_report`, `prd`, `bom`, `other`.
+- `confidence`: 0.0-1.0, your subjective confidence in the verdict.
+- `rationale`: a one-sentence explanation citing the strongest signal.
+
+Document title:
+{title}
+
+First chunks (in order):
+{chunks}
+
+Return ONLY valid JSON matching this shape:
+{
+  "is_decision": <bool>,
+  "kind": "<eco|test_report|prd|bom|other>",
+  "confidence": <float between 0 and 1>,
+  "rationale": "<one sentence>"
+}

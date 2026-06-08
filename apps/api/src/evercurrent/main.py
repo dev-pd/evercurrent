@@ -14,6 +14,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import text
 
 from evercurrent.api.middleware import RequestIDMiddleware
+from evercurrent.api.routes.cards import router as cards_router
 from evercurrent.api.routes.connectors import router as connectors_router
 from evercurrent.api.routes.digests import router as digests_router
 from evercurrent.api.routes.documents import router as documents_router
@@ -108,6 +109,7 @@ def create_app() -> FastAPI:
     app.include_router(jobs_router)
     app.include_router(today_router)
     app.include_router(connectors_router)
+    app.include_router(cards_router)
 
     Instrumentator(
         excluded_handlers=["/metrics", "/health"],

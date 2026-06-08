@@ -1,0 +1,82 @@
+"""Pydantic schemas for Card drafting + API responses.
+
+`CardDraft` is what Sonnet emits; we persist it to the `cards` row.
+`CardSourceRef` is what the read API returns inline with each Card.
+`CardListItem` and `CardResponse` are the route response shapes.
+"""
+
+from __future__ import annotations
+
+import datetime as dt
+import uuid
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+CardKindT = Literal["decision", "risk", "question"]
+CardStatusT = Literal["open", "resolved", "dismissed"]
+SourceKindT = Literal["message", "document_chunk", "pr"]
+
+
+class CardDraft(BaseModel):
+    """Sonnet's structured output when drafting a new Card."""
+
+    model_config = ConfigDict(strict=True, frozen=True)
+
+    summary: str = Field(min_length=10, max_length=200)
+    body: str = Field(min_length=20)
+    affected_subsystems: list[str]
+    confidence: float = Field(ge=0.0, le=1.0)
+    decided_at: dt.datetime | None = None
+
+
+class CardSourceRef(BaseModel):
+    """A single source citation, returned inline with a Card detail."""
+
+    model_config = ConfigDict(strict=True, frozen=True)
+
+    source_kind: SourceKindT
+    source_id: uuid.UUID
+    snippet: str | None = None
+
+
+class CardListItem(BaseModel):
+    """Compact list-row representation of a Card."""
+
+    model_config = ConfigDict(strict=True)
+
+    id: uuid.UUID
+    kind: CardKindT
+    summary: str
+    status: CardStatusT
+    confidence: float
+    decided_at: dt.datetime | None = None
+    sources_count: int
+    updated_at: dt.datetime
+
+
+class CardResponse(BaseModel):
+    """Full Card detail with expanded source citations."""
+
+    model_config = ConfigDict(strict=True)
+
+    id: uuid.UUID
+    kind: CardKindT
+    summary: str
+    body: str
+    status: CardStatusT
+    confidence: float
+    decided_at: dt.datetime | None = None
+    affected_subsystems: list[str]
+    sources: list[CardSourceRef]
+    created_at: dt.datetime
+    updated_at: dt.datetime
+
+
+class CardFeedbackPayload(BaseModel):
+    """User feedback on a Card; bumps the user's topic weights."""
+
+    model_config = ConfigDict(strict=True)
+
+    signal: Literal[-1, 1]
+    topic: str | None = None

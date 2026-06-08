@@ -49,6 +49,27 @@ def ingest_document(document_id: str) -> dict[str, Any]:
     return _run(impl({}, document_id))
 
 
+@celery_app.task(name="evercurrent.route_message")
+def route_message(raw_event_id: str) -> dict[str, Any]:
+    from evercurrent.jobs.tasks.route_message import route_message as impl
+
+    return _run(impl({}, raw_event_id))
+
+
+@celery_app.task(name="evercurrent.build_card")
+def build_card(message_id: str, kind: str, summary_hint: str) -> dict[str, Any]:
+    from evercurrent.jobs.tasks.build_card import build_card as impl
+
+    return _run(impl({}, message_id, kind, summary_hint))
+
+
+@celery_app.task(name="evercurrent.score_message_for_members")
+def score_message_for_members(message_id: str) -> dict[str, Any]:
+    from evercurrent.jobs.tasks.score_message import score_message_for_members as impl
+
+    return _run(impl({}, message_id))
+
+
 @celery_app.task(name="evercurrent.regenerate_user_digest")
 def regenerate_user_digest(
     project_id: str,
