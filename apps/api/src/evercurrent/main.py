@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from evercurrent.api.middleware import RequestIDMiddleware
+from evercurrent.api.routes.connectors import router as connectors_router
 from evercurrent.api.routes.digests import router as digests_router
 from evercurrent.api.routes.documents import router as documents_router
 from evercurrent.api.routes.events import router as events_router
@@ -105,6 +106,7 @@ def create_app() -> FastAPI:
     app.include_router(events_router)
     app.include_router(jobs_router)
     app.include_router(today_router)
+    app.include_router(connectors_router)
 
     return app
 

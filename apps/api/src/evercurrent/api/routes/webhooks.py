@@ -2,23 +2,27 @@
 
 Currently:
 - POST /api/v1/webhooks/auth0  — org + user provisioning events from Auth0.
+- POST /api/v1/webhooks/slack  — Slack Events API.
 
-Phase 3 adds /api/v1/webhooks/slack. Phase 10 adds /api/v1/webhooks/drive.
+Phase 10 adds /api/v1/webhooks/drive.
 """
 
 from __future__ import annotations
 
 import hmac
+import json
 from hashlib import sha256
 from typing import Annotated, Any, Literal
 
 import structlog
-from fastapi import APIRouter, Header, HTTPException, Request, status
+from fastapi import APIRouter, Header, HTTPException, Request, Response, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 
 from evercurrent.auth.deps import SessionDep
 from evercurrent.config import get_settings
+from evercurrent.connectors.slack.events import handle_event as handle_slack_event
+from evercurrent.connectors.slack.tasks import enqueue_route_message
 from evercurrent.db.models import Org, OrgMembership
 
 log = structlog.get_logger(__name__)
@@ -149,3 +153,28 @@ async def auth0_webhook(
     await handler(session, payload)
     await session.commit()
     return {"ok": True}
+
+
+@router.post("/slack")
+async def slack_webhook(
+    request: Request,
+    session: SessionDep,
+    x_slack_signature: Annotated[str | None, Header()] = None,
+    x_slack_request_timestamp: Annotated[str | None, Header()] = None,
+) -> Response:
+    """Slack Events API webhook. Verify, persist raw, enqueue, ack."""
+    body = await request.body()
+    settings = get_settings()
+    result = await handle_slack_event(
+        session=session,
+        settings=settings,
+        body=body,
+        timestamp=x_slack_request_timestamp,
+        signature=x_slack_signature,
+        enqueue_route_message=enqueue_route_message,
+    )
+    return Response(
+        content=json.dumps(result.body),
+        status_code=result.status_code,
+        media_type="application/json",
+    )

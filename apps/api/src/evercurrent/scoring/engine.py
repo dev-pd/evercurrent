@@ -1,131 +1,81 @@
-"""Scoring engine.
+"""Pure-Python relevance scoring.
 
-`score_messages_for_user` takes a list of EnrichedMessages, a user, and a
-project, and emits ScoredMessage objects ranked highest-first. The engine
-is pure: it does not touch the DB. Repositories load EnrichedMessages and
-hand them in; the service layer calls this and persists results.
+Six deterministic signals are combined as a weighted sum, then clamped to
+`[0, 1]`. No I/O, no LLM, sub-millisecond. The breakdown is part of the
+return value so the dashboard can answer "why is this in my top 5."
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from dataclasses import dataclass
+from evercurrent.scoring.schemas import ScoreInput, ScoreResult
+from evercurrent.scoring.weights import DEFAULT_WEIGHTS, Weights
 
-from evercurrent.domain.messages import EnrichedMessage, Urgency
-from evercurrent.domain.projects import Project
-from evercurrent.domain.users import User
-from evercurrent.scoring.weights import Weights, default_weights
+_URGENCY_MAP: dict[str, float] = {
+    "critical": 1.0,
+    "high": 0.6,
+    "normal": 0.3,
+    "low": 0.0,
+}
 
-
-def _dependency_match(
-    entities: list[str],
-    owned_subsystems: list[str],
-    owned_parts: list[str],
-) -> bool:
-    owned = {s.lower() for s in owned_subsystems} | {p.lower() for p in owned_parts}
-    return any(e.lower() in owned for e in entities)
-
-_THREAD_ACTIVITY_THRESHOLD = 5
-_DEFAULT_TOP_N = 20
+_PHASE_CONCERN_HIT: float = 0.7
+_CROSS_FUNCTIONAL_HIT: float = 0.4
 
 
-@dataclass(frozen=True, slots=True)
-class ScoredMessage:
-    enriched: EnrichedMessage
-    score: float
-    breakdown: dict[str, float]
-
-    @property
-    def message_id(self) -> str:
-        return str(self.enriched.message.id)
+def _role_match(inp: ScoreInput) -> float:
+    return 1.0 if inp.member_role in inp.message_affected_roles else 0.0
 
 
-def _phase_concerns_for(project: Project) -> set[str]:
-    concerns = project.phase_concerns.get(project.current_phase, [])
-    return {c.lower() for c in concerns}
+def _subsystem_match(inp: ScoreInput) -> float:
+    owned = set(inp.owned_subsystems)
+    overlap = sum(1 for e in inp.message_entities if e in owned)
+    return min(1.0, float(overlap))
 
 
-def score_message_for_user(
-    enriched: EnrichedMessage,
-    user: User,
-    project: Project,
-    *,
-    thread_reply_count: int = 0,
-    weights: Weights | None = None,
-) -> ScoredMessage:
-    """Score one enriched message for one user. Pure function."""
-    w = weights or default_weights()
-    breakdown: dict[str, float] = {}
-    score = 0.0
-
-    tag = enriched.tag
-    urgency = tag.urgency if tag else Urgency.LOW
-
-    # 1. Role-direct hit.
-    if tag and user.role.value in tag.affected_roles:
-        score += w.role_direct
-        breakdown["role_direct"] = w.role_direct
-
-    # 2. Cross-functional dependency hit (owned subsystem/part appears in entities).
-    if tag and _dependency_match(tag.entities, user.owned_subsystems, user.owned_parts):
-        score += w.cross_functional
-        breakdown["cross_functional"] = w.cross_functional
-
-    # 3. Urgency.
-    urgency_value = w.urgency.get(urgency, 0.0)
-    if urgency_value:
-        score += urgency_value
-        breakdown["urgency"] = urgency_value
-
-    # 4. Thread activity (active threads matter more).
-    if thread_reply_count >= _THREAD_ACTIVITY_THRESHOLD:
-        score += w.thread_activity
-        breakdown["thread_activity"] = w.thread_activity
-
-    # 5. Phase concern match — topic intersects this phase's concerns.
-    if tag:
-        concerns = _phase_concerns_for(project)
-        topic_lower = tag.topic.lower().replace("_", " ")
-        if any(c in topic_lower or topic_lower in c for c in concerns):
-            score += w.phase_match
-            breakdown["phase_match"] = w.phase_match
-
-    # 6. Per-user learned topic weight (from thumbs feedback).
-    if tag:
-        learned = float(user.topic_weights.get(tag.topic, 0.0))
-        if learned:
-            score += w.feedback_unit * learned
-            breakdown["feedback"] = w.feedback_unit * learned
-
-    return ScoredMessage(enriched=enriched, score=score, breakdown=breakdown)
+def _urgency_boost(inp: ScoreInput) -> float:
+    if inp.message_urgency is None:
+        return 0.0
+    return _URGENCY_MAP.get(inp.message_urgency, 0.0)
 
 
-def score_messages_for_user(
-    enriched_messages: Sequence[EnrichedMessage],
-    user: User,
-    project: Project,
-    *,
-    thread_reply_counts: dict[str, int] | None = None,
-    weights: Weights | None = None,
-    top_n: int | None = _DEFAULT_TOP_N,
-) -> list[ScoredMessage]:
-    """Score and rank all messages for one user. Returns top_n highest-first."""
-    counts = thread_reply_counts or {}
-    scored: list[ScoredMessage] = []
-    for em in enriched_messages:
-        replies = 0
-        if em.message.thread_root_id is not None:
-            replies = counts.get(str(em.message.thread_root_id), 0)
-        else:
-            replies = counts.get(str(em.message.id), 0)
-        scored.append(
-            score_message_for_user(
-                em,
-                user,
-                project,
-                thread_reply_count=replies,
-                weights=weights,
-            ),
-        )
-    scored.sort(key=lambda s: (-s.score, s.enriched.message.ts))
-    return scored if top_n is None else scored[:top_n]
+def _phase_concern_match(inp: ScoreInput) -> float:
+    if inp.message_topic is None:
+        return 0.0
+    return _PHASE_CONCERN_HIT if inp.message_topic in inp.phase_concerns else 0.0
+
+
+def _topic_weight(inp: ScoreInput) -> float:
+    if inp.message_topic is None:
+        return 0.0
+    raw = inp.topic_weights.get(inp.message_topic, 0.0)
+    return max(-1.0, min(1.0, raw))
+
+
+def _cross_functional(inp: ScoreInput) -> float:
+    if inp.author_role == inp.member_role:
+        return 0.0
+    owned = set(inp.owned_subsystems)
+    has_overlap = any(e in owned for e in inp.message_entities)
+    return _CROSS_FUNCTIONAL_HIT if has_overlap else 0.0
+
+
+def score(inp: ScoreInput, weights: Weights | None = None) -> ScoreResult:
+    """Score one (message, member) pair. Pure function, deterministic."""
+    w = weights or DEFAULT_WEIGHTS
+    breakdown: dict[str, float] = {
+        "role_match": _role_match(inp),
+        "subsystem_match": _subsystem_match(inp),
+        "urgency_boost": _urgency_boost(inp),
+        "phase_concern_match": _phase_concern_match(inp),
+        "topic_weight": _topic_weight(inp),
+        "cross_functional": _cross_functional(inp),
+    }
+    raw = (
+        w.role_match * breakdown["role_match"]
+        + w.subsystem_match * breakdown["subsystem_match"]
+        + w.urgency_boost * breakdown["urgency_boost"]
+        + w.phase_concern_match * breakdown["phase_concern_match"]
+        + w.topic_weight * breakdown["topic_weight"]
+        + w.cross_functional * breakdown["cross_functional"]
+    )
+    total = max(0.0, min(1.0, raw))
+    return ScoreResult(total=total, breakdown=breakdown)

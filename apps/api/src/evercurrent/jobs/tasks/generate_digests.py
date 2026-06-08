@@ -1,13 +1,8 @@
-"""Async impl behind a Celery task: score + generate digest for every user on a given day."""
+"""Stubbed pending Phase 8 — rewritten as per-(member, day) digests."""
 
 from __future__ import annotations
 
-import uuid
 from typing import Any
-
-import structlog
-
-log = structlog.get_logger(__name__)
 
 
 async def generate_all_digests(
@@ -15,9 +10,5 @@ async def generate_all_digests(
     project_id: str,
     day: int,
 ) -> dict[str, Any]:
-    from evercurrent.digest.generator import generate_all_digests_for_day
-
-    project_uuid = uuid.UUID(project_id)
-    count = await generate_all_digests_for_day(project_uuid, day)
-    log.info("digest.generate_all.done", day=day, generated=count)
-    return {"day": day, "generated": count}
+    _ = project_id, day
+    raise NotImplementedError("Phase 8 rewrites digest generation as per-member tasks")

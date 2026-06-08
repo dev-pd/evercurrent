@@ -1,0 +1,169 @@
+"""Connectors API: install, list, channel toggles.
+
+Webhook endpoint for inbound Slack events lives in `webhooks.py` so
+all webhook surfaces share the same prefix + tag. This router holds
+the user-facing connector management endpoints.
+"""
+
+from __future__ import annotations
+
+import uuid
+from typing import Annotated
+
+import structlog
+from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import BaseModel, ConfigDict
+from sqlalchemy import func, select
+from starlette.responses import RedirectResponse
+
+from evercurrent.auth.deps import CurrentUserDep, SessionDep
+from evercurrent.config import get_settings
+from evercurrent.connectors.slack import install as slack_install
+from evercurrent.connectors.slack.crypto import TokenVault
+from evercurrent.db import models
+
+log = structlog.get_logger(__name__)
+
+router = APIRouter(prefix="/api/v1/connectors", tags=["connectors"])
+
+
+class ConnectorSummary(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    id: uuid.UUID
+    kind: str
+    status: str
+    external_team_id: str | None
+    channels_count: int
+    message_count: int
+
+
+class InstallResponse(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    redirect_url: str
+
+
+class ChannelTogglePayload(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    ingest: bool
+
+
+def _vault() -> TokenVault:
+    settings = get_settings()
+    if settings.connector_secret_key is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="connector_secret_key not configured",
+        )
+    return TokenVault(settings.connector_secret_key)
+
+
+@router.get("")
+async def list_connectors(
+    session: SessionDep,
+    current_user: CurrentUserDep,
+) -> list[ConnectorSummary]:
+    rows = (
+        await session.execute(
+            select(models.Connector).where(models.Connector.org_id == current_user.org_id),
+        )
+    ).scalars().all()
+
+    out: list[ConnectorSummary] = []
+    for row in rows:
+        channel_count = (
+            await session.execute(
+                select(func.count()).select_from(models.ConnectorChannel).where(
+                    models.ConnectorChannel.connector_id == row.id,
+                ),
+            )
+        ).scalar_one()
+        out.append(
+            ConnectorSummary(
+                id=row.id,
+                kind=row.kind,
+                status=row.status,
+                external_team_id=row.external_team_id,
+                channels_count=int(channel_count),
+                message_count=0,
+            ),
+        )
+    return out
+
+
+@router.post("/slack/install")
+async def slack_install_start(current_user: CurrentUserDep) -> InstallResponse:
+    settings = get_settings()
+    if settings.slack_client_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="slack_client_id not configured",
+        )
+    url = slack_install.build_install_url(
+        org_id=current_user.org_id,
+        settings=settings,
+    )
+    return InstallResponse(redirect_url=url)
+
+
+@router.get("/slack/oauth/callback")
+async def slack_oauth_callback(
+    session: SessionDep,
+    code: Annotated[str, Query(min_length=1)],
+    state: Annotated[str, Query(min_length=1)],
+) -> RedirectResponse:
+    settings = get_settings()
+    try:
+        connector_id = await slack_install.exchange_and_persist(
+            session=session,
+            settings=settings,
+            vault=_vault(),
+            code=code,
+            state_token=state,
+            installed_by_membership_id=None,
+        )
+    except slack_install.InstallStateError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    await session.commit()
+    log.info("slack.install.callback_complete", connector_id=str(connector_id))
+
+    return RedirectResponse(url="/connectors", status_code=status.HTTP_302_FOUND)
+
+
+@router.post("/{connector_id}/channels/{external_id}")
+async def toggle_channel_ingest(
+    connector_id: uuid.UUID,
+    external_id: str,
+    payload: ChannelTogglePayload,
+    session: SessionDep,
+    current_user: CurrentUserDep,
+) -> dict[str, bool]:
+    row = (
+        await session.execute(
+            select(models.ConnectorChannel).where(
+                models.ConnectorChannel.connector_id == connector_id,
+                models.ConnectorChannel.external_id == external_id,
+            ),
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="channel not found",
+        )
+    row.ingest = payload.ingest
+    await session.commit()
+    log.info(
+        "slack.channel.toggle",
+        connector_id=str(connector_id),
+        external_id=external_id,
+        ingest=payload.ingest,
+        membership_id=str(current_user.membership_id),
+    )
+    return {"ingest": row.ingest}

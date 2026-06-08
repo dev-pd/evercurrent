@@ -1,31 +1,62 @@
-"""Scoring weights. Tune here, never inline in the engine."""
+"""Scoring weights.
+
+Six signals, six weights, summing to 1.0. Tune here; the engine never
+hard-codes a number.
+"""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from evercurrent.domain.messages import Urgency
+_SUM_TOLERANCE = 1e-9
 
 
 @dataclass(frozen=True, slots=True)
 class Weights:
-    role_direct: float = 10.0  # user.role in tag.affected_roles
-    cross_functional: float = 7.0  # owned subsystem / part in tag.entities
-    thread_activity: float = 2.0  # >=5 replies in thread
-    feedback_unit: float = 1.0  # multiplier on per-topic learned weight
-    urgency: dict[Urgency, float] = field(
-        default_factory=lambda: {
-            Urgency.LOW: 0.0,
-            Urgency.MEDIUM: 2.0,
-            Urgency.HIGH: 5.0,
-            # Critical sits above role_direct + cross_functional so an
-            # enterprise-wide line-stop surfaces even when the user has no
-            # direct stake.
-            Urgency.CRITICAL: 20.0,
-        },
-    )
-    phase_match: float = 4.0  # tag.topic appears in project.phase_concerns
+    """Per-signal multipliers for the linear scoring model.
+
+    Validated at construction time: weights must sum to 1.0 (within float
+    tolerance) so the final score lives in `[0, 1]` after clamping. All
+    values must be non-negative.
+    """
+
+    role_match: float = 0.30
+    subsystem_match: float = 0.25
+    urgency_boost: float = 0.20
+    phase_concern_match: float = 0.10
+    topic_weight: float = 0.10
+    cross_functional: float = 0.05
+
+    def __post_init__(self) -> None:
+        values = (
+            self.role_match,
+            self.subsystem_match,
+            self.urgency_boost,
+            self.phase_concern_match,
+            self.topic_weight,
+            self.cross_functional,
+        )
+        if any(v < 0.0 for v in values):
+            raise ValueError("Weights must be non-negative")
+        total = sum(values)
+        if abs(total - 1.0) > _SUM_TOLERANCE:
+            raise ValueError(f"Weights must sum to 1.0, got {total}")
+
+    def as_dict(self) -> dict[str, float]:
+        return {
+            "role_match": self.role_match,
+            "subsystem_match": self.subsystem_match,
+            "urgency_boost": self.urgency_boost,
+            "phase_concern_match": self.phase_concern_match,
+            "topic_weight": self.topic_weight,
+            "cross_functional": self.cross_functional,
+        }
+
+
+DEFAULT_WEIGHTS: Weights = Weights()
+
+WEIGHTS: dict[str, float] = DEFAULT_WEIGHTS.as_dict()
 
 
 def default_weights() -> Weights:
-    return Weights()
+    return DEFAULT_WEIGHTS

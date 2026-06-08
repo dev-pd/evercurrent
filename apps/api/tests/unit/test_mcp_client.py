@@ -1,0 +1,105 @@
+"""Unit tests for the in-process MCP client.
+
+Verifies that:
+- the default dispatch table registers every Phase 4 tool
+- `call(name, session, args)` dispatches to the matching function with
+  `args` exploded as kwargs and `session` as the first positional arg
+- unknown tool names raise `UnknownToolError`
+"""
+
+from __future__ import annotations
+
+import uuid
+from typing import Any
+from unittest.mock import AsyncMock
+
+import pytest
+
+from evercurrent.mcp.client import InProcessMCPClient, UnknownToolError
+from evercurrent.mcp.tools.get_thread_context import (
+    get_thread_context as fn_get_thread_context,
+)
+from evercurrent.mcp.tools.get_user_context import (
+    get_user_context as fn_get_user_context,
+)
+from evercurrent.mcp.tools.query_cards import query_cards as fn_query_cards
+from evercurrent.mcp.tools.search_documents import (
+    search_documents as fn_search_documents,
+)
+from evercurrent.mcp.tools.search_messages import (
+    search_messages as fn_search_messages,
+)
+
+
+def test_default_dispatch_lists_all_phase4_tools() -> None:
+    client = InProcessMCPClient()
+    expected = {
+        "search_messages",
+        "search_documents",
+        "query_cards",
+        "get_thread_context",
+        "get_user_context",
+    }
+    assert set(client.tool_names) == expected
+
+
+@pytest.mark.asyncio
+async def test_call_dispatches_to_registered_tool() -> None:
+    captured: dict[str, Any] = {}
+
+    async def fake_tool(session: Any, *, query: str, project_id: uuid.UUID) -> str:
+        captured["session"] = session
+        captured["query"] = query
+        captured["project_id"] = project_id
+        return "ok"
+
+    client = InProcessMCPClient(dispatch={"search_messages": fake_tool})
+    session = AsyncMock()
+    project_id = uuid.uuid4()
+
+    result = await client.call(
+        "search_messages",
+        session,
+        {"query": "thermal", "project_id": project_id},
+    )
+
+    assert result == "ok"
+    assert captured["session"] is session
+    assert captured["query"] == "thermal"
+    assert captured["project_id"] == project_id
+
+
+@pytest.mark.asyncio
+async def test_call_with_no_args_passes_empty_kwargs() -> None:
+    called = False
+
+    async def fake_tool(session: Any) -> str:  # noqa: ARG001
+        nonlocal called
+        called = True
+        return "fine"
+
+    client = InProcessMCPClient(dispatch={"ping": fake_tool})
+    result = await client.call("ping", AsyncMock())
+    assert called
+    assert result == "fine"
+
+
+@pytest.mark.asyncio
+async def test_call_unknown_tool_raises() -> None:
+    client = InProcessMCPClient(dispatch={})
+    with pytest.raises(UnknownToolError):
+        await client.call("nope", AsyncMock(), {})
+
+
+def test_call_routes_each_default_tool_by_name() -> None:
+    """Every default tool name is registered."""
+    client = InProcessMCPClient()
+    expected = {
+        "search_messages": fn_search_messages,
+        "search_documents": fn_search_documents,
+        "query_cards": fn_query_cards,
+        "get_thread_context": fn_get_thread_context,
+        "get_user_context": fn_get_user_context,
+    }
+    for name in expected:
+        assert name in client.tool_names
