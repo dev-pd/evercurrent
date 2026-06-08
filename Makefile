@@ -1,5 +1,5 @@
-# EverCurrent — developer ergonomics. Everything runs in docker. `make help`
-# lists targets.
+# EverCurrent — developer ergonomics. Everything runs in docker.
+# `make help` lists targets.
 
 .DEFAULT_GOAL := help
 SHELL := /bin/bash
@@ -7,8 +7,6 @@ SHELL := /bin/bash
 COMPOSE := docker compose
 API_RUN := $(COMPOSE) run --rm api
 API_EXEC := $(COMPOSE) exec api
-# Web lint/format/test run against the `web-dev` profile (builder stage image
-# with full node_modules + source). `pnpm` is on PATH inside that image.
 WEB_RUN := $(COMPOSE) --profile dev run --rm web-dev
 
 .PHONY: help
@@ -17,106 +15,115 @@ help:
 		/^[a-zA-Z0-9_.-]+:.*##/ { printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2 }' \
 		$(MAKEFILE_LIST)
 
-# ----- Docker compose ---------------------------------------------------------
+# ----- Docker compose --------------------------------------------------------
 
 .PHONY: up
-up: ## Start the full stack (postgres + redis + api + worker + web + nginx)
+up: ## Start stack (postgres + redis + api + worker + beat + web + nginx)
 	$(COMPOSE) up -d --build
 
 .PHONY: down
-down: ## Stop the stack (preserves volumes)
+down: ## Stop stack (volumes preserved)
 	$(COMPOSE) down
 
 .PHONY: down-v
-down-v: ## Stop the stack AND wipe volumes (postgres + redis)
+down-v: ## Stop stack AND wipe volumes
 	$(COMPOSE) down -v
 
 .PHONY: build
-build: ## Rebuild all images
+build: ## Rebuild images
 	$(COMPOSE) build
 
 .PHONY: logs
-logs: ## Tail logs from all services
+logs: ## Tail logs (all services)
 	$(COMPOSE) logs -f
 
+.PHONY: logs-api
+logs-api: ## Tail api logs only
+	$(COMPOSE) logs -f api
+
+.PHONY: logs-worker
+logs-worker: ## Tail worker logs only
+	$(COMPOSE) logs -f worker
+
 .PHONY: ps
-ps: ## Show container status
+ps: ## Container status
 	$(COMPOSE) ps
 
-# ----- Backend (everything inside containers) ---------------------------------
+# ----- Database --------------------------------------------------------------
 
 .PHONY: migrate
-migrate: ## Apply Alembic migrations against the running stack
+migrate: ## Apply Alembic migrations
 	$(API_EXEC) alembic upgrade head
 
 .PHONY: migration
-migration: ## Create a new Alembic migration. Usage: make migration name="add foo"
+migration: ## Create new migration. Usage: make migration name="add foo"
 	@if [ -z "$(name)" ]; then echo "Usage: make migration name=\"<short description>\""; exit 1; fi
 	$(API_EXEC) alembic revision --autogenerate -m "$(name)"
 
-.PHONY: seed
-seed: ## Full seed: project, users, channels, messages, docs
-	$(API_EXEC) python -m evercurrent.ingestion.seeder --all
-
-.PHONY: seed-base
-seed-base: ## Seed only project + users + channels
-	$(API_EXEC) python -m evercurrent.ingestion.seeder
-
-.PHONY: reset
-reset: ## Drop + recreate the schema + rerun the full seed
-	$(API_EXEC) alembic downgrade base
-	$(API_EXEC) alembic upgrade head
-	$(API_EXEC) python -m evercurrent.ingestion.seeder --all
-
-.PHONY: seed-messages
-seed-messages: ## Load committed synthetic messages into the DB
-	$(API_EXEC) python -m evercurrent.ingestion.seeder --load-messages
-
-.PHONY: seed-docs
-seed-docs: ## Load committed project docs into the DB
-	$(API_EXEC) python -m evercurrent.ingestion.seeder --load-docs
-
-.PHONY: ingest-docs
-ingest-docs: ## Run RAG document ingestion (chunk + embed + index)
-	$(API_EXEC) python -m evercurrent.rag.indexer --all
-
-.PHONY: generate-digests
-generate-digests: ## Generate digests for day=N (current phase). Usage: make generate-digests day=3
-	@if [ -z "$(day)" ]; then echo "Usage: make generate-digests day=<N>"; exit 1; fi
-	$(API_EXEC) python -m evercurrent.digest.generator --day $(day)
-
-.PHONY: precompute-digests
-precompute-digests: ## Pre-compute every (user, day, phase) digest. ~240 Sonnet calls, ~10-20 min.
-	$(API_EXEC) python -m evercurrent.digest.generator --all
-
 .PHONY: psql
-psql: ## Open a psql shell against the running postgres container
+psql: ## Open psql against the dev DB
 	$(COMPOSE) exec postgres psql -U evercurrent -d evercurrent
 
+# ----- Shells ----------------------------------------------------------------
+
 .PHONY: shell-api
-shell-api: ## Drop into a Python shell inside the api container
+shell-api: ## Python shell inside api container
 	$(API_EXEC) python
 
 .PHONY: shell-bash
-shell-bash: ## Drop into bash inside the api container
+shell-bash: ## Bash inside api container
 	$(API_EXEC) bash
 
-# ----- Quality gates (inside containers) --------------------------------------
+# ----- Quality gates ---------------------------------------------------------
 
 .PHONY: lint
-lint: ## ruff + ty (api) and eslint + prettier check (web), all inside docker
+lint: ## ruff + ty (api) and eslint + prettier + tsc (web)
 	$(API_RUN) sh -c "ruff check && ty check"
 	$(WEB_RUN) sh -c "pnpm lint && pnpm format:check && pnpm typecheck"
 
 .PHONY: fmt
-fmt: ## ruff format + ruff --fix (api) and prettier (web), inside docker
+fmt: ## ruff format + auto-fix (api) and prettier (web)
 	$(API_RUN) sh -c "ruff format && ruff check --fix"
 	$(WEB_RUN) sh -c "pnpm format"
 
+# ----- Tests -----------------------------------------------------------------
+
 .PHONY: test
-test: ## Health/ready unit tests (api). Web has no traditional tests by policy.
+test: test-unit ## Default: unit tests (fast)
+
+.PHONY: test-unit
+test-unit: ## Unit tests (api, no external services)
 	$(API_RUN) pytest tests/unit -v
 
+.PHONY: test-integration
+test-integration: ## Integration tests (api, testcontainers Postgres + Redis)
+	$(API_RUN) pytest tests/integration -v
+
+.PHONY: test-web
+test-web: ## Web unit + component tests (vitest)
+	$(WEB_RUN) pnpm test
+
+.PHONY: e2e
+e2e: ## Playwright E2E (needs the stack running: make up first)
+	$(WEB_RUN) pnpm e2e
+
 .PHONY: eval
-eval: ## Eval harness (RAG, scoring, digest, decisions)
+eval: ## Eval harness (Anthropic key required)
 	$(API_RUN) pytest tests/evals -v -s --no-cov
+
+# ----- Dev utilities ---------------------------------------------------------
+
+.PHONY: ngrok
+ngrok: ## Expose port 8000 publicly for Slack/Drive webhooks (needs `ngrok` on PATH)
+	@command -v ngrok >/dev/null 2>&1 || { echo "Install ngrok: brew install ngrok/ngrok/ngrok"; exit 1; }
+	ngrok http 8000
+
+.PHONY: install-hooks
+install-hooks: ## Install pre-commit git hooks
+	pre-commit install
+
+.PHONY: clean
+clean: ## Remove caches + node_modules + .next + uv envs (NUKE)
+	rm -rf apps/web/node_modules apps/web/.next apps/web/.vitest apps/api/.venv
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
