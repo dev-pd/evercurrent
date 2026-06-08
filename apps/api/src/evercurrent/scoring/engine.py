@@ -14,8 +14,16 @@ from dataclasses import dataclass
 from evercurrent.domain.messages import EnrichedMessage, Urgency
 from evercurrent.domain.projects import Project
 from evercurrent.domain.users import User
-from evercurrent.scoring.dependencies import dependency_match
 from evercurrent.scoring.weights import Weights, default_weights
+
+
+def _dependency_match(
+    entities: list[str],
+    owned_subsystems: list[str],
+    owned_parts: list[str],
+) -> bool:
+    owned = {s.lower() for s in owned_subsystems} | {p.lower() for p in owned_parts}
+    return any(e.lower() in owned for e in entities)
 
 _THREAD_ACTIVITY_THRESHOLD = 5
 _DEFAULT_TOP_N = 20
@@ -59,7 +67,7 @@ def score_message_for_user(
         breakdown["role_direct"] = w.role_direct
 
     # 2. Cross-functional dependency hit (owned subsystem/part appears in entities).
-    if tag and dependency_match(tag.entities, user.owned_subsystems, user.owned_parts):
+    if tag and _dependency_match(tag.entities, user.owned_subsystems, user.owned_parts):
         score += w.cross_functional
         breakdown["cross_functional"] = w.cross_functional
 

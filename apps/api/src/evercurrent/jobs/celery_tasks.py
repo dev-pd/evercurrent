@@ -35,67 +35,6 @@ def heartbeat() -> str:
     return dt.datetime.now(dt.UTC).isoformat()
 
 
-@celery_app.task(name="evercurrent.refresh_today")
-def refresh_today(project_name: str | None = None) -> dict[str, Any]:
-    from evercurrent.jobs.tasks.refresh_today import refresh_today as impl
-
-    result = _run(impl({}, project_name))
-    project_id = result.get("project_id") if isinstance(result, dict) else None
-    if project_id:
-        publish_event(
-            project_id,
-            "digest.updated",
-            {"day": result.get("day"), "phase": result.get("phase")},
-        )
-    return result
-
-
-@celery_app.task(name="evercurrent.synthesize_today_message")
-def synthesize_today_message(project_name: str | None = None) -> dict[str, Any]:
-    from evercurrent.jobs.tasks.refresh_today import synthesize_today_message as impl
-
-    result = _run(impl({}, project_name))
-    msgs = result.get("messages") if isinstance(result, dict) else None
-    if isinstance(msgs, list) and msgs:
-        # Inserted messages carry no project_id at this layer; publish
-        # under the project_name's resolved id is overkill — just emit a
-        # generic 'message.synthesized' on a project-scoped lookup.
-        from evercurrent.db.repositories import ProjectRepository
-        from evercurrent.db.session import session_scope
-
-        async def _publish_for(name: str | None) -> None:
-            async with session_scope() as session:
-                proj = await ProjectRepository(session).get_by_name(
-                    name or "Warehouse Robot v2",
-                )
-            if proj is not None:
-                publish_event(proj.id, "message.synthesized", {"count": len(msgs)})
-
-        _run(_publish_for(project_name))
-    return result
-
-
-@celery_app.task(name="evercurrent.enrich_day")
-def enrich_day(project_id: str, day: int) -> dict[str, Any]:
-    from evercurrent.jobs.tasks.enrich_messages import enrich_day as impl
-
-    return _run(impl({}, project_id, day))
-
-
-@celery_app.task(name="evercurrent.advance_day")
-def advance_day(project_id: str) -> dict[str, Any]:
-    from evercurrent.jobs.tasks.advance_day import advance_day as impl
-
-    return _run(impl({}, project_id))
-
-
-@celery_app.task(name="evercurrent.extract_decisions_for_day")
-def extract_decisions_for_day(project_id: str, day: int) -> dict[str, Any]:
-    from evercurrent.jobs.tasks.extract_decisions import extract_decisions_for_day as impl
-
-    return _run(impl({}, project_id, day))
-
-
 @celery_app.task(name="evercurrent.generate_all_digests")
 def generate_all_digests(project_id: str, day: int) -> dict[str, Any]:
     from evercurrent.jobs.tasks.generate_digests import generate_all_digests as impl

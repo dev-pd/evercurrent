@@ -174,35 +174,45 @@ evercurrent/
 - Never `git commit --no-verify`. Pre-commit hooks are there for a reason.
 - Attribution is empty (see `.claude/settings.json`). No `Co-Authored-By`.
 
-## 11. Testing philosophy
+## 11. Testing strategy (revised — supersedes prior "no tests" rule)
 
-We do NOT write traditional unit/integration tests across the codebase.
-Reasoning: it is a take-home with a small scope and high engineering bar
-elsewhere, and the eval harness covers the AI-quality dimension which is
-the harder thing to measure.
+We write tests. TDD on deterministic code, evals on LLM behaviour.
+This is the right hybrid for an AI-native app: deterministic layers
+(auth, RLS, ingestion, scoring, repositories) get red-green-refactor
+unit tests; prompt + agent quality goes through an offline eval
+harness instead of brittle string-match unit tests.
 
-The only test code we write:
+### What we test, where it lives
 
-- An eval harness in `apps/api/tests/evals/` covering four dimensions:
-  - RAG retrieval: precision@5 and MRR on hand-labeled question/source pairs
-  - Scoring engine: scenario-based ranking checks
-  - Digest quality: LLM-as-judge with a rubric
-  - Decision extraction: recall and field accuracy
-- Unit tests for the `/health` and `/ready` endpoints, living at
-  `apps/api/tests/unit/test_health.py` and
-  `apps/api/tests/unit/test_ready.py`. These prove the service boots and
-  its dependencies (DB, Redis) are reachable. Nothing else goes in
-  `tests/unit/`.
+| Kind | Location | Runner | When run |
+|------|----------|--------|----------|
+| Unit (Python, deterministic) | `apps/api/tests/unit/` | pytest + pytest-asyncio | pre-commit, CI, `make test` |
+| Integration (route → service → DB) | `apps/api/tests/integration/` | pytest + testcontainers Postgres + Redis | CI, `make test` |
+| Eval (LLM quality) | `apps/api/tests/evals/` | custom runner | `make eval`, not CI gate |
+| Unit (TS, components + hooks) | `apps/web/__tests__/` | vitest + testing-library + msw | pre-commit, CI |
+| E2E (one happy path) | `apps/web/e2e/` | Playwright | CI, `make e2e` |
 
-Any test code outside those two paths is out of scope. If a subphase in
-the build doc lists tests beyond these (e.g. "unit tests on scoring
-engine", "integration test on end-to-end pipeline", "vitest unit tests"),
-treat that as superseded by this section — skip those tasks and note it
-in the subphase commit message.
+### TDD discipline
 
-Evals are runnable via `make eval`. They are NOT in CI gates by default;
-they are reference numbers documented in `docs/EVAL_BASELINE.md`. The
-health/ready unit tests run via `make test` and ARE in CI.
+- For new deterministic modules (`scoring/`, `cards/builder`, `ingestion/chunking`, `tenancy/rls`, signature verification, repository methods): **red → green → refactor**. Write the failing test, write the minimum code to pass, refactor.
+- Test public behaviour, not implementation. No tests on private helpers.
+- One assert per test where possible. Name tests as full sentences (`test_score_includes_role_match_when_user_owns_subsystem`).
+- Coverage gate: **80% line coverage** on `auth/`, `tenancy/`, `scoring/`, `cards/`, `ingestion/`, `db/repositories/`, `connectors/*/events`. Agents + prompts excluded from coverage.
+
+### What we do NOT unit-test
+
+- Prompt strings. They live in `<module>/prompts/*.txt`; eval harness covers them.
+- LLM-returned content. Evals + Pydantic schema validation handle this.
+- Generated SQL queries (test against real DB via testcontainers, not by string match).
+- Glue code that is purely a thin wrapper around a third-party SDK.
+
+### Eval harness (unchanged)
+
+- RAG retrieval: precision@5 and MRR on hand-labelled question/source pairs.
+- Router agent: accuracy on hand-labelled message → tags pairs.
+- Scoring: scenario-based ranking checks.
+- Digest quality: LLM-as-judge with rubric.
+- Reference numbers tracked in `docs/EVAL_BASELINE.md`. Not a CI gate.
 
 ## 12. Subphase workflow
 

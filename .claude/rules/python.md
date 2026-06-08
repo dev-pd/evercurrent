@@ -40,8 +40,9 @@ non-negotiables from `AGENTS.md` §6, plus operational specifics.
   in/out via dedicated functions.
 - **FastAPI dependencies via `Depends(get_x)`** factory functions, not
   module-level globals.
-- **Background work uses Arq.** Define tasks in `jobs/tasks/<name>.py`,
-  register in `jobs/worker.py`. Tasks must be idempotent.
+- **Background work uses Celery + Beat.** Define tasks in
+  `jobs/tasks/<name>.py`, register in `jobs/celery_tasks.py`. Tasks
+  must be idempotent (replay-safe via unique constraints or upserts).
 
 ## Pydantic v2 patterns
 
