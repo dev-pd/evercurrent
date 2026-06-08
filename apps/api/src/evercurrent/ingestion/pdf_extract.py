@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     fitz: Any = None
 else:  # pragma: no cover - import guard, exercised at runtime
     try:
-        import fitz  # ty: ignore[unresolved-import]
+        import fitz
     except ImportError:  # pragma: no cover
         fitz = None
 

@@ -70,6 +70,22 @@ def score_message_for_members(message_id: str) -> dict[str, Any]:
     return _run(impl({}, message_id))
 
 
+@celery_app.task(name="evercurrent.ingest_drive_file")
+def ingest_drive_file(connector_id: str, drive_file_id: str) -> dict[str, Any]:
+    import uuid as _u
+
+    from evercurrent.ingestion.tasks import ingest_drive_file as impl
+
+    return _run(impl(connector_id=_u.UUID(connector_id), drive_file_id=drive_file_id))
+
+
+@celery_app.task(name="evercurrent.renew_drive_watches")
+def renew_drive_watches() -> dict[str, Any]:
+    from evercurrent.connectors.drive.watch import renew_drive_watches as impl
+
+    return _run(impl())
+
+
 @celery_app.task(name="evercurrent.regenerate_user_digest")
 def regenerate_user_digest(
     project_id: str,
