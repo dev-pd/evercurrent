@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict
 
 from evercurrent.jobs.celery_app import celery_app
 
-router = APIRouter(prefix="/jobs", tags=["jobs"])
+router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 
 # Celery states we want the UI to treat as "still working" — the dashboard
 # polls until status flips out of these.

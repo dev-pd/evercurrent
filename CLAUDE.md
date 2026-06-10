@@ -19,9 +19,9 @@
   `make lint`, verify definition of done, commit with
   `feat(phase-N): <description>`. Stop. Do not auto-start the next
   phase.
-- **`EVERCURRENT_BUILD_DOC.md` is historical.** Pre-pivot plan. Do
-  not read it unless explicitly asked; it conflicts with the new
-  phases/ tree.
+- **`docs/archive/EVERCURRENT_BUILD_DOC.md` is historical.** Pre-pivot
+  plan. Do not read it unless explicitly asked; it conflicts with the
+  new phases/ tree.
 - When stuck, prefer using the `planner` subagent over guessing.
   (`Use the planner subagent to think through how to ...`)
 - For frequent operations (new route, new component, new task, new

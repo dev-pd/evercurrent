@@ -153,15 +153,13 @@ async def top_scored_items_for_member(
             text(
                 "SELECT s.message_id, s.score, "
                 "       mt.topic AS topic, mt.urgency AS urgency, "
-                "       ch.name AS channel, u.display_name AS author, "
-                "       m.text AS text, m.ts AS posted_at "
+                "       m.channel AS channel, m.author_display_name AS author, "
+                "       m.text AS text, m.posted_at AS posted_at "
                 "FROM scores s "
                 "JOIN messages m ON m.id = s.message_id "
                 "LEFT JOIN message_tags mt ON mt.message_id = m.id "
-                "LEFT JOIN channels ch ON ch.id = m.channel_id "
-                "LEFT JOIN users u ON u.id = m.author_id "
                 "WHERE s.project_member_id = :mid "
-                "ORDER BY s.score DESC, m.ts DESC LIMIT :lim",
+                "ORDER BY s.score DESC, m.posted_at DESC LIMIT :lim",
             ),
             {"mid": str(project_member_id), "lim": limit},
         )

@@ -3,20 +3,29 @@ import {
   cardListItemSchema,
   cardResponseSchema,
   digestV2Schema,
-  meSchema,
+  projectSchema,
   regenerateResponseSchema,
   cardFeedbackResponseSchema,
+  proactiveInsightSchema,
+  timelineSchema,
   todayV2Schema,
   type CardListItem,
   type CardResponse,
   type DigestV2,
-  type Me,
+  type Project,
+  type ProactiveInsight,
   type RegenerateResponse,
   type CardFeedbackResponse,
+  type Timeline,
   type TodayV2,
 } from "@/lib/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+// Server components run inside the web container and must reach the API by its
+// absolute internal URL. NEXT_PUBLIC_API_URL is browser-facing (e.g. "/api"
+// behind nginx) and is relative — useless for server-side fetch().
+const INTERNAL_API_URL = process.env.INTERNAL_API_URL ?? "http://api:8000";
 
 export class ApiError extends Error {
   status: number;
@@ -88,13 +97,15 @@ async function apiFetch<T>(
 }
 
 export interface ApiClient {
-  me(): Promise<Me>;
+  listProjects(): Promise<Project[]>;
   getToday(projectId: string): Promise<TodayV2>;
   getDigestToday(): Promise<DigestV2>;
   regenerateDigest(): Promise<RegenerateResponse>;
   listCards(filters?: CardFilters): Promise<CardListItem[]>;
   getCard(id: string): Promise<CardResponse>;
   feedbackCard(id: string, useful: boolean): Promise<CardFeedbackResponse>;
+  getInsights(limit?: number): Promise<ProactiveInsight[]>;
+  getTimeline(projectId: string): Promise<Timeline>;
 }
 
 export interface CardFilters {
@@ -115,12 +126,18 @@ function buildCardQuery(filters?: CardFilters): string {
 
 function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
   const cardListSchema = z.array(cardListItemSchema);
+  const insightListSchema = z.array(proactiveInsightSchema);
+  const projectListSchema = z.array(projectSchema);
   return {
-    async me() {
-      return apiFetch("/api/v1/me", meSchema, await getCtx());
+    async listProjects() {
+      return apiFetch("/api/v1/projects", projectListSchema, await getCtx());
     },
     async getToday(projectId) {
-      return apiFetch(`/api/v1/projects/${projectId}/today`, todayV2Schema, await getCtx());
+      return apiFetch(
+        `/api/v1/today?project_id=${encodeURIComponent(projectId)}`,
+        todayV2Schema,
+        await getCtx(),
+      );
     },
     async getDigestToday() {
       return apiFetch("/api/v1/digests/today", digestV2Schema, await getCtx());
@@ -145,6 +162,16 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
         { method: "POST", body: { useful } },
       );
     },
+    async getInsights(limit = 5) {
+      return apiFetch(`/api/v1/insights?limit=${limit}`, insightListSchema, await getCtx());
+    },
+    async getTimeline(projectId) {
+      return apiFetch(
+        `/api/v1/timeline/${encodeURIComponent(projectId)}`,
+        timelineSchema,
+        await getCtx(),
+      );
+    },
   };
 }
 
@@ -158,7 +185,7 @@ export async function apiServer(): Promise<ApiClient> {
     } catch {
       token = null;
     }
-    return { baseUrl: API_BASE_URL, token, pathPrefix: "" };
+    return { baseUrl: INTERNAL_API_URL, token, pathPrefix: "" };
   });
 }
 
@@ -175,5 +202,9 @@ export function getApiBaseUrl(): string {
 }
 
 export function getStreamUrl(projectId: string): string {
-  return `${API_BASE_URL}/api/v1/events/stream?project_id=${encodeURIComponent(projectId)}`;
+  // nginx routes /api/v1/events straight to the API with proxy_buffering off
+  // (real SSE); the route is unauthenticated. Keep this relative so the
+  // browser hits nginx, not the buffering Next.js proxy. Backend route is
+  // /api/v1/events (no /stream suffix).
+  return `/api/v1/events?project_id=${encodeURIComponent(projectId)}`;
 }

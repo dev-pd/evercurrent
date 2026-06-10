@@ -16,6 +16,7 @@ import uuid
 import structlog
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import text
 
 from evercurrent.auth.deps import CurrentUserDep, SessionDep
 from evercurrent.digest import repository as digest_repo
@@ -31,6 +32,18 @@ log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/digests", tags=["digests"])
 
 
+class DigestItemV2(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    id: str
+    bucket: str  # top_priority | watch_outs | fyi
+    source: str  # channel name (e.g. "#mech-design")
+    author_display_name: str | None = None
+    ts: str | None = None
+    why_this_matters: str
+    card_id: uuid.UUID | None = None
+
+
 class DigestTodayResponse(BaseModel):
     model_config = ConfigDict(strict=True)
 
@@ -39,6 +52,8 @@ class DigestTodayResponse(BaseModel):
     day_index: int
     phase: str
     content_md: str
+    items: list[DigestItemV2]
+    anomalies: list[dict[str, str]] = []
     card_ids: list[uuid.UUID]
     message_ids: list[uuid.UUID]
     generated_at: str
@@ -92,17 +107,80 @@ async def get_today(
             force=False,
         )
 
+    items = await _build_items(
+        session,
+        message_ids=latest.message_ids,
+    )
+
     return DigestTodayResponse(
         id=latest.id,
         project_member_id=latest.project_member_id,
         day_index=latest.day_index,
         phase=latest.phase,
         content_md=latest.content_md,
+        items=items,
+        anomalies=[],
         card_ids=latest.card_ids,
         message_ids=latest.message_ids,
         generated_at=latest.generated_at.isoformat(),
         is_stale=is_stale,
     )
+
+
+async def _build_items(
+    session,  # noqa: ANN001
+    *,
+    message_ids: list[uuid.UUID],
+) -> list[DigestItemV2]:
+    """Hydrate digest message_ids into DigestItemV2 for the dashboard.
+
+    Splits into buckets by urgency: high → top_priority, normal → watch_outs,
+    everything else → fyi. Pulls channel + author + timestamp + message text
+    from `messages` joined to `message_tags`.
+    """
+    if not message_ids:
+        return []
+    rows = (
+        await session.execute(
+            text(
+                """
+                SELECT m.id, m.channel, m.author_display_name,
+                       m.posted_at, m.text, mt.urgency
+                FROM messages m
+                LEFT JOIN message_tags mt ON mt.message_id = m.id
+                WHERE m.id = ANY(:ids)
+                ORDER BY m.posted_at DESC
+                """,
+            ),
+            {"ids": [str(i) for i in message_ids]},
+        )
+    ).mappings().all()
+    out: list[DigestItemV2] = []
+    for r in rows:
+        urgency = (r["urgency"] or "normal").lower()
+        bucket = (
+            "top_priority"
+            if urgency == "high"
+            else "watch_outs"
+            if urgency == "normal"
+            else "fyi"
+        )
+        out.append(
+            DigestItemV2(
+                id=str(r["id"]),
+                bucket=bucket,
+                source=f"#{r['channel']}" if r["channel"] else "—",
+                author_display_name=r["author_display_name"],
+                ts=r["posted_at"].isoformat() if r["posted_at"] else None,
+                why_this_matters=(r["text"] or "")[:280],
+                card_id=None,
+            ),
+        )
+    # Cap fyi to 8 so the dashboard stays compact; preserve top + watch.
+    top = [i for i in out if i.bucket == "top_priority"][:8]
+    watch = [i for i in out if i.bucket == "watch_outs"][:8]
+    fyi = [i for i in out if i.bucket == "fyi"][:6]
+    return top + watch + fyi
 
 
 @router.post(

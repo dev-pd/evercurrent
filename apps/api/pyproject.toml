@@ -13,6 +13,7 @@ dependencies = [
     # Web framework + server
     "fastapi>=0.136.1,<0.137.0",
     "uvicorn[standard]>=0.32",
+    "python-multipart>=0.0.18",  # multipart/form-data parsing for PDF uploads
 
     # Validation + settings
     "pydantic>=2.12",

@@ -189,6 +189,7 @@ class SlackClient:
         text: str,
         username: str | None = None,
         icon_emoji: str | None = None,
+        icon_url: str | None = None,
         blocks: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {"channel": channel, "text": text}
@@ -196,6 +197,8 @@ class SlackClient:
             payload["username"] = username
         if icon_emoji is not None:
             payload["icon_emoji"] = icon_emoji
+        if icon_url is not None:
+            payload["icon_url"] = icon_url
         if blocks is not None:
             # Slack wants `blocks` as JSON-encoded when posting via form data.
             payload["blocks"] = json.dumps(blocks)

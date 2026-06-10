@@ -3,31 +3,87 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Brand: indigo accent on near-monochrome neutrals. Tuned for engineers —
+     high contrast on text, restrained color use, mono for IDs/timestamps. */
+  --color-accent-50: oklch(0.97 0.014 268);
+  --color-accent-100: oklch(0.93 0.03 268);
+  --color-accent-200: oklch(0.86 0.06 268);
+  --color-accent-300: oklch(0.76 0.1 268);
+  --color-accent-400: oklch(0.66 0.16 268);
+  --color-accent-500: oklch(0.56 0.21 268);
+  --color-accent-600: oklch(0.48 0.21 268);
+  --color-accent-700: oklch(0.4 0.18 268);
+  --color-accent-800: oklch(0.33 0.14 268);
+  --color-accent-900: oklch(0.27 0.1 268);
+
+  /* Subsystem palette — keep saturation low so cards aren't noisy */
+  --color-subsystem-chassis: oklch(0.55 0.05 240);     /* slate-ish */
+  --color-subsystem-power: oklch(0.65 0.16 60);        /* amber */
+  --color-subsystem-firmware: oklch(0.56 0.21 268);    /* indigo */
+  --color-subsystem-qa: oklch(0.6 0.14 160);           /* emerald */
+  --color-subsystem-supply: oklch(0.55 0.18 300);      /* violet */
+  --color-subsystem-compliance: oklch(0.6 0.08 200);   /* steel */
+  --color-subsystem-mfg: oklch(0.55 0.12 30);          /* warm grey/red */
+}
+
+:root {
+  --surface-bg: #fafaf9;
+  --surface-canvas: #ffffff;
+  --surface-muted: #f4f4f5;
+  --border-default: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
+  --text-muted: #71717a;
 }
 
 html,
 body {
   height: 100%;
-  background: #fafafa;
-  color: #18181b;
+  background: var(--surface-bg);
+  color: var(--text-primary);
   font-family:
     var(--font-geist-sans),
+    "Inter",
     system-ui,
     -apple-system,
     sans-serif;
+  font-feature-settings: "cv11", "ss01", "ss03";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Minimal markdown rendering — Tailwind v4 dropped @tailwindcss/typography
-   from defaults, so we ship a small bespoke ruleset for ReactMarkdown
-   output. Scoped to .prose so other UI is untouched. */
+/* Tabular numerics where we show counts, IDs, durations */
+.tabular-nums,
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Focus rings: indigo, restrained */
+*:focus-visible {
+  outline: 2px solid var(--color-accent-500);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Subtle scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+/* Minimal markdown rendering */
 .prose {
   line-height: 1.55;
+  color: var(--text-primary);
 }
 .prose h1,
 .prose h2,
 .prose h3 {
   font-weight: 600;
   margin: 0.6rem 0 0.4rem;
+  letter-spacing: -0.01em;
 }
 .prose h1 {
   font-size: 1.25rem;
@@ -53,7 +109,7 @@ body {
   margin: 0.2rem 0;
 }
 .prose code {
-  background: #f4f4f5;
+  background: var(--surface-muted);
   border-radius: 0.2rem;
   padding: 0.05rem 0.3rem;
   font-family: var(--font-geist-mono), monospace;
@@ -66,6 +122,7 @@ body {
   font-style: italic;
 }
 .prose a {
-  color: #2563eb;
+  color: var(--color-accent-600);
   text-decoration: underline;
+  text-underline-offset: 2px;
 }

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { redirect } from "next/navigation";
 import { auth0 } from "@/lib/auth0";
 import { apiServer } from "@/lib/api";
@@ -6,6 +8,7 @@ import { DigestHeader } from "@/components/dashboard/digest-header";
 import { DigestSection } from "@/components/dashboard/digest-section";
 import { AnomalyBanner } from "@/components/dashboard/anomaly-banner";
 import { LiveUpdatesBadge } from "@/components/dashboard/live-updates-badge";
+import { MetricStrip } from "@/components/dashboard/metric-strip";
 import type { DigestV2, TodayV2 } from "@/lib/types";
 
 async function safeFetch<T>(fn: () => Promise<T>): Promise<T | null> {
@@ -38,10 +41,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     safeFetch<DigestV2>(() => client.getDigestToday()),
   ]);
 
-  const projectName = today ? `Project ${today.project_id.slice(0, 8)}` : "Your project";
-  const phase = today?.phase ?? digest?.phase ?? "—";
+  const projectName = today ? `Project ${today.project_id.slice(0, 8)}` : "Atlas — chassis";
+  const phase = today?.phase ?? digest?.phase ?? "DVT";
   const dayIndex = today?.live_day ?? digest?.day_index ?? 0;
-  const generatedAt = digest?.generated_at ?? today?.last_digest_at ?? null;
+  const generatedAt = digest?.generated_at ?? today?.last_digest_generated_at ?? null;
 
   const items = digest?.items ?? [];
   const topPriority = items.filter((i) => i.bucket === "top_priority");
@@ -50,7 +53,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   return (
     <AppShell>
-      <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <div className="mx-auto flex max-w-4xl flex-col gap-6">
         <DigestHeader
           projectName={projectName}
           phase={phase}
@@ -58,21 +61,45 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           generatedAt={generatedAt}
         />
 
+        <MetricStrip
+          signals={today?.message_count ?? items.length}
+          decisions={topPriority.length}
+          risks={watchOuts.length}
+          docs={fyi.length}
+        />
+
         <div className="flex items-center justify-between">
           <LiveUpdatesBadge projectId={projectId} generatedAt={generatedAt} />
         </div>
 
+        <AnomalyBanner anomalies={digest?.anomalies ?? []} />
+
         {digest === null && (
-          <div className="rounded-lg border border-zinc-200 bg-white p-6 text-sm text-zinc-500">
-            No digest yet. Regenerate to draft your first briefing.
+          <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-white p-8 text-center">
+            <p className="text-sm font-medium text-[var(--text-primary)]">
+              No digest yet.
+            </p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
+              Connect Slack or Dropbox and click regenerate to draft your first briefing.
+            </p>
+          </div>
+        )}
+
+        {digest !== null && items.length === 0 && (
+          <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-white p-8 text-center">
+            <p className="text-sm font-medium text-[var(--text-primary)]">
+              Quiet day.
+            </p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
+              No signals scored above the threshold. Either the team didn&apos;t post
+              much, or nothing is relevant to your subscriptions.
+            </p>
           </div>
         )}
 
         <DigestSection bucket="top_priority" items={topPriority} />
         <DigestSection bucket="watch_outs" items={watchOuts} />
         <DigestSection bucket="fyi" items={fyi} />
-
-        <AnomalyBanner anomalies={digest?.anomalies ?? []} />
       </div>
     </AppShell>
   );

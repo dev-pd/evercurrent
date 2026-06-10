@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ThumbsDown, ThumbsUp } from "lucide-react";
+import { ArrowUpRight, MessageSquare, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFeedback, useCardFeedbackState } from "@/hooks/use-feedback";
-import { cn } from "@/lib/utils";
 import type { DigestItemV2 } from "@/lib/types";
 
 export interface DigestItemCardProps {
@@ -41,16 +40,27 @@ export function DigestItemCard({ item, onFeedback }: DigestItemCardProps) {
   };
 
   return (
-    <article className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-      <div className="flex flex-col gap-1 text-xs text-zinc-500">
-        <span>
-          {item.source}
-          {item.author_display_name ? ` · ${item.author_display_name}` : ""}
-          {ts ? ` · ${ts}` : ""}
-        </span>
+    <article className="group rounded-lg border border-[var(--border-default)] bg-white p-4 transition-colors hover:border-[var(--border-strong)]">
+      <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
+        <MessageSquare className="h-3 w-3" aria-hidden="true" />
+        <span className="font-medium text-[var(--text-secondary)]">{item.source}</span>
+        {item.author_display_name && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span>{item.author_display_name}</span>
+          </>
+        )}
+        {ts && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span className="font-mono tabular-nums">{ts}</span>
+          </>
+        )}
       </div>
-      <p className="mt-2 text-sm text-zinc-900">{item.why_this_matters}</p>
-      <div className="mt-3 flex items-center gap-2">
+      <p className="mt-2 text-sm leading-relaxed text-[var(--text-primary)]">
+        {item.why_this_matters}
+      </p>
+      <div className="mt-3 flex items-center gap-1.5">
         <Button
           onClick={() => fire(true)}
           disabled={feedback.isPending}
@@ -74,11 +84,10 @@ export function DigestItemCard({ item, onFeedback }: DigestItemCardProps) {
         {item.card_id && (
           <Link
             href={`/decisions/${item.card_id}`}
-            className={cn(
-              "ml-auto text-xs font-medium text-zinc-700 hover:text-zinc-900",
-            )}
+            className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-[var(--color-accent-700)] hover:text-[var(--color-accent-800)]"
           >
             Open card
+            <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
           </Link>
         )}
       </div>

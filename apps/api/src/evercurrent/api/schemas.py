@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import datetime as dt
 import uuid
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -82,22 +82,6 @@ class GenerateDigestsResponse(BaseModel):
 
     job_id: str
     day: int
-
-
-class FeedbackRequest(BaseModel):
-    model_config = ConfigDict(strict=True)
-
-    user_id: uuid.UUID
-    message_id: uuid.UUID
-    signal: Annotated[Literal[-1, 1], Field(description="-1 thumbs down, +1 thumbs up")]
-    topic: str | None = None
-
-
-class FeedbackResponse(BaseModel):
-    model_config = ConfigDict(strict=True)
-
-    user_id: uuid.UUID
-    topic_weights: dict[str, float]
 
 
 class ChangePhaseRequest(BaseModel):

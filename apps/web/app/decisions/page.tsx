@@ -1,5 +1,8 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ArrowUpRight, GitBranch, MessageSquare } from "lucide-react";
 import { auth0 } from "@/lib/auth0";
 import { apiServer } from "@/lib/api";
 import { AppShell } from "@/components/layout/app-shell";
@@ -21,6 +24,17 @@ interface DecisionsPageProps {
   searchParams: Promise<{ project_id?: string; kind?: string; status?: string }>;
 }
 
+const KIND_STYLES: Record<string, string> = {
+  decision: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  risk: "border-amber-200 bg-amber-50 text-amber-700",
+  question: "border-sky-200 bg-sky-50 text-sky-700",
+  action: "border-violet-200 bg-violet-50 text-violet-700",
+};
+
+function kindStyle(kind: string): string {
+  return KIND_STYLES[kind] ?? "border-zinc-200 bg-zinc-50 text-zinc-700";
+}
+
 export default async function DecisionsPage({ searchParams }: DecisionsPageProps) {
   const session = await auth0.getSession();
   if (!session?.user) {
@@ -29,16 +43,30 @@ export default async function DecisionsPage({ searchParams }: DecisionsPageProps
 
   const params = await searchParams;
   const cards = await safeListCards(params.project_id);
+  const filtered = cards.filter((c) => {
+    if (params.kind && c.kind !== params.kind) return false;
+    if (params.status && c.status !== params.status) return false;
+    return true;
+  });
 
   return (
     <AppShell>
-      <div className="mx-auto flex max-w-3xl flex-col gap-4">
-        <header className="flex items-end justify-between border-b border-zinc-200 pb-4">
-          <h1 className="text-2xl font-semibold tracking-tight">Decisions</h1>
-          <span className="text-xs text-zinc-500">{cards.length} cards</span>
+      <div className="mx-auto flex max-w-4xl flex-col gap-5">
+        <header className="flex flex-col gap-1 border-b border-[var(--border-default)] pb-5">
+          <div className="flex items-end justify-between">
+            <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
+              Decisions
+            </h1>
+            <span className="font-mono text-xs tabular-nums text-[var(--text-muted)]">
+              {filtered.length}/{cards.length}
+            </span>
+          </div>
+          <p className="text-sm text-[var(--text-muted)]">
+            Structured decisions, risks, and actions extracted from team chatter and docs.
+          </p>
         </header>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           <FilterChip
             href="/decisions"
             label="All"
@@ -59,33 +87,61 @@ export default async function DecisionsPage({ searchParams }: DecisionsPageProps
             label="Risks"
             active={params.kind === "risk"}
           />
+          <FilterChip
+            href="/decisions?kind=action"
+            label="Actions"
+            active={params.kind === "action"}
+          />
         </div>
 
-        {cards.length === 0 ? (
-          <p className="rounded-lg border border-zinc-200 bg-white p-6 text-sm text-zinc-500">
-            No cards yet.
-          </p>
+        {filtered.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-white p-8 text-center">
+            <p className="text-sm font-medium text-[var(--text-primary)]">
+              No cards match this filter.
+            </p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
+              Try a different filter or run a digest regeneration.
+            </p>
+          </div>
         ) : (
-          <ul className="flex flex-col gap-3">
-            {cards.map((card) => (
+          <ul className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-white">
+            {filtered.map((card, idx) => (
               <li
                 key={card.id}
-                className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm"
+                className={`group flex items-start gap-4 p-4 hover:bg-[var(--surface-muted)] ${
+                  idx > 0 ? "border-t border-[var(--border-default)]" : ""
+                }`}
               >
-                <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 font-medium text-zinc-700">
-                    {card.kind}
-                  </span>
-                  <span>status: {card.status}</span>
-                  <span>{card.sources_count} sources</span>
-                  <span>{card.edges_count} edges</span>
-                </div>
-                <Link
-                  href={`/decisions/${card.id}`}
-                  className="mt-2 block text-sm font-medium text-zinc-900 hover:text-zinc-700"
+                <span
+                  className={`mt-0.5 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${kindStyle(card.kind)}`}
                 >
-                  {card.summary}
-                </Link>
+                  {card.kind}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <Link
+                    href={`/decisions/${card.id}`}
+                    className="block text-sm font-medium text-[var(--text-primary)] hover:text-[var(--color-accent-700)]"
+                  >
+                    {card.summary}
+                  </Link>
+                  <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-[var(--text-muted)]">
+                    <span className="font-mono uppercase tracking-wider">
+                      {card.status}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <MessageSquare className="h-3 w-3" aria-hidden="true" />
+                      {card.sources_count}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <GitBranch className="h-3 w-3" aria-hidden="true" />
+                      {card.edges_count}
+                    </span>
+                  </div>
+                </div>
+                <ArrowUpRight
+                  className="h-4 w-4 text-[var(--text-muted)] opacity-0 transition-opacity group-hover:opacity-100"
+                  aria-hidden="true"
+                />
               </li>
             ))}
           </ul>
@@ -107,8 +163,8 @@ function FilterChip({ href, label, active }: FilterChipProps) {
       href={href}
       className={
         active
-          ? "rounded-full border border-zinc-900 bg-zinc-900 px-3 py-1 text-xs font-medium text-white"
-          : "rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
+          ? "rounded-md border border-[var(--color-accent-600)] bg-[var(--color-accent-600)] px-2.5 py-1 text-xs font-medium text-white"
+          : "rounded-md border border-[var(--border-default)] bg-white px-2.5 py-1 text-xs font-medium text-[var(--text-secondary)] hover:border-[var(--border-strong)]"
       }
     >
       {label}

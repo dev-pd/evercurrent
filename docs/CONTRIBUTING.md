@@ -42,7 +42,7 @@ and should be skipped (and called out in the subphase commit message).
 
 ## Adding a new feature
 
-1. Find the right phase / subphase in `EVERCURRENT_BUILD_DOC.md`.
+1. Find the right phase / subphase in `docs/phases/`.
 2. Restate the goal and the files you'll create / modify in your PR
    description.
 3. If a `.claude/skills/` skill matches (add-fastapi-route,

@@ -47,6 +47,18 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-}
+      AUTH0_WEBHOOK_SECRET: ${AUTH0_WEBHOOK_SECRET:-}
+      SLACK_CLIENT_ID: ${SLACK_CLIENT_ID:-}
+      SLACK_CLIENT_SECRET: ${SLACK_CLIENT_SECRET:-}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
+      DROPBOX_CLIENT_ID: ${DROPBOX_CLIENT_ID:-}
+      DROPBOX_CLIENT_SECRET: ${DROPBOX_CLIENT_SECRET:-}
+      DROPBOX_REDIRECT_URI: ${DROPBOX_REDIRECT_URI:-http://localhost:8080/api/v1/connectors/dropbox/oauth/callback}
+      CONNECTOR_SECRET_KEY: ${CONNECTOR_SECRET_KEY:-}
+      FERNET_KEY: ${FERNET_KEY:-}
+      DEMO_AUTH_FALLBACK: ${DEMO_AUTH_FALLBACK:-true}
     depends_on:
       postgres:
         condition: service_healthy
@@ -85,6 +97,18 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-}
+      AUTH0_WEBHOOK_SECRET: ${AUTH0_WEBHOOK_SECRET:-}
+      SLACK_CLIENT_ID: ${SLACK_CLIENT_ID:-}
+      SLACK_CLIENT_SECRET: ${SLACK_CLIENT_SECRET:-}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
+      DROPBOX_CLIENT_ID: ${DROPBOX_CLIENT_ID:-}
+      DROPBOX_CLIENT_SECRET: ${DROPBOX_CLIENT_SECRET:-}
+      DROPBOX_REDIRECT_URI: ${DROPBOX_REDIRECT_URI:-http://localhost:8080/api/v1/connectors/dropbox/oauth/callback}
+      CONNECTOR_SECRET_KEY: ${CONNECTOR_SECRET_KEY:-}
+      FERNET_KEY: ${FERNET_KEY:-}
+      DEMO_AUTH_FALLBACK: ${DEMO_AUTH_FALLBACK:-true}
     depends_on:
       postgres:
         condition: service_healthy
@@ -114,6 +138,18 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-}
+      AUTH0_WEBHOOK_SECRET: ${AUTH0_WEBHOOK_SECRET:-}
+      SLACK_CLIENT_ID: ${SLACK_CLIENT_ID:-}
+      SLACK_CLIENT_SECRET: ${SLACK_CLIENT_SECRET:-}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
+      DROPBOX_CLIENT_ID: ${DROPBOX_CLIENT_ID:-}
+      DROPBOX_CLIENT_SECRET: ${DROPBOX_CLIENT_SECRET:-}
+      DROPBOX_REDIRECT_URI: ${DROPBOX_REDIRECT_URI:-http://localhost:8080/api/v1/connectors/dropbox/oauth/callback}
+      CONNECTOR_SECRET_KEY: ${CONNECTOR_SECRET_KEY:-}
+      FERNET_KEY: ${FERNET_KEY:-}
+      DEMO_AUTH_FALLBACK: ${DEMO_AUTH_FALLBACK:-true}
     depends_on:
       redis:
         condition: service_healthy
@@ -130,10 +166,23 @@ services:
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:8080}
+      INTERNAL_API_URL: ${INTERNAL_API_URL:-http://api:8000}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-}
+      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID:-}
+      AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET:-}
+      AUTH0_SECRET: ${AUTH0_SECRET:-}
     depends_on:
       - api
     expose:
       - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
 
   nginx:
     image: nginx:1.27-alpine
@@ -191,7 +240,7 @@ services:
     volumes:
       - loki_data:/loki
     ports:
-      - "3100:3100"
+      - "3110:3100"
 
   promtail:
     profiles: ["monitor"]
@@ -219,7 +268,7 @@ services:
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
     ports:
-      - "3001:3000"
+      - "3030:3000"
     depends_on:
       - prometheus
       - loki

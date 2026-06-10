@@ -23,7 +23,7 @@ from redis.asyncio import Redis
 
 from evercurrent.config import get_settings
 
-router = APIRouter(prefix="/events", tags=["events"])
+router = APIRouter(prefix="/api/v1/events", tags=["events"])
 
 _KEEPALIVE_SECONDS = 15.0
 

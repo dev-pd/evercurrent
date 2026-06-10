@@ -10,7 +10,7 @@ from evercurrent.api.deps import SessionDep
 from evercurrent.api.schemas import ChangePhaseRequest, ProjectResponse
 from evercurrent.db.repositories import ProjectRepository
 
-router = APIRouter(prefix="/projects", tags=["projects"])
+router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
 
 def _to_response(project: object) -> ProjectResponse:

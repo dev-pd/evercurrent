@@ -19,11 +19,12 @@ from evercurrent.api.routes.connectors import router as connectors_router
 from evercurrent.api.routes.digests import router as digests_router
 from evercurrent.api.routes.documents import router as documents_router
 from evercurrent.api.routes.events import router as events_router
-from evercurrent.api.routes.feedback import router as feedback_router
+from evercurrent.api.routes.insights import router as insights_router
 from evercurrent.api.routes.jobs import router as jobs_router
 from evercurrent.api.routes.me import router as me_router
 from evercurrent.api.routes.projects import router as projects_router
 from evercurrent.api.routes.subscriptions import router as subscriptions_router
+from evercurrent.api.routes.timeline import router as timeline_router
 from evercurrent.api.routes.today import router as today_router
 from evercurrent.api.routes.webhooks import router as webhooks_router
 from evercurrent.auth.auth0 import Auth0Verifier
@@ -104,13 +105,14 @@ def create_app() -> FastAPI:
     app.include_router(webhooks_router)
     app.include_router(projects_router)
     app.include_router(digests_router)
-    app.include_router(feedback_router)
     app.include_router(documents_router)
     app.include_router(events_router)
     app.include_router(jobs_router)
     app.include_router(today_router)
+    app.include_router(timeline_router)
     app.include_router(connectors_router)
     app.include_router(cards_router)
+    app.include_router(insights_router)
     app.include_router(subscriptions_router)
 
     Instrumentator(

@@ -10,90 +10,7 @@ export const projectSchema = z.object({
 });
 export type Project = z.infer<typeof projectSchema>;
 
-export const userSchema = z.object({
-  id: z.string().uuid(),
-  project_id: z.string().uuid(),
-  username: z.string(),
-  display_name: z.string(),
-  role: z.string(),
-  owned_subsystems: z.array(z.string()),
-  owned_parts: z.array(z.string()),
-  topic_weights: z.record(z.string(), z.number()),
-});
-export type User = z.infer<typeof userSchema>;
-
-export const digestItemSchema = z.object({
-  id: z.string().uuid(),
-  channel: z.string(),
-  author_username: z.string(),
-  author_display_name: z.string(),
-  day: z.number().int(),
-  ts: z.string(),
-  text: z.string(),
-  topic: z.string().nullable().optional(),
-  urgency: z.string().nullable().optional(),
-});
-export type DigestItem = z.infer<typeof digestItemSchema>;
-
-export const digestSchema = z.object({
-  id: z.string().uuid(),
-  user_id: z.string().uuid(),
-  day: z.number().int(),
-  phase: z.string(),
-  content_md: z.string(),
-  item_message_ids: z.array(z.string().uuid()),
-  items: z.array(digestItemSchema),
-  generated_at: z.string(),
-});
-export type Digest = z.infer<typeof digestSchema>;
-
-export const decisionSchema = z.object({
-  id: z.string().uuid(),
-  summary: z.string(),
-  rationale: z.string().nullable(),
-  decided_by: z.string(),
-  decided_at: z.string(),
-  source_message_ids: z.array(z.string().uuid()),
-  affected_subsystems: z.array(z.string()),
-  status: z.string(),
-  confidence: z.number(),
-});
-export type Decision = z.infer<typeof decisionSchema>;
-
-export const generateDigestsSchema = z.object({
-  job_id: z.string(),
-  day: z.number().int(),
-});
-export type GenerateDigestsResponse = z.infer<typeof generateDigestsSchema>;
-
-export const feedbackResponseSchema = z.object({
-  user_id: z.string().uuid(),
-  topic_weights: z.record(z.string(), z.number()),
-});
-export type FeedbackResponse = z.infer<typeof feedbackResponseSchema>;
-
-export const documentSchema = z.object({
-  id: z.string().uuid(),
-  project_id: z.string().uuid(),
-  kind: z.string(),
-  title: z.string(),
-  phases: z.array(z.string()),
-  body_excerpt: z.string(),
-  chars: z.number().int(),
-});
-export type Document = z.infer<typeof documentSchema>;
-
-export const jobStatusSchema = z.object({
-  job_id: z.string(),
-  status: z.string(),
-  result: z.record(z.string(), z.unknown()).nullable().optional(),
-  enqueue_time: z.string().nullable().optional(),
-  start_time: z.string().nullable().optional(),
-  finish_time: z.string().nullable().optional(),
-});
-export type JobStatus = z.infer<typeof jobStatusSchema>;
-
-export const todaySchema = z.object({
+export const todayV2Schema = z.object({
   project_id: z.string().uuid(),
   live_day: z.number().int(),
   live_date: z.string(),
@@ -103,26 +20,6 @@ export const todaySchema = z.object({
   message_count: z.number().int(),
   last_message_at: z.string().nullable(),
   last_digest_generated_at: z.string().nullable(),
-});
-export type Today = z.infer<typeof todaySchema>;
-
-export const meSchema = z.object({
-  membership_id: z.string().uuid(),
-  org_id: z.string().uuid(),
-  auth0_user_id: z.string(),
-  email: z.string(),
-  display_name: z.string(),
-});
-export type Me = z.infer<typeof meSchema>;
-
-export const todayV2Schema = z.object({
-  project_id: z.string().uuid(),
-  live_day: z.number().int(),
-  phase: z.string(),
-  phase_concerns: z.array(z.string()),
-  message_count_24h: z.number().int(),
-  last_digest_at: z.string().nullable(),
-  top_priority_count: z.number().int(),
 });
 export type TodayV2 = z.infer<typeof todayV2Schema>;
 
@@ -224,3 +121,87 @@ export const cardFeedbackResponseSchema = z.object({
   ok: z.boolean(),
 });
 export type CardFeedbackResponse = z.infer<typeof cardFeedbackResponseSchema>;
+
+export const specSnapshotSchema = z.object({
+  label: z.string(),
+  value: z.string(),
+});
+export type SpecSnapshot = z.infer<typeof specSnapshotSchema>;
+
+export const insightConflictSchema = z.object({
+  subsystem: z.string(),
+  severity: z.enum(["info", "warn", "critical"]),
+  title: z.string(),
+  detail: z.string(),
+  impact: z.string(),
+});
+export type InsightConflict = z.infer<typeof insightConflictSchema>;
+
+export const insightSourceSchema = z.object({
+  kind: z.enum(["slack", "doc"]),
+  channel: z.string().nullable(),
+  author: z.string().nullable(),
+  snippet: z.string(),
+  ts: z.string().nullable(),
+});
+export type InsightSource = z.infer<typeof insightSourceSchema>;
+
+export const suggestedActionSchema = z.object({
+  label: z.string(),
+  invitees: z.array(z.string()),
+  description: z.string(),
+});
+export type SuggestedAction = z.infer<typeof suggestedActionSchema>;
+
+export const proactiveInsightSchema = z.object({
+  id: z.string(),
+  req_id: z.string(),
+  title: z.string(),
+  detected_at: z.string(),
+  summary: z.string(),
+  before: z.array(specSnapshotSchema),
+  after: z.array(specSnapshotSchema),
+  affected_subsystems: z.array(z.string()),
+  conflicts: z.array(insightConflictSchema),
+  sources: z.array(insightSourceSchema),
+  suggested_action: suggestedActionSchema,
+  impact_summary: z.record(z.string(), z.string()),
+});
+export type ProactiveInsight = z.infer<typeof proactiveInsightSchema>;
+
+export const timelinePhaseSchema = z.object({
+  label: z.string(),
+  start_month: z.number(),
+  end_month: z.number(),
+  status: z.enum(["done", "active", "upcoming"]),
+});
+export type TimelinePhase = z.infer<typeof timelinePhaseSchema>;
+
+export const timelineLaneSegmentSchema = z.object({
+  start: z.number(),
+  end: z.number(),
+  tone: z.enum(["primary", "muted"]),
+});
+export type TimelineLaneSegment = z.infer<typeof timelineLaneSegmentSchema>;
+
+export const timelineLaneSchema = z.object({
+  name: z.string(),
+  segments: z.array(timelineLaneSegmentSchema),
+  marker: z.number(),
+});
+export type TimelineLane = z.infer<typeof timelineLaneSchema>;
+
+export const timelineSchema = z.object({
+  project_id: z.string().uuid(),
+  project_name: z.string(),
+  current_phase: z.string(),
+  current_day: z.number().int(),
+  start_date: z.string(),
+  months: z.array(z.string()),
+  phases: z.array(timelinePhaseSchema),
+  lanes: z.array(timelineLaneSchema),
+  summary: z.string(),
+  fcs_label: z.string(),
+  progress_pct: z.number().int(),
+});
+export type Timeline = z.infer<typeof timelineSchema>;

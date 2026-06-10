@@ -16,8 +16,9 @@ EverCurrent team.
 
 ## 2. Authoritative documents
 
-- `EVERCURRENT_BUILD_DOC.md` — the full build plan with phases and subphases.
-  This is the work list.
+- `docs/phases/` — the authoritative build plan (one doc per phase).
+  This is the work list. `docs/archive/EVERCURRENT_BUILD_DOC.md` is
+  the pre-pivot historical version; do not use it.
 - `docs/ARCHITECTURE.md` — design decisions and rationale.
 - `docs/PRODUCTION_ROADMAP.md` — the scale-out story.
 - `AGENTS.md` (this file) — coding standards and conventions.
@@ -81,8 +82,7 @@ evercurrent/
 │       ├── components/
 │       ├── lib/, hooks/, stores/
 │       └── package.json
-├── docs/
-└── EVERCURRENT_BUILD_DOC.md
+└── docs/
 ```
 
 ## 5. Architecture principles
@@ -216,7 +216,7 @@ harness instead of brittle string-match unit tests.
 
 ## 12. Subphase workflow
 
-Every piece of work corresponds to a subphase in `EVERCURRENT_BUILD_DOC.md`.
+Every piece of work corresponds to a phase doc in `docs/phases/`.
 Workflow:
 
 1. Read the subphase: goal, tasks, definition of done.

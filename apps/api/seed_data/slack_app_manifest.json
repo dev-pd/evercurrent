@@ -14,15 +14,13 @@
     "scopes": {
       "bot": [
         "chat:write",
-        "chat:write.customize",
         "channels:history",
         "channels:read",
         "channels:join",
         "channels:manage",
         "groups:history",
         "groups:read",
-        "users:read",
-        "team:read"
+        "users:read"
       ]
     }
   },
@@ -37,7 +35,7 @@
       "is_enabled": false
     },
     "org_deploy_enabled": false,
-    "socket_mode_enabled": false,
+    "socket_mode_enabled": true,
     "token_rotation_enabled": false
   }
 }

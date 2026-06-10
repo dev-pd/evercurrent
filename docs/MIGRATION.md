@@ -281,7 +281,7 @@ demo flow is real Slack + real PDFs.
 | `README.md` | REWRITE@0 | new pivot description |
 | `CLAUDE.md` | REWRITE@0 | point at phases/ as authoritative |
 | `AGENTS.md` | KEEP | already updated for TDD |
-| `EVERCURRENT_BUILD_DOC.md` | REWRITE@0 | mark historical, link to phases/ |
+| `docs/archive/EVERCURRENT_BUILD_DOC.md` | REWRITE@0 | mark historical, link to phases/ |
 | (new) `.github/workflows/ci.yml` | NEW@1 | |
 | (new) `apps/api/Dockerfile.dev` | NEW@1 | hot reload |
 | (new) `apps/web/Dockerfile.dev` | NEW@1 | hot reload |

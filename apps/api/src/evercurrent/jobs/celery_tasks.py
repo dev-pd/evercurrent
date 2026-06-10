@@ -21,10 +21,21 @@ log = structlog.get_logger(__name__)
 def _run(coro: Any) -> Any:
     """Run an async coroutine in a fresh event loop.
 
-    Celery tasks are sync; we don't share the loop across tasks because
-    SQLAlchemy async + asyncpg dislike loop reuse from a worker pool.
+    Celery tasks are sync; each task gets its own loop because SQLAlchemy
+    async + asyncpg bind their connection pool to whatever loop was alive
+    when the engine was built. After the coroutine finishes we dispose the
+    engine so the next task rebuilds the pool on its own loop — otherwise
+    asyncpg raises "Future attached to a different loop".
     """
-    return asyncio.run(coro)
+    from evercurrent.db.session import dispose_engine
+
+    async def _wrapper() -> Any:
+        try:
+            return await coro
+        finally:
+            await dispose_engine()
+
+    return asyncio.run(_wrapper())
 
 
 @celery_app.task(name="evercurrent.heartbeat")

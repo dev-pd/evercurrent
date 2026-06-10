@@ -97,7 +97,7 @@ before implementing".>
 For most planning tasks, read:
 
 - `AGENTS.md` for coding standards
-- `EVERCURRENT_BUILD_DOC.md` for the relevant phase/subphase
+- `docs/phases/` for the relevant phase doc
 - The module(s) the change touches
 - Sibling modules for patterns to follow
 

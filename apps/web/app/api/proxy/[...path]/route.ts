@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth0 } from "@/lib/auth0";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_BASE_URL = process.env.INTERNAL_API_URL ?? "http://api:8000";
 
 async function forward(request: NextRequest, segments: string[]): Promise<NextResponse> {
   const session = await auth0.getSession();
@@ -34,13 +34,15 @@ async function forward(request: NextRequest, segments: string[]): Promise<NextRe
   const body =
     request.method === "GET" || request.method === "HEAD"
       ? undefined
-      : await request.text();
+      : await request.arrayBuffer();
 
   const upstream = await fetch(url, {
     method: request.method,
     headers,
-    body,
+    body: body ? Buffer.from(body) : undefined,
     cache: "no-store",
+    // @ts-expect-error: duplex required for fetch with streaming body in Node
+    duplex: "half",
   });
 
   const responseBody = await upstream.text();

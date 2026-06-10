@@ -106,25 +106,11 @@ async def _load_member_profile(
 
     # `org_memberships` carries timezone + role but not subsystems /
     # topic_weights — those live on the project_members link table in the
-    # design doc, which is not yet materialised. Best-effort: look for a
-    # JSONB topic_weights column if it exists; otherwise empty.
+    # design doc, which is not yet materialised. Until the column exists,
+    # leave both empty; attempting the SELECT inside an aborted transaction
+    # poisons subsequent queries on the same connection.
     topic_weights: dict[str, float] = {}
     subsystems: list[str] = []
-    try:
-        extra = (
-            await session.execute(
-                text(
-                    "SELECT topic_weights FROM org_memberships WHERE id = :id",
-                ),
-                {"id": str(project_member_id)},
-            )
-        ).first()
-        if extra is not None and extra[0]:
-            raw = extra[0]
-            if isinstance(raw, dict):
-                topic_weights = {str(k): float(v) for k, v in raw.items()}
-    except Exception as exc:  # noqa: BLE001  best-effort optional column
-        log.debug("digest.profile.topic_weights_missing", error=str(exc))
 
     profile = MemberProfile(
         project_member_id=uuid.UUID(str(row["id"])),
@@ -243,6 +229,50 @@ def _parse_draft(payload: Any) -> DigestDraft:
     return DigestDraft.model_validate(payload)
 
 
+def _stub_draft_from_scored(scored: list) -> DigestDraft:  # noqa: ANN001
+    """Fallback when the LLM provider is unavailable.
+
+    Builds a deterministic digest from the top-scored messages so the
+    demo still renders content. No LLM calls. Markdown sections mirror
+    what the LLM is asked to produce.
+    """
+    top = scored[:8]
+    watch = scored[8:16]
+    fyi = scored[16:24]
+
+    def _bullets(items: list) -> str:  # noqa: ANN001
+        if not items:
+            return "_None._"
+        lines = []
+        for it in items:
+            author = getattr(it, "author", "team")
+            channel = getattr(it, "channel", "")
+            urgency = getattr(it, "urgency", None) or "normal"
+            preview = (getattr(it, "text", "") or "").replace("\n", " ").strip()
+            if len(preview) > 220:
+                preview = preview[:217] + "…"
+            channel_tag = f"#{channel}" if channel else ""
+            lines.append(
+                f"- **{author}** {channel_tag} [{urgency}] — {preview}",
+            )
+        return "\n".join(lines)
+
+    content_md = (
+        "## Top priority\n"
+        f"{_bullets(top)}\n\n"
+        "## Watch-outs\n"
+        f"{_bullets(watch)}\n\n"
+        "## FYI\n"
+        f"{_bullets(fyi)}\n"
+    )
+    message_ids = [s.message_id for s in (top + watch + fyi)]
+    return DigestDraft(
+        content_md=content_md,
+        card_ids=[],
+        message_ids=message_ids,
+    )
+
+
 async def generate_digest(
     session: AsyncSession,
     llm: LLMProvider,
@@ -335,6 +365,14 @@ async def generate_digest(
             error=str(exc),
         )
         raise
+    except Exception as exc:  # noqa: BLE001  fall back when LLM provider is down
+        log.warning(
+            "digest.llm_unavailable_fallback",
+            project_member_id=str(project_member_id),
+            day_index=day_index,
+            error=str(exc),
+        )
+        draft = _stub_draft_from_scored(scored)
 
     valid_card_ids = {c.card_id for c in cards}
     valid_message_ids = {s.message_id for s in scored}

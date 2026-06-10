@@ -8,7 +8,6 @@ models. Each module owns one aggregate root.
 from evercurrent.db.repositories.channels import ChannelRepository
 from evercurrent.db.repositories.digests import DigestRepository
 from evercurrent.db.repositories.documents import DocumentRepository
-from evercurrent.db.repositories.feedback import FeedbackRepository
 from evercurrent.db.repositories.messages import MessageRepository
 from evercurrent.db.repositories.projects import ProjectRepository
 from evercurrent.db.repositories.users import UserRepository
@@ -17,7 +16,6 @@ __all__ = [
     "ChannelRepository",
     "DigestRepository",
     "DocumentRepository",
-    "FeedbackRepository",
     "MessageRepository",
     "ProjectRepository",
     "UserRepository",

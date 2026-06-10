@@ -9,13 +9,13 @@ description: |
 
 # Execute subphase
 
-When you are asked to implement a subphase of `EVERCURRENT_BUILD_DOC.md`,
+When you are asked to implement a subphase from `docs/phases/`,
 follow this workflow precisely. Do not deviate.
 
 ## Step 1: Read the subphase
 
-Open `EVERCURRENT_BUILD_DOC.md` and locate the subphase the user named
-(e.g. "2.3"). Read in full:
+Open the relevant `docs/phases/PHASE_N_*.md` and locate the subphase the
+user named (e.g. "2.3"). Read in full:
 
 - **Goal** — what this subphase achieves
 - **Tasks** — concrete items

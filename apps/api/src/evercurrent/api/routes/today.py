@@ -7,13 +7,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import func, select
+from sqlalchemy import text
 
 from evercurrent.api.deps import SessionDep
-from evercurrent.db.models import Message as MessageModel
 from evercurrent.db.repositories import ProjectRepository
 
-router = APIRouter(prefix="/today", tags=["today"])
+router = APIRouter(prefix="/api/v1/today", tags=["today"])
 
 
 class TodayResponse(BaseModel):
@@ -39,14 +38,17 @@ async def get_today(
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="project not found")
 
+    # Post Phase-8 messages are org-scoped with a `posted_at` timestamp; the
+    # old (project_id, day) shape no longer exists. "Signals" = messages in
+    # the last 24h. RLS already constrains rows to the caller's org.
     msg_count_row = await session.execute(
-        select(
-            func.count(MessageModel.id),
-            func.max(MessageModel.ts),
-        ).where(
-            MessageModel.project_id == project_id,
-            MessageModel.day == project.current_day,
+        text(
+            "SELECT count(*) AS c, max(posted_at) AS last_at "
+            "FROM messages "
+            "WHERE project_id = :pid "
+            "AND posted_at >= now() - interval '24 hours'"
         ),
+        {"pid": str(project_id)},
     )
     msg_count, last_message_at = msg_count_row.one()
 

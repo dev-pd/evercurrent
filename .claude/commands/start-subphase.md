@@ -4,12 +4,13 @@ description: Start work on a build doc subphase by number (e.g. /start-subphase 
 
 # /start-subphase $ARGUMENTS
 
-User wants to start subphase **$ARGUMENTS** of `EVERCURRENT_BUILD_DOC.md`.
+User wants to start subphase **$ARGUMENTS** from `docs/phases/`.
 
 Follow the workflow defined in `.claude/skills/execute-subphase/SKILL.md`:
 
-1. Read the subphase $ARGUMENTS section from `EVERCURRENT_BUILD_DOC.md` in
-   full (goal, tasks, definition of done, any sketches).
+1. Read the subphase $ARGUMENTS section from the matching
+   `docs/phases/PHASE_N_*.md` doc in full (goal, tasks, definition of
+   done, any sketches).
 2. Confirm dependencies on prior subphases by running `git log --oneline -n 20`
    to see what's been completed.
 3. Restate the subphase goal in one sentence and list files to create or

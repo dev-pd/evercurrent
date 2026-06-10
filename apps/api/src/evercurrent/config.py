@@ -61,11 +61,23 @@ class Settings(BaseSettings):
         "http://localhost:8000/api/v1/connectors/drive/oauth/callback"
     )
 
+    # Dropbox connector
+    dropbox_client_id: str | None = None
+    dropbox_client_secret: str | None = None
+    dropbox_redirect_uri: str = (
+        "http://localhost:8080/api/v1/connectors/dropbox/oauth/callback"
+    )
+
     # Webhook public URL (ngrok in dev)
     webhook_public_url: str | None = None
 
     # Crypto: 32-byte base64 Fernet key used to encrypt connector tokens
     connector_secret_key: str | None = None
+
+    # Demo / dev fallback: when set, missing/invalid bearer tokens fall back
+    # to the first org in the DB so the dashboard works without a fully
+    # configured Auth0 API. Never enable in production.
+    demo_auth_fallback: bool = False
 
 
 @lru_cache(maxsize=1)

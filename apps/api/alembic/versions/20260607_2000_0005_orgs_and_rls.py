@@ -153,7 +153,9 @@ def upgrade() -> None:
                 nullable=True,
             ),
         )
-        op.execute(sa.text(f"UPDATE {table} SET org_id = :id"), {"id": legacy_org_id})  # noqa: S608
+        op.execute(  # noqa: S608
+            sa.text(f"UPDATE {table} SET org_id = :id").bindparams(id=legacy_org_id),
+        )
         op.alter_column(table, "org_id", nullable=False)
         op.create_foreign_key(
             f"{table}_org_id_fkey",

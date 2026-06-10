@@ -142,7 +142,7 @@ up-monitor: ## Start stack + monitoring (prometheus + loki + promtail + grafana)
 
 .PHONY: monitor
 monitor: ## Open Grafana in browser
-	@open http://localhost:3001 || xdg-open http://localhost:3001 || echo "Visit http://localhost:3001"
+	@open http://localhost:3030 || xdg-open http://localhost:3030 || echo "Visit http://localhost:3030"
 
 .PHONY: logs-pretty
 logs-pretty: ## Tail api logs and pretty-print structlog JSON
@@ -171,7 +171,7 @@ slack-seed: ## Post hardware-team demo messages to your Slack workspace
 		echo "7. make slack-seed"; \
 		exit 1; \
 	fi
-	$(API_RUN) python -m apps.api.seed_data.slack_seed
+	$(COMPOSE) exec -e SLACK_DEMO_BOT_TOKEN api python /app/seed_data/slack_seed.py
 
 .PHONY: install-hooks
 install-hooks: ## Install pre-commit git hooks
