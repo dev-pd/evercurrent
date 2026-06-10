@@ -74,11 +74,6 @@ class Settings(BaseSettings):
     # Crypto: 32-byte base64 Fernet key used to encrypt connector tokens
     connector_secret_key: str | None = None
 
-    # Demo / dev fallback: when set, missing/invalid bearer tokens fall back
-    # to the first org in the DB so the dashboard works without a fully
-    # configured Auth0 API. Never enable in production.
-    demo_auth_fallback: bool = False
-
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

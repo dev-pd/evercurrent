@@ -1,14 +1,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
-  Bell,
   CircuitBoard,
   FileText,
   GanttChartSquare,
   Home,
   ListChecks,
   Plug,
-  Search,
   Settings,
   Sparkles,
 } from "lucide-react";
@@ -73,27 +71,8 @@ export function AppShell({ children, orgName }: AppShellProps) {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-3 border-b border-[var(--border-default)] bg-white px-4 py-2.5 sm:px-6">
           <div className="text-xs text-[var(--text-muted)] sm:hidden">EverCurrent</div>
-          <button
-            type="button"
-            aria-label="Search"
-            className="hidden items-center gap-2 rounded-md border border-[var(--border-default)] bg-[var(--surface-muted)] px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:border-[var(--border-strong)] sm:flex"
-          >
-            <Search className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>Search messages, decisions, docs</span>
-            <kbd className="ml-2 rounded border border-[var(--border-default)] bg-white px-1.5 py-0.5 font-mono text-[10px] text-[var(--text-muted)]">
-              ⌘K
-            </kbd>
-          </button>
 
           <div className="ml-auto flex items-center gap-2">
-            <button
-              type="button"
-              aria-label="Notifications"
-              className="relative rounded-md p-1.5 text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]"
-            >
-              <Bell className="h-4 w-4" aria-hidden="true" />
-              <span className="absolute right-1 top-1 inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-accent-500)]" />
-            </button>
             <UserBadge />
           </div>
         </header>

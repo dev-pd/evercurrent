@@ -58,7 +58,6 @@ services:
       DROPBOX_REDIRECT_URI: ${DROPBOX_REDIRECT_URI:-http://localhost:8080/api/v1/connectors/dropbox/oauth/callback}
       CONNECTOR_SECRET_KEY: ${CONNECTOR_SECRET_KEY:-}
       FERNET_KEY: ${FERNET_KEY:-}
-      DEMO_AUTH_FALLBACK: ${DEMO_AUTH_FALLBACK:-true}
     depends_on:
       postgres:
         condition: service_healthy
@@ -73,9 +72,7 @@ services:
       - ./apps/api/src:/app/src
       - ./apps/api/tests:/app/tests
       - ./apps/api/alembic:/app/alembic
-      - ./apps/api/alembic.ini:/app/alembic.ini
-      - ./apps/api/seed_data:/app/seed_data
-      - ./apps/api/pyproject.toml:/app/pyproject.toml
+      - ./apps/api/alembic.ini:/app/alembic.ini      - ./apps/api/pyproject.toml:/app/pyproject.toml
 
   worker:
     build:
@@ -108,7 +105,6 @@ services:
       DROPBOX_REDIRECT_URI: ${DROPBOX_REDIRECT_URI:-http://localhost:8080/api/v1/connectors/dropbox/oauth/callback}
       CONNECTOR_SECRET_KEY: ${CONNECTOR_SECRET_KEY:-}
       FERNET_KEY: ${FERNET_KEY:-}
-      DEMO_AUTH_FALLBACK: ${DEMO_AUTH_FALLBACK:-true}
     depends_on:
       postgres:
         condition: service_healthy
@@ -116,8 +112,6 @@ services:
         condition: service_healthy
     volumes:
       - ./apps/api/src:/app/src
-      - ./apps/api/seed_data:/app/seed_data
-
   beat:
     build:
       context: ./apps/api
@@ -149,7 +143,6 @@ services:
       DROPBOX_REDIRECT_URI: ${DROPBOX_REDIRECT_URI:-http://localhost:8080/api/v1/connectors/dropbox/oauth/callback}
       CONNECTOR_SECRET_KEY: ${CONNECTOR_SECRET_KEY:-}
       FERNET_KEY: ${FERNET_KEY:-}
-      DEMO_AUTH_FALLBACK: ${DEMO_AUTH_FALLBACK:-true}
     depends_on:
       redis:
         condition: service_healthy

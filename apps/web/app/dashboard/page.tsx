@@ -41,8 +41,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     safeFetch<DigestV2>(() => client.getDigestToday()),
   ]);
 
-  const projectName = today ? `Project ${today.project_id.slice(0, 8)}` : "Atlas — chassis";
-  const phase = today?.phase ?? digest?.phase ?? "DVT";
+  const projectName = today ? `Project ${today.project_id.slice(0, 8)}` : "No project";
+  const phase = today?.phase ?? digest?.phase ?? "—";
   const dayIndex = today?.live_day ?? digest?.day_index ?? 0;
   const generatedAt = digest?.generated_at ?? today?.last_digest_generated_at ?? null;
 

@@ -155,24 +155,6 @@ prune: ## DESTRUCTIVE: nuke containers + volumes + dangling images for this proj
 	docker system prune -f
 	@echo "Pruned. Run 'make up' or 'make up-monitor' to start fresh."
 
-# ----- Slack demo -----------------------------------------------------------
-
-.PHONY: slack-seed
-slack-seed: ## Post hardware-team demo messages to your Slack workspace
-	@if [ -z "$$SLACK_DEMO_BOT_TOKEN" ]; then \
-		echo "ERROR: SLACK_DEMO_BOT_TOKEN not set."; \
-		echo ""; \
-		echo "1. Go to https://api.slack.com/apps and create an app"; \
-		echo "2. OAuth & Permissions -> add Bot Token Scopes: chat:write, channels:history, groups:history"; \
-		echo "3. Install to workspace, copy 'Bot User OAuth Token' (xoxb-...)"; \
-		echo "4. Create channels: #mech-design, #qa-testing, #supply-chain, #general"; \
-		echo "5. Invite the bot to each channel: /invite @<your-app>"; \
-		echo "6. export SLACK_DEMO_BOT_TOKEN=xoxb-..."; \
-		echo "7. make slack-seed"; \
-		exit 1; \
-	fi
-	$(COMPOSE) exec -e SLACK_DEMO_BOT_TOKEN api python /app/seed_data/slack_seed.py
-
 .PHONY: install-hooks
 install-hooks: ## Install pre-commit git hooks
 	pre-commit install

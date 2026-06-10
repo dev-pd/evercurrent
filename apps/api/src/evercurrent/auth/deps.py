@@ -19,7 +19,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from evercurrent.auth.auth0 import Auth0Verifier, InvalidTokenError
-from evercurrent.config import get_settings
 from evercurrent.db.models import Org, OrgMembership
 from evercurrent.db.session import get_sessionmaker
 from evercurrent.tenancy.rls import set_org_context
@@ -55,59 +54,6 @@ def get_auth0_verifier(request: Request) -> Auth0Verifier:
 VerifierDep = Annotated[Auth0Verifier, Depends(get_auth0_verifier)]
 
 
-async def _demo_fallback_user(
-    request: Request,
-    session: AsyncSession,
-) -> CurrentUser:
-    """Return the first org's first membership as the current user.
-
-    Demo mode only: lets the dashboard render without a fully configured
-    Auth0 API audience. Creates a synthetic membership if none exists.
-    """
-    # Prefer the demo org (Atlas Hardware) by name; fall back to first.
-    org_row = (
-        await session.execute(
-            select(Org).where(Org.name == "Atlas Hardware").limit(1),
-        )
-    ).scalar_one_or_none()
-    if org_row is None:
-        org_row = (
-            await session.execute(select(Org).order_by(Org.created_at).limit(1))
-        ).scalar_one_or_none()
-    if org_row is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="no orgs provisioned (run db_seed first)",
-        )
-    membership_row = (
-        await session.execute(
-            select(OrgMembership).where(OrgMembership.org_id == org_row.id).limit(1),
-        )
-    ).scalar_one_or_none()
-    if membership_row is None:
-        membership_row = OrgMembership(
-            org_id=org_row.id,
-            auth0_user_id="demo|fallback",
-            email="demo@evercurrent.local",
-            display_name="Demo User",
-        )
-        session.add(membership_row)
-        await session.flush()
-        # Commit so subsequent requests (and Celery tasks looking up this
-        # membership_id) can see the row. Without this each request creates
-        # a fresh membership in memory only.
-        await session.commit()
-    request.state.org_id = org_row.id
-    await set_org_context(session, org_row.id)
-    return CurrentUser(
-        org_id=org_row.id,
-        membership_id=membership_row.id,
-        auth0_user_id=membership_row.auth0_user_id,
-        email=membership_row.email,
-        display_name=membership_row.display_name,
-    )
-
-
 async def require_user(
     request: Request,
     creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
@@ -115,10 +61,7 @@ async def require_user(
     session: SessionDep,
 ) -> CurrentUser:
     """Verify Bearer token, resolve Org + OrgMembership, set RLS."""
-    settings = get_settings()
     if creds is None:
-        if settings.demo_auth_fallback:
-            return await _demo_fallback_user(request, session)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="missing bearer token",
@@ -126,16 +69,12 @@ async def require_user(
     try:
         claims = await verifier.verify(creds.credentials)
     except InvalidTokenError as exc:
-        if settings.demo_auth_fallback:
-            return await _demo_fallback_user(request, session)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(exc),
         ) from exc
 
     if claims.org_id is None:
-        if settings.demo_auth_fallback:
-            return await _demo_fallback_user(request, session)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="token has no org_id claim",
@@ -147,8 +86,6 @@ async def require_user(
         )
     ).scalar_one_or_none()
     if org_row is None:
-        if settings.demo_auth_fallback:
-            return await _demo_fallback_user(request, session)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="org not provisioned",
