@@ -35,7 +35,7 @@ router = APIRouter(prefix="/api/v1/cards", tags=["cards"])
 async def list_cards(
     session: SessionDep,
     _user: CurrentUserDep,
-    project_id: Annotated[uuid.UUID, Query()],
+    project_id: Annotated[uuid.UUID | None, Query()] = None,
     kind: Annotated[str | None, Query()] = None,
     status_filter: Annotated[str | None, Query(alias="status")] = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,

@@ -58,7 +58,7 @@ export const cardListItemSchema = z.object({
   summary: z.string(),
   status: z.string(),
   sources_count: z.number().int(),
-  edges_count: z.number().int(),
+  edges_count: z.number().int().default(0),
   confidence: z.number().nullable().optional(),
   decided_at: z.string().nullable().optional(),
   updated_at: z.string(),

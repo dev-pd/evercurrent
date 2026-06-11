@@ -125,14 +125,18 @@ async def add_card_sources(
 async def list_cards(
     session: AsyncSession,
     *,
-    project_id: uuid.UUID,
+    project_id: uuid.UUID | None = None,
     kind: str | None = None,
     status: str | None = None,
     limit: int = 50,
 ) -> list[CardListItem]:
-    """List Cards for a project, ordered by updated_at desc."""
-    clauses = ["project_id = :project_id"]
-    params: dict[str, Any] = {"project_id": str(project_id), "limit": limit}
+    """List Cards, ordered by updated_at desc. RLS scopes to the caller's org;
+    `project_id` narrows to one project when given."""
+    clauses = ["TRUE"]
+    params: dict[str, Any] = {"limit": limit}
+    if project_id is not None:
+        clauses.append("project_id = :project_id")
+        params["project_id"] = str(project_id)
     if kind is not None:
         clauses.append("kind = :kind")
         params["kind"] = kind

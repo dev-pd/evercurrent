@@ -20,18 +20,18 @@ from evercurrent.mcp.schemas import MessageRef, ThreadContext
 
 log = structlog.get_logger(__name__)
 
+# Post Phase-8 messages are denormalized (channel text + author_display_name
+# + posted_at) — no channels/users joins.
 _LOOKUP_SQL = text(
     """
     SELECT
         m.id AS id,
         m.thread_root_id AS thread_root_id,
-        c.name AS channel,
-        u.display_name AS author,
+        m.channel AS channel,
+        m.author_display_name AS author,
         m.text AS text,
-        m.ts AS posted_at
+        m.posted_at AS posted_at
     FROM messages m
-    JOIN channels c ON c.id = m.channel_id
-    JOIN users u ON u.id = m.author_id
     WHERE m.id = :message_id
     """,
 ).bindparams(bindparam("message_id"))
@@ -40,16 +40,14 @@ _REPLIES_SQL = text(
     """
     SELECT
         m.id AS id,
-        c.name AS channel,
-        u.display_name AS author,
+        m.channel AS channel,
+        m.author_display_name AS author,
         m.text AS text,
-        m.ts AS posted_at
+        m.posted_at AS posted_at
     FROM messages m
-    JOIN channels c ON c.id = m.channel_id
-    JOIN users u ON u.id = m.author_id
     WHERE m.thread_root_id = :root_id
       AND m.id <> :root_id
-    ORDER BY m.ts ASC
+    ORDER BY m.posted_at ASC
     """,
 ).bindparams(bindparam("root_id"))
 
