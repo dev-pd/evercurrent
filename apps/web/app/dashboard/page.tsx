@@ -56,10 +56,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   // Beneficial KPIs (not the bucket counts shown below): activity, program
   // progress, deadline, and decisions touching the viewer's subsystems.
-  const [today, timeline, cards] = await Promise.all([
+  const [today, timeline, cards, focus] = await Promise.all([
     projectId ? safeFetch(() => client.getToday(projectId)) : Promise.resolve(null),
     projectId ? safeFetch(() => client.getTimeline(projectId)) : Promise.resolve(null),
     projectId ? safeFetch(() => client.listCards({ projectId })) : Promise.resolve(null),
+    safeFetch(() => client.getFocus()),
   ]);
 
   const buckets = parseDigest(digest?.content_md);
@@ -91,7 +92,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           kpis={kpis}
         />
 
-        <FocusPanel />
+        <FocusPanel focus={focus ?? []} />
 
         <AnomalyBanner anomalies={digest?.anomalies ?? []} />
 
