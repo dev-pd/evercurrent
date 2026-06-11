@@ -1,3 +1,4 @@
+import { LogOut } from "lucide-react";
 import { auth0 } from "@/lib/auth0";
 
 export async function UserBadge() {
@@ -6,16 +7,23 @@ export async function UserBadge() {
     return null;
   }
 
-  const email = typeof session.user.email === "string" ? session.user.email : session.user.sub;
+  const email =
+    typeof session.user.email === "string" ? session.user.email : (session.user.sub ?? "Account");
+  const initial = email.charAt(0).toUpperCase();
 
   return (
-    <div className="flex items-center gap-3 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm">
-      <span className="text-zinc-700">{email}</span>
+    <div className="flex items-center gap-2.5 border-t border-[var(--border-default)] px-3 py-3">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-100)] text-xs font-semibold text-[var(--color-accent-700)]">
+        {initial}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-xs text-[var(--text-secondary)]">{email}</span>
       <a
         href="/api/auth/logout"
-        className="text-xs font-medium text-zinc-500 hover:text-zinc-900"
+        aria-label="Sign out"
+        title="Sign out"
+        className="shrink-0 rounded-md p-1.5 text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
       >
-        Sign out
+        <LogOut className="h-4 w-4" aria-hidden="true" />
       </a>
     </div>
   );

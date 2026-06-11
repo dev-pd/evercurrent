@@ -7,8 +7,9 @@ import { AppShell } from "@/components/layout/app-shell";
 import { ContextBar } from "@/components/dashboard/context-bar";
 import { DigestColumns } from "@/components/dashboard/digest-columns";
 import { AnomalyBanner } from "@/components/dashboard/anomaly-banner";
-import { LiveUpdatesBadge } from "@/components/dashboard/live-updates-badge";
-import type { DigestItemV2, DigestV2, MemberSummary } from "@/lib/types";
+import { EmptyState } from "@/components/ui/empty-state";
+import { parseDigest } from "@/lib/digest-parse";
+import type { DigestV2, MemberSummary } from "@/lib/types";
 
 async function safeFetch<T>(fn: () => Promise<T>): Promise<T | null> {
   try {
@@ -52,41 +53,50 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     memberList.find((m) => m.id === asMember) ?? memberList[0] ?? null;
   const projectId = projects?.[0]?.id ?? null;
 
-  const items: DigestItemV2[] = digest?.items ?? [];
-  const buckets = {
-    top_priority: items.filter((i) => i.bucket === "top_priority"),
-    watch_outs: items.filter((i) => i.bucket === "watch_outs"),
-    fyi: items.filter((i) => i.bucket === "fyi"),
-  };
+  // Beneficial KPIs (not the bucket counts shown below): activity, program
+  // progress, deadline, and decisions touching the viewer's subsystems.
+  const [today, timeline, cards] = await Promise.all([
+    projectId ? safeFetch(() => client.getToday(projectId)) : Promise.resolve(null),
+    projectId ? safeFetch(() => client.getTimeline(projectId)) : Promise.resolve(null),
+    projectId ? safeFetch(() => client.listCards({ projectId })) : Promise.resolve(null),
+  ]);
+
+  const buckets = parseDigest(digest?.content_md);
 
   const phase = digest?.phase ?? "—";
   const dayIndex = digest?.day_index ?? 0;
   const summary = buildSummary(buckets.top_priority.length, currentMember?.display_name ?? "there");
 
+  const openDecisions = (cards ?? []).filter((c) => c.status === "open").length;
+  const fcsTarget = timeline?.fcs_label?.split(" FCS")[0] ?? "—";
+
+  const kpis = [
+    { label: "Signals today", value: today?.message_count ?? 0 },
+    { label: "Program progress", value: `${timeline?.progress_pct ?? 0}%`, hint: phase },
+    { label: "FCS target", value: fcsTarget },
+    { label: "Open decisions", value: openDecisions },
+  ];
+
   return (
     <AppShell>
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
+      <div className="mx-auto flex h-full max-w-6xl flex-col gap-4">
         <ContextBar
-          members={memberList}
           currentMember={currentMember}
           phase={phase}
           dayIndex={dayIndex}
           summary={summary}
+          projectId={projectId}
+          generatedAt={digest?.generated_at ?? null}
+          kpis={kpis}
         />
-
-        <div className="flex items-center justify-between">
-          <LiveUpdatesBadge projectId={projectId} generatedAt={digest?.generated_at ?? null} />
-        </div>
 
         <AnomalyBanner anomalies={digest?.anomalies ?? []} />
 
         {digest === null ? (
-          <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-white p-8 text-center">
-            <p className="text-sm font-medium text-[var(--text-primary)]">No digest yet.</p>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
-              Connect Slack and regenerate to draft the first briefing.
-            </p>
-          </div>
+          <EmptyState
+            title="No digest yet."
+            hint="Connect Slack and regenerate to draft the first briefing."
+          />
         ) : (
           <DigestColumns buckets={buckets} />
         )}

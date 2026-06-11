@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth0 } from "@/lib/auth0";
 import { AppShell } from "@/components/layout/app-shell";
+import { PageContainer, PageHeader } from "@/components/layout/page-header";
 
 export default async function SettingsPage() {
   const session = await auth0.getSession();
@@ -13,13 +14,11 @@ export default async function SettingsPage() {
   const displayName = user.name ?? user.email ?? "Account";
   return (
     <AppShell>
-      <div className="mx-auto flex max-w-3xl flex-col gap-8">
-        <header className="border-b border-[var(--border-default)] pb-5">
-          <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">
-            Account, workspace, and notification preferences.
-          </p>
-        </header>
+      <PageContainer>
+        <PageHeader
+          title="Settings"
+          subtitle="Account, workspace, sources, and notification preferences."
+        />
 
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-[var(--text-primary)]">Account</h2>
@@ -71,7 +70,7 @@ export default async function SettingsPage() {
             Daily digest delivery (email + Slack DM) is on the roadmap.
           </div>
         </section>
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

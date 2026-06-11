@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { auth0 } from "@/lib/auth0";
 import { apiServer } from "@/lib/api";
 import { AppShell } from "@/components/layout/app-shell";
+import { PageContainer, PageHeader } from "@/components/layout/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { InsightCard } from "@/components/insights/insight-card";
 import type { ProactiveInsight } from "@/lib/types";
 
@@ -29,21 +31,17 @@ export default async function InsightsPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto flex max-w-4xl flex-col gap-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-lg font-semibold text-[var(--text-primary)]">Insights</h1>
-          <p className="text-sm text-[var(--text-muted)]">
-            Proactive changes Eve detected across requirements, specs, and their downstream impact.
-          </p>
-        </div>
+      <PageContainer>
+        <PageHeader
+          title="Insights"
+          subtitle="Proactive changes Eve detected across requirements, specs, and downstream impact."
+        />
 
         {insights.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-white p-8 text-center">
-            <p className="text-sm font-medium text-[var(--text-primary)]">No insights yet.</p>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
-              Eve surfaces requirement changes and cross-subsystem conflicts here as they appear.
-            </p>
-          </div>
+          <EmptyState
+            title="No insights yet."
+            hint="Eve surfaces requirement changes and cross-subsystem conflicts here as they appear."
+          />
         ) : (
           <div className="flex flex-col gap-6">
             {insights.map((insight) => (
@@ -51,7 +49,7 @@ export default async function InsightsPage() {
             ))}
           </div>
         )}
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

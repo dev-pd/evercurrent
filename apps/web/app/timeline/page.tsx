@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { auth0 } from "@/lib/auth0";
 import { apiServer } from "@/lib/api";
 import { AppShell } from "@/components/layout/app-shell";
+import { PageContainer, PageHeader } from "@/components/layout/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { TimelineBoard } from "@/components/timeline/timeline-board";
 import type { Timeline } from "@/lib/types";
 
@@ -43,25 +45,21 @@ export default async function TimelinePage({ searchParams }: TimelinePageProps) 
 
   return (
     <AppShell>
-      <div className="mx-auto flex max-w-4xl flex-col gap-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-lg font-semibold text-[var(--text-primary)]">Timeline</h1>
-          <p className="text-sm text-[var(--text-muted)]">
-            Program phases and subsystem progress across the NPI schedule.
-          </p>
-        </div>
+      <PageContainer>
+        <PageHeader
+          title="Timeline"
+          subtitle="Program phases and subsystem progress across the NPI schedule."
+        />
 
         {timeline ? (
           <TimelineBoard timeline={timeline} />
         ) : (
-          <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-white p-8 text-center">
-            <p className="text-sm font-medium text-[var(--text-primary)]">No timeline yet.</p>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
-              Once a project exists, its phase plan and subsystem lanes show here.
-            </p>
-          </div>
+          <EmptyState
+            title="No timeline yet."
+            hint="Once a project exists, its phase plan and subsystem lanes show here."
+          />
         )}
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

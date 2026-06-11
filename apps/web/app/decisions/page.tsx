@@ -6,6 +6,7 @@ import { ArrowUpRight, GitBranch, MessageSquare } from "lucide-react";
 import { auth0 } from "@/lib/auth0";
 import { apiServer } from "@/lib/api";
 import { AppShell } from "@/components/layout/app-shell";
+import { PageContainer, PageHeader } from "@/components/layout/page-header";
 import type { CardListItem } from "@/lib/types";
 
 async function safeListCards(projectId: string | undefined): Promise<CardListItem[]> {
@@ -51,20 +52,16 @@ export default async function DecisionsPage({ searchParams }: DecisionsPageProps
 
   return (
     <AppShell>
-      <div className="mx-auto flex max-w-4xl flex-col gap-5">
-        <header className="flex flex-col gap-1 border-b border-[var(--border-default)] pb-5">
-          <div className="flex items-end justify-between">
-            <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
-              Decisions
-            </h1>
+      <PageContainer>
+        <PageHeader
+          title="Decisions"
+          subtitle="Structured decisions, risks, and actions extracted from team chatter and docs."
+          action={
             <span className="font-mono text-xs tabular-nums text-[var(--text-muted)]">
               {filtered.length}/{cards.length}
             </span>
-          </div>
-          <p className="text-sm text-[var(--text-muted)]">
-            Structured decisions, risks, and actions extracted from team chatter and docs.
-          </p>
-        </header>
+          }
+        />
 
         <div className="flex flex-wrap gap-1.5">
           <FilterChip
@@ -146,7 +143,7 @@ export default async function DecisionsPage({ searchParams }: DecisionsPageProps
             ))}
           </ul>
         )}
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

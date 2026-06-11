@@ -170,7 +170,7 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
         `/api/v1/cards/${id}/feedback`,
         cardFeedbackResponseSchema,
         await getCtx(),
-        { method: "POST", body: { useful } },
+        { method: "POST", body: { signal: useful ? 1 : -1 } },
       );
     },
     async getInsights(limit = 5) {

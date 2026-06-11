@@ -1,16 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import {
-  CircuitBoard,
-  FileText,
-  GanttChartSquare,
-  Home,
-  ListChecks,
-  Plug,
-  Settings,
-  Sparkles,
-} from "lucide-react";
+import { CircuitBoard, FileText, GanttChartSquare, Home, Settings } from "lucide-react";
 import { UserBadge } from "@/components/auth/user-badge";
+import { EveRail } from "@/components/layout/eve-rail";
+import { ViewAsSwitcher } from "@/components/layout/view-as-switcher";
 
 interface NavItem {
   href: string;
@@ -18,98 +11,71 @@ interface NavItem {
   icon: typeof Home;
 }
 
-const NAV_PRIMARY: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/timeline", label: "Timeline", icon: GanttChartSquare },
-  { href: "/insights", label: "Insights", icon: Sparkles },
+const NAV: NavItem[] = [
+  { href: "/dashboard", label: "Digest", icon: Home },
   { href: "/decisions", label: "Decisions", icon: FileText },
-  { href: "/subscriptions", label: "Subscriptions", icon: ListChecks },
-];
-
-const NAV_SECONDARY: NavItem[] = [
-  { href: "/connectors", label: "Connectors", icon: Plug },
+  { href: "/timeline", label: "Timeline", icon: GanttChartSquare },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 interface AppShellProps {
   children: ReactNode;
   orgName?: string;
+  /** Pages own their scroll, so the shell stays fixed-height. */
+  eveRail?: boolean;
 }
 
-export function AppShell({ children, orgName }: AppShellProps) {
+export function AppShell({ children, orgName, eveRail = true }: AppShellProps) {
   const workspace = orgName ?? "Atlas Hardware";
   return (
-    <div className="flex min-h-screen bg-[var(--surface-bg)]">
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-[var(--border-default)] bg-white sm:flex">
-        <div className="flex items-center gap-2 border-b border-[var(--border-default)] px-4 py-4">
+    <div className="flex h-screen overflow-hidden bg-[var(--surface-bg)]">
+      <aside className="hidden w-56 shrink-0 flex-col border-r border-[var(--border-default)] bg-white sm:flex">
+        <div className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--border-default)] px-4">
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-accent-600)] text-white">
             <CircuitBoard className="h-4 w-4" aria-hidden="true" />
           </span>
           <div className="flex min-w-0 flex-col leading-tight">
-            <span className="truncate text-sm font-semibold tracking-tight">
-              EverCurrent
-            </span>
-            <span className="truncate text-[11px] text-[var(--text-muted)]">
-              {workspace}
-            </span>
+            <span className="truncate text-sm font-semibold tracking-tight">EverCurrent</span>
+            <span className="truncate text-[11px] text-[var(--text-muted)]">{workspace}</span>
           </div>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-6 px-2 py-4">
-          <NavGroup items={NAV_PRIMARY} />
-          <div className="flex flex-col gap-1">
-            <NavLabel>Workspace</NavLabel>
-            <NavGroup items={NAV_SECONDARY} />
-          </div>
+        <nav className="flex flex-1 flex-col gap-0.5 px-2 py-4">
+          {NAV.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
+              >
+                <Icon
+                  className="h-4 w-4 text-[var(--text-muted)] group-hover:text-[var(--text-primary)]"
+                  aria-hidden="true"
+                />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="border-t border-[var(--border-default)] px-4 py-3 text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
-          <span className="font-mono">v0.12.0</span> · phase 12
-        </div>
+        <UserBadge />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-3 border-b border-[var(--border-default)] bg-white px-4 py-2.5 sm:px-6">
-          <div className="text-xs text-[var(--text-muted)] sm:hidden">EverCurrent</div>
-
-          <div className="ml-auto flex items-center gap-2">
-            <UserBadge />
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--border-default)] bg-white px-4 sm:px-6">
+          <span className="text-sm font-semibold text-[var(--text-primary)]">{workspace}</span>
+          <span className="rounded bg-[var(--surface-muted)] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
+            DVT · Day 42
+          </span>
+          <div className="ml-auto">
+            <ViewAsSwitcher />
           </div>
         </header>
-        <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8">{children}</main>
+        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">{children}</main>
       </div>
+
+      {eveRail && <EveRail />}
     </div>
-  );
-}
-
-function NavGroup({ items }: { items: NavItem[] }) {
-  return (
-    <ul className="flex flex-col gap-0.5">
-      {items.map((item) => {
-        const Icon = item.icon;
-        return (
-          <li key={item.href}>
-            <Link
-              href={item.href}
-              className="group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
-            >
-              <Icon
-                className="h-4 w-4 text-[var(--text-muted)] group-hover:text-[var(--text-primary)]"
-                aria-hidden="true"
-              />
-              <span>{item.label}</span>
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-function NavLabel({ children }: { children: ReactNode }) {
-  return (
-    <span className="px-2 text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
-      {children}
-    </span>
   );
 }
