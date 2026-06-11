@@ -3,6 +3,7 @@ import {
   cardListItemSchema,
   cardResponseSchema,
   digestV2Schema,
+  memberSummarySchema,
   projectSchema,
   regenerateResponseSchema,
   cardFeedbackResponseSchema,
@@ -12,6 +13,7 @@ import {
   type CardListItem,
   type CardResponse,
   type DigestV2,
+  type MemberSummary,
   type Project,
   type ProactiveInsight,
   type RegenerateResponse,
@@ -48,6 +50,7 @@ interface FetchContext {
   baseUrl: string;
   token: string | null;
   pathPrefix: string;
+  impersonate?: string | null;
 }
 
 async function apiFetch<T>(
@@ -61,6 +64,9 @@ async function apiFetch<T>(
   };
   if (ctx.token) {
     headers.Authorization = `Bearer ${ctx.token}`;
+  }
+  if (ctx.impersonate) {
+    headers["X-Impersonate-User"] = ctx.impersonate;
   }
   if (options.body !== undefined) {
     headers["Content-Type"] = "application/json";
@@ -97,6 +103,7 @@ async function apiFetch<T>(
 }
 
 export interface ApiClient {
+  listMembers(): Promise<MemberSummary[]>;
   listProjects(): Promise<Project[]>;
   getToday(projectId: string): Promise<TodayV2>;
   getDigestToday(): Promise<DigestV2>;
@@ -128,7 +135,11 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
   const cardListSchema = z.array(cardListItemSchema);
   const insightListSchema = z.array(proactiveInsightSchema);
   const projectListSchema = z.array(projectSchema);
+  const memberListSchema = z.array(memberSummarySchema);
   return {
+    async listMembers() {
+      return apiFetch("/api/v1/members", memberListSchema, await getCtx());
+    },
     async listProjects() {
       return apiFetch("/api/v1/projects", projectListSchema, await getCtx());
     },
@@ -175,7 +186,7 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
   };
 }
 
-export async function apiServer(): Promise<ApiClient> {
+export async function apiServer(impersonate?: string | null): Promise<ApiClient> {
   return createClient(async () => {
     let token: string | null = null;
     try {
@@ -185,7 +196,7 @@ export async function apiServer(): Promise<ApiClient> {
     } catch {
       token = null;
     }
-    return { baseUrl: INTERNAL_API_URL, token, pathPrefix: "" };
+    return { baseUrl: INTERNAL_API_URL, token, pathPrefix: "", impersonate };
   });
 }
 

@@ -58,6 +58,7 @@ services:
       DROPBOX_REDIRECT_URI: ${DROPBOX_REDIRECT_URI:-http://localhost:8080/api/v1/connectors/dropbox/oauth/callback}
       CONNECTOR_SECRET_KEY: ${CONNECTOR_SECRET_KEY:-}
       WEBHOOK_PUBLIC_URL: ${WEBHOOK_PUBLIC_URL:-}
+      DEV_LOGIN: ${DEV_LOGIN:-false}
       FERNET_KEY: ${FERNET_KEY:-}
     depends_on:
       postgres:
@@ -106,6 +107,7 @@ services:
       DROPBOX_REDIRECT_URI: ${DROPBOX_REDIRECT_URI:-http://localhost:8080/api/v1/connectors/dropbox/oauth/callback}
       CONNECTOR_SECRET_KEY: ${CONNECTOR_SECRET_KEY:-}
       WEBHOOK_PUBLIC_URL: ${WEBHOOK_PUBLIC_URL:-}
+      DEV_LOGIN: ${DEV_LOGIN:-false}
       FERNET_KEY: ${FERNET_KEY:-}
     depends_on:
       postgres:
@@ -145,6 +147,7 @@ services:
       DROPBOX_REDIRECT_URI: ${DROPBOX_REDIRECT_URI:-http://localhost:8080/api/v1/connectors/dropbox/oauth/callback}
       CONNECTOR_SECRET_KEY: ${CONNECTOR_SECRET_KEY:-}
       WEBHOOK_PUBLIC_URL: ${WEBHOOK_PUBLIC_URL:-}
+      DEV_LOGIN: ${DEV_LOGIN:-false}
       FERNET_KEY: ${FERNET_KEY:-}
     depends_on:
       redis:

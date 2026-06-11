@@ -122,6 +122,14 @@ export const cardFeedbackResponseSchema = z.object({
 });
 export type CardFeedbackResponse = z.infer<typeof cardFeedbackResponseSchema>;
 
+export const memberSummarySchema = z.object({
+  id: z.string().uuid(),
+  display_name: z.string(),
+  eng_role: z.string().nullable(),
+  owned_subsystems: z.array(z.string()),
+});
+export type MemberSummary = z.infer<typeof memberSummarySchema>;
+
 export const specSnapshotSchema = z.object({
   label: z.string(),
   value: z.string(),

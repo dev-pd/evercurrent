@@ -22,6 +22,7 @@ from evercurrent.api.routes.events import router as events_router
 from evercurrent.api.routes.insights import router as insights_router
 from evercurrent.api.routes.jobs import router as jobs_router
 from evercurrent.api.routes.me import router as me_router
+from evercurrent.api.routes.members import router as members_router
 from evercurrent.api.routes.projects import router as projects_router
 from evercurrent.api.routes.subscriptions import router as subscriptions_router
 from evercurrent.api.routes.timeline import router as timeline_router
@@ -102,6 +103,7 @@ def create_app() -> FastAPI:
         return {"status": "ok", "checks": checks}
 
     app.include_router(me_router)
+    app.include_router(members_router)
     app.include_router(webhooks_router)
     app.include_router(projects_router)
     app.include_router(digests_router)

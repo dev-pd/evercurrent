@@ -19,6 +19,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from evercurrent.auth.auth0 import Auth0Verifier, InvalidTokenError
+from evercurrent.config import get_settings
 from evercurrent.db.models import Org, OrgMembership
 from evercurrent.db.session import get_sessionmaker
 from evercurrent.tenancy.rls import set_org_context
@@ -54,6 +55,42 @@ def get_auth0_verifier(request: Request) -> Auth0Verifier:
 VerifierDep = Annotated[Auth0Verifier, Depends(get_auth0_verifier)]
 
 
+async def _dev_user(request: Request, session: AsyncSession) -> CurrentUser:
+    """Dev-only: resolve the request to a real member without a verified token.
+
+    Picks the member named by the `X-Impersonate-User` header (the "view as"
+    switch) or the first member in the only org. Sets RLS context. Guarded by
+    `settings.dev_login`; never reached in production.
+    """
+    impersonate = request.headers.get("x-impersonate-user")
+    member: OrgMembership | None = None
+    if impersonate:
+        try:
+            member = await session.get(OrgMembership, uuid.UUID(impersonate))
+        except ValueError:
+            member = None
+    if member is None:
+        member = (
+            await session.execute(
+                select(OrgMembership).order_by(OrgMembership.created_at).limit(1),
+            )
+        ).scalar_one_or_none()
+    if member is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="no members provisioned",
+        )
+    request.state.org_id = member.org_id
+    await set_org_context(session, member.org_id)
+    return CurrentUser(
+        org_id=member.org_id,
+        membership_id=member.id,
+        auth0_user_id=member.auth0_user_id,
+        email=member.email,
+        display_name=member.display_name,
+    )
+
+
 async def require_user(
     request: Request,
     creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
@@ -61,7 +98,10 @@ async def require_user(
     session: SessionDep,
 ) -> CurrentUser:
     """Verify Bearer token, resolve Org + OrgMembership, set RLS."""
+    dev = get_settings().dev_login
     if creds is None:
+        if dev:
+            return await _dev_user(request, session)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="missing bearer token",
@@ -69,12 +109,16 @@ async def require_user(
     try:
         claims = await verifier.verify(creds.credentials)
     except InvalidTokenError as exc:
+        if dev:
+            return await _dev_user(request, session)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(exc),
         ) from exc
 
     if claims.org_id is None:
+        if dev:
+            return await _dev_user(request, session)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="token has no org_id claim",
@@ -86,6 +130,8 @@ async def require_user(
         )
     ).scalar_one_or_none()
     if org_row is None:
+        if dev:
+            return await _dev_user(request, session)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="org not provisioned",

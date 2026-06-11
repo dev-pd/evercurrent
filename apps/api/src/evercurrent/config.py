@@ -74,6 +74,11 @@ class Settings(BaseSettings):
     # Crypto: 32-byte base64 Fernet key used to encrypt connector tokens
     connector_secret_key: str | None = None
 
+    # Dev-only login bypass: when true, an unverifiable/missing token resolves
+    # to a real member (honouring X-Impersonate-User for "view as"). Lets the
+    # app render without a full Auth0 API + Organizations setup. NEVER in prod.
+    dev_login: bool = False
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
