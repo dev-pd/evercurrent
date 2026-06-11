@@ -30,6 +30,10 @@ async function forward(request: NextRequest, segments: string[]): Promise<NextRe
   if (contentType) {
     headers["Content-Type"] = contentType;
   }
+  const impersonate = request.headers.get("x-impersonate-user");
+  if (impersonate) {
+    headers["X-Impersonate-User"] = impersonate;
+  }
 
   const body =
     request.method === "GET" || request.method === "HEAD"

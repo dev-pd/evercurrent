@@ -3,6 +3,7 @@ import {
   cardListItemSchema,
   cardResponseSchema,
   digestV2Schema,
+  focusTopicSchema,
   memberSummarySchema,
   projectSchema,
   regenerateResponseSchema,
@@ -13,6 +14,7 @@ import {
   type CardListItem,
   type CardResponse,
   type DigestV2,
+  type FocusTopic,
   type MemberSummary,
   type Project,
   type ProactiveInsight,
@@ -104,6 +106,8 @@ async function apiFetch<T>(
 
 export interface ApiClient {
   listMembers(): Promise<MemberSummary[]>;
+  getFocus(): Promise<FocusTopic[]>;
+  focusSignal(topic: string, delta: number): Promise<FocusTopic[]>;
   listProjects(): Promise<Project[]>;
   getToday(projectId: string): Promise<TodayV2>;
   getDigestToday(): Promise<DigestV2>;
@@ -136,9 +140,19 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
   const insightListSchema = z.array(proactiveInsightSchema);
   const projectListSchema = z.array(projectSchema);
   const memberListSchema = z.array(memberSummarySchema);
+  const focusListSchema = z.array(focusTopicSchema);
   return {
     async listMembers() {
       return apiFetch("/api/v1/members", memberListSchema, await getCtx());
+    },
+    async getFocus() {
+      return apiFetch("/api/v1/focus", focusListSchema, await getCtx());
+    },
+    async focusSignal(topic, delta) {
+      return apiFetch("/api/v1/focus/signal", focusListSchema, await getCtx(), {
+        method: "POST",
+        body: { topic, delta },
+      });
     },
     async listProjects() {
       return apiFetch("/api/v1/projects", projectListSchema, await getCtx());
@@ -201,11 +215,13 @@ export async function apiServer(impersonate?: string | null): Promise<ApiClient>
 }
 
 export function apiBrowser(): ApiClient {
-  return createClient(async () => ({
-    baseUrl: "",
-    token: null,
-    pathPrefix: "/api/proxy",
-  }));
+  return createClient(async () => {
+    const impersonate =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("as")
+        : null;
+    return { baseUrl: "", token: null, pathPrefix: "/api/proxy", impersonate };
+  });
 }
 
 export function getApiBaseUrl(): string {

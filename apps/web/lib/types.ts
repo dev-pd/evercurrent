@@ -122,6 +122,15 @@ export const cardFeedbackResponseSchema = z.object({
 });
 export type CardFeedbackResponse = z.infer<typeof cardFeedbackResponseSchema>;
 
+export const focusTopicSchema = z.object({
+  topic: z.string(),
+  label: z.string(),
+  weight: z.number(),
+  sources: z.array(z.enum(["role", "phase", "learned"])),
+  trend: z.enum(["up", "flat", "down"]),
+});
+export type FocusTopic = z.infer<typeof focusTopicSchema>;
+
 export const memberSummarySchema = z.object({
   id: z.string().uuid(),
   display_name: z.string(),

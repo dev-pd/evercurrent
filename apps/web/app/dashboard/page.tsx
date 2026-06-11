@@ -5,6 +5,7 @@ import { auth0 } from "@/lib/auth0";
 import { apiServer } from "@/lib/api";
 import { AppShell } from "@/components/layout/app-shell";
 import { ContextBar } from "@/components/dashboard/context-bar";
+import { FocusPanel } from "@/components/dashboard/focus-panel";
 import { DigestColumns } from "@/components/dashboard/digest-columns";
 import { AnomalyBanner } from "@/components/dashboard/anomaly-banner";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -89,6 +90,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           generatedAt={digest?.generated_at ?? null}
           kpis={kpis}
         />
+
+        <FocusPanel />
 
         <AnomalyBanner anomalies={digest?.anomalies ?? []} />
 
