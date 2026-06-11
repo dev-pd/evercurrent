@@ -94,7 +94,8 @@ async def _load_member_profile(
     row = (
         await session.execute(
             text(
-                "SELECT id, org_id, display_name, role, timezone "
+                "SELECT id, org_id, display_name, role, eng_role, "
+                "owned_subsystems, topic_weights, timezone "
                 "FROM org_memberships WHERE id = :id",
             ),
             {"id": str(project_member_id)},
@@ -104,18 +105,14 @@ async def _load_member_profile(
         return None
     org_id = uuid.UUID(str(row["org_id"]))
 
-    # `org_memberships` carries timezone + role but not subsystems /
-    # topic_weights — those live on the project_members link table in the
-    # design doc, which is not yet materialised. Until the column exists,
-    # leave both empty; attempting the SELECT inside an aborted transaction
-    # poisons subsequent queries on the same connection.
-    topic_weights: dict[str, float] = {}
-    subsystems: list[str] = []
+    topic_weights: dict[str, float] = dict(row["topic_weights"] or {})
+    subsystems: list[str] = list(row["owned_subsystems"] or [])
+    eng_role = row["eng_role"] or row["role"]
 
     profile = MemberProfile(
         project_member_id=uuid.UUID(str(row["id"])),
         display_name=str(row["display_name"] or ""),
-        role=str(row["role"] or "member"),
+        role=str(eng_role or "member"),
         timezone=str(row["timezone"] or "UTC"),
         owned_subsystems=subsystems,
         topic_weights=topic_weights,

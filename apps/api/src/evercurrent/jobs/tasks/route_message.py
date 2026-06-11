@@ -271,10 +271,7 @@ def _enqueue_followups(
     try:
         celery_app.send_task(
             "evercurrent.score_message_for_members",
-            kwargs={
-                "message_id": str(message_id),
-                "org_id": str(org_id),
-            },
+            kwargs={"message_id": str(message_id)},
         )
     except Exception as exc:  # noqa: BLE001
         log.warning(

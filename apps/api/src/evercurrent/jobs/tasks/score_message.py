@@ -16,7 +16,7 @@ import uuid
 from typing import Any
 
 import structlog
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from evercurrent.db import models
 from evercurrent.db.session import session_scope
@@ -34,16 +34,22 @@ async def score_message_for_members(
 ) -> dict[str, Any]:
     msg_uuid = uuid.UUID(message_id)
     async with session_scope() as session:
+        # Message ORM model is stale (legacy channel_id/day/ts) vs the real
+        # org-scoped table; read the columns we need via raw SQL.
         msg = (
             await session.execute(
-                select(models.Message).where(models.Message.id == msg_uuid),
+                text(
+                    "SELECT org_id, project_id, author_membership_id "
+                    "FROM messages WHERE id = :id",
+                ),
+                {"id": str(msg_uuid)},
             )
-        ).scalar_one_or_none()
+        ).mappings().first()
         if msg is None:
             log.info("scoring.skipped", reason="message_missing", message_id=message_id)
             return {"scored": 0, "reason": "message_missing"}
 
-        org_id = getattr(msg, "org_id", None)
+        org_id = msg["org_id"]
         if org_id is None:
             log.info("scoring.skipped", reason="no_org_id", message_id=message_id)
             return {"scored": 0, "reason": "no_org_id"}
@@ -51,9 +57,13 @@ async def score_message_for_members(
 
         tag = (
             await session.execute(
-                select(models.MessageTag).where(models.MessageTag.message_id == msg_uuid),
+                text(
+                    "SELECT topic, urgency, entities, affected_roles "
+                    "FROM message_tags WHERE message_id = :id",
+                ),
+                {"id": str(msg_uuid)},
             )
-        ).scalar_one_or_none()
+        ).mappings().first()
         if tag is None:
             log.info("scoring.skipped", reason="no_tag", message_id=message_id)
             return {"scored": 0, "reason": "no_tag"}
@@ -66,18 +76,42 @@ async def score_message_for_members(
         if not memberships:
             return {"scored": 0, "reason": "no_members"}
 
+        # Project phase concerns for the phase-match signal. Messages may carry
+        # no project_id (backfill), so fall back to the org's single project.
+        project = (
+            await session.execute(
+                select(models.Project)
+                .where(models.Project.id == msg["project_id"])
+                if msg["project_id"] is not None
+                else select(models.Project).limit(1),
+            )
+        ).scalar_one_or_none()
+        phase_concerns: list[str] = []
+        if project is not None:
+            phase_concerns = list(
+                (project.phase_concerns or {}).get(project.current_phase, []),
+            )
+
+        # Resolve the author's engineering role for the cross-functional signal.
+        author_role = "unknown"
+        author_mid = msg["author_membership_id"]
+        if author_mid is not None:
+            author = next((mm for mm in memberships if mm.id == author_mid), None)
+            if author is not None:
+                author_role = author.eng_role or author.role
+
         rows: list[dict[str, object]] = []
         for m in memberships:
             inp = ScoreInput(
-                member_role=getattr(m, "role", "member"),
-                owned_subsystems=[],
-                topic_weights={},
-                author_role="unknown",
-                message_topic=getattr(tag, "topic", None),
-                message_entities=list(getattr(tag, "entities", []) or []),
-                message_affected_roles=list(getattr(tag, "affected_roles", []) or []),
-                message_urgency=getattr(tag, "urgency", None),
-                phase_concerns=[],
+                member_role=(m.eng_role or m.role),
+                owned_subsystems=list(m.owned_subsystems or []),
+                topic_weights=dict(m.topic_weights or {}),
+                author_role=author_role,
+                message_topic=tag["topic"],
+                message_entities=list(tag["entities"] or []),
+                message_affected_roles=list(tag["affected_roles"] or []),
+                message_urgency=tag["urgency"],
+                phase_concerns=phase_concerns,
             )
             result = score(inp)
             rows.append(

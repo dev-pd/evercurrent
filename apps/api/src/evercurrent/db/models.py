@@ -498,6 +498,17 @@ class OrgMembership(Base):
     display_name: Mapped[str] = mapped_column(Text, nullable=False)
     email: Mapped[str] = mapped_column(Text, nullable=False)
     role: Mapped[str] = mapped_column(Text, nullable=False, server_default="member")
+    eng_role: Mapped[str | None] = mapped_column(Text, nullable=True)
+    owned_subsystems: Mapped[list[str]] = mapped_column(
+        ARRAY(Text),
+        nullable=False,
+        server_default="{}",
+    )
+    topic_weights: Mapped[dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default="{}",
+    )
     timezone: Mapped[str] = mapped_column(Text, nullable=False, server_default="UTC")
     quiet_start: Mapped[dt.time | None] = mapped_column(nullable=True)
     quiet_end: Mapped[dt.time | None] = mapped_column(nullable=True)
