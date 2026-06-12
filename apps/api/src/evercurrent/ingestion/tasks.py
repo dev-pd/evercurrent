@@ -11,15 +11,11 @@ Pipeline:
 5. Run the Haiku classifier on title + first 3 chunks.
 6. Publish `document_ingested` to Redis for SSE consumers.
 
-Two entrypoints:
-
-- `ingest_pdf_bytes(...)` — used by the mock-drive path (no Drive call)
-- `ingest_drive_file(...)` — used by the live Drive webhook path
+Entrypoint: `ingest_pdf_bytes(...)` — used by the Dropbox sync.
 """
 
 from __future__ import annotations
 
-import json
 import uuid
 from pathlib import Path
 from typing import Any
@@ -27,9 +23,6 @@ from typing import Any
 import structlog
 from sqlalchemy import select, text
 
-from evercurrent.config import get_settings
-from evercurrent.connectors.drive.client import DriveClient
-from evercurrent.connectors.slack.crypto import TokenVault
 from evercurrent.db import models
 from evercurrent.db.session import session_scope
 from evercurrent.ingestion.chunking import Chunk, chunk_blocks
@@ -45,7 +38,6 @@ log = structlog.get_logger(__name__)
 MAX_BYTES = 50 * 1024 * 1024
 DECISION_CONFIDENCE_THRESHOLD = 0.7
 PDF_MIME = "application/pdf"
-GDOC_MIME = "application/vnd.google-apps.document"
 
 
 async def _upsert_document(
@@ -250,7 +242,7 @@ async def ingest_pdf_bytes(
     kind_hint: str = "pdf",
     embedder: EmbeddingProvider | None = None,
 ) -> dict[str, Any]:
-    """Ingest a PDF given its raw bytes. Used by mock-drive + Drive paths."""
+    """Ingest a PDF given its raw bytes. Used by the Dropbox sync."""
     if len(pdf_bytes) > MAX_BYTES:
         log.warning(
             "ingest.too_large",
@@ -290,76 +282,3 @@ async def ingest_pdf_path(
         kind_hint=kind_hint,
         embedder=embedder,
     )
-
-
-async def ingest_drive_file(
-    *,
-    connector_id: uuid.UUID,
-    drive_file_id: str,
-    embedder: EmbeddingProvider | None = None,
-) -> dict[str, Any]:
-    """Live-Drive path: download, dispatch by mime type, run the pipeline."""
-    settings = get_settings()
-    if settings.connector_secret_key is None:
-        log.error("ingest.drive.no_secret_key")
-        return {"document_id": None, "chunks": 0, "skipped": "no_secret_key"}
-    vault = TokenVault(settings.connector_secret_key)
-
-    async with session_scope() as session:
-        connector = await session.get(models.Connector, connector_id)
-        if connector is None:
-            log.warning("ingest.drive.missing_connector", connector_id=str(connector_id))
-            return {"document_id": None, "chunks": 0, "skipped": "missing_connector"}
-        org_id = connector.org_id
-        blob = vault.decrypt(connector.credentials_secret)
-        token_payload = json.loads(blob)
-        access_token = str(token_payload["access_token"])
-
-    client = DriveClient(access_token=access_token)
-    try:
-        meta = await client.files_get_metadata(drive_file_id)
-        if _is_google_doc(meta.mime_type):
-            exported = await client.files_export_text(drive_file_id)
-            # For text-exported Docs, use a synthetic single-block layout.
-            blocks = [Block(page=1, bbox=(0.0, 0.0, 0.0, 0.0), text=exported)]
-            return await _ingest_blocks(
-                blocks=blocks,
-                org_id=org_id,
-                source="drive",
-                external_id=drive_file_id,
-                title=meta.name,
-                kind_hint="gdoc",
-                embedder=embedder,
-            )
-        if not _is_pdf(meta.mime_type):
-            log.info(
-                "ingest.drive.skipped_mime",
-                file_id=drive_file_id,
-                mime_type=meta.mime_type,
-            )
-            return {
-                "document_id": None,
-                "chunks": 0,
-                "skipped": f"mime:{meta.mime_type}",
-            }
-        pdf_bytes = await client.files_download_bytes(drive_file_id)
-    finally:
-        await client.aclose()
-
-    return await ingest_pdf_bytes(
-        org_id=org_id,
-        source="drive",
-        external_id=drive_file_id,
-        title=meta.name,
-        pdf_bytes=pdf_bytes,
-        kind_hint="pdf",
-        embedder=embedder,
-    )
-
-
-def _is_pdf(mime_type: str) -> bool:
-    return mime_type == PDF_MIME
-
-
-def _is_google_doc(mime_type: str) -> bool:
-    return mime_type == GDOC_MIME

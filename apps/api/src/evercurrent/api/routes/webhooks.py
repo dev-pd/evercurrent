@@ -21,7 +21,6 @@ from sqlalchemy import select
 
 from evercurrent.auth.deps import SessionDep
 from evercurrent.config import get_settings
-from evercurrent.connectors.drive.webhook import handle_drive_webhook
 from evercurrent.connectors.slack.events import handle_event as handle_slack_event
 from evercurrent.connectors.slack.tasks import enqueue_route_message
 from evercurrent.db.models import Org, OrgMembership
@@ -181,44 +180,3 @@ async def slack_webhook(
     )
 
 
-def _enqueue_ingest_drive_file(
-    *,
-    connector_id: Any,
-    drive_file_id: str,
-) -> None:
-    """Lazy import to avoid pulling Celery into the webhook hot path on import."""
-    from evercurrent.jobs.celery_app import celery_app
-
-    celery_app.send_task(
-        "evercurrent.ingest_drive_file",
-        kwargs={
-            "connector_id": str(connector_id),
-            "drive_file_id": drive_file_id,
-        },
-    )
-
-
-@router.post("/drive")
-async def drive_webhook(
-    session: SessionDep,
-    x_goog_channel_id: Annotated[str | None, Header()] = None,
-    x_goog_channel_token: Annotated[str | None, Header()] = None,
-    x_goog_resource_state: Annotated[str | None, Header()] = None,
-    x_goog_resource_id: Annotated[str | None, Header()] = None,
-) -> Response:
-    """Google Drive push-notification webhook. Verify, diff, enqueue, ack."""
-    settings = get_settings()
-    result = await handle_drive_webhook(
-        session=session,
-        settings=settings,
-        channel_id=x_goog_channel_id,
-        channel_token=x_goog_channel_token,
-        resource_state=x_goog_resource_state,
-        resource_id=x_goog_resource_id,
-        enqueue_ingest_document=_enqueue_ingest_drive_file,
-    )
-    return Response(
-        content=json.dumps(result.body),
-        status_code=result.status_code,
-        media_type="application/json",
-    )

@@ -243,7 +243,7 @@ export function WireframeSettings() {
             <Box label="Profile" sub="role · owned subsystems · timezone" />
             <Box label="Subscriptions" sub="topics / people / subsystems you follow" />
             <Box label="Delivery" sub="in-app · Slack DM · email · time" />
-            <Box label="Sources" sub="Slack ✓ connected · Drive — · last sync 2m" />
+            <Box label="Sources" sub="Slack ✓ connected · Dropbox — · last sync 2m" />
           </div>
         </div>
       </Win>

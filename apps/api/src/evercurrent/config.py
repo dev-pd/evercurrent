@@ -54,13 +54,6 @@ class Settings(BaseSettings):
     slack_client_secret: str | None = None
     slack_signing_secret: str | None = None
 
-    # Google Drive (Phase 10)
-    google_client_id: str | None = None
-    google_client_secret: str | None = None
-    google_redirect_uri: str = (
-        "http://localhost:8000/api/v1/connectors/drive/oauth/callback"
-    )
-
     # Dropbox connector
     dropbox_client_id: str | None = None
     dropbox_client_secret: str | None = None
