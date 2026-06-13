@@ -36,7 +36,7 @@ every screen, so two short visits a day replace the open-tab firehose.
 | —     | GitHub + Jira + Email connectors                            | roadmap |
 | —     | Phase agent + Personalizer                                  | roadmap |
 
-`docs/PRODUCTION_ROADMAP.md` has the full post-take-home plan.
+See `docs/ARCHITECTURE.md` for how the pieces fit together.
 
 ## Quick start
 
@@ -81,25 +81,13 @@ get your first Card on screen in two minutes.
 
 Two agents, not one mega-agent. Router (Haiku, per-message) classifies
 and tags. Digest (Sonnet, per-user-per-morning) writes the briefing.
-The rest is pure Python. Decision rationale in `docs/DECISIONS.md`.
+The rest is pure Python. Design rationale in `docs/ARCHITECTURE.md`.
 
 ## Read order
 
-A reviewer with 30 minutes should open these four docs in order:
-
-1. **`docs/PRD.md`** — what we built and a day-in-the-life walkthrough.
-2. **`docs/SYSTEM_DESIGN.md`** — data model, API surface, request
-   lifecycle.
-3. **`docs/DECISIONS.md`** — every architectural choice as an ADR.
-4. **`docs/AGENT_VS_WORKFLOW.md`** — what the agent decides, what the
-   workflow does.
-
-Then `docs/CODE_TOUR.md` if they want a file-by-file walk before
-opening the codebase.
-
-`docs/ARCHITECTURE.md` and `docs/SYSTEM_DESIGN.md` record the design
-decisions and data model. Useful for understanding why things are the
-way they are; not required reading.
+`docs/ARCHITECTURE.md` is the single design doc — backend architecture,
+data flow, and the rationale behind the major choices. The code is the
+source of truth for everything else.
 
 ## Try the agent yourself
 
@@ -129,7 +117,7 @@ make eval            # router + scoring + rag + digest evals
 ```
 
 `make eval` runs all four evals; skips the LLM and Voyage ones if API
-keys are not set. Numbers are documented in `docs/EVAL_BASELINE.md`.
+keys are not set.
 Evals are not in CI by design — cost and nondeterminism. See ADR-013.
 
 ## Stack
@@ -142,7 +130,7 @@ Frontend: Node 25, Next.js 16.2 App Router, React 19, TypeScript 5
 strict, Tailwind v4, shadcn/ui, TanStack Query v5, Zustand, Zod.
 
 Infra (local only): Docker + docker-compose, Prometheus + Loki +
-Grafana for observability. AWS deploy in `docs/PRODUCTION_ROADMAP.md`.
+Grafana for observability.
 
 ## License
 

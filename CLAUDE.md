@@ -5,13 +5,8 @@
 ## Claude Code specific
 
 - **The code is the source of truth.** The step-by-step build is
-  complete; read these for context when you need it:
-  1. `docs/SYSTEM_DESIGN.md` — data model, APIs, services
-  2. `docs/ARCHITECTURE.md` — design decisions and rationale
-  3. `docs/AGENT_VS_WORKFLOW.md` — how agents fit (incl. Eve)
-  4. `docs/DECISIONS.md` — every architectural choice with rationale
-  5. `docs/PRD.md` — what we build (plain-English walkthrough)
-  6. `docs/TESTING_STRATEGY.md` — TDD + eval patterns
+  complete. `docs/ARCHITECTURE.md` covers the backend architecture and
+  rationale; everything else is recoverable from git history.
 - **Workflow.** Restate the goal in one sentence, list the files to
   touch, wait for `go`, implement, run `make lint`, verify, then
   commit with a Conventional Commit. Stop; don't auto-start the next
@@ -34,7 +29,7 @@
 - Do not write comments that explain what the code does. Comments
   are only for explaining why something non-obvious was done.
 - Do not skip the test plan. TDD on deterministic code is enforced —
-  write the failing test first. See `docs/TESTING_STRATEGY.md`.
+  write the failing test first (`apps/api/tests/`).
 
 ## When a doc and reality disagree
 

@@ -17,13 +17,8 @@ EverCurrent team.
 ## 2. Authoritative documents
 
 The step-by-step build is complete; the code is the source of truth.
-For context:
 
-- `docs/ARCHITECTURE.md` — design decisions and rationale.
-- `docs/SYSTEM_DESIGN.md` — data model, APIs, services.
-- `docs/AGENT_VS_WORKFLOW.md` — how the agents fit (incl. Eve).
-- `docs/DECISIONS.md` — every architectural choice with rationale.
-- `docs/PRODUCTION_ROADMAP.md` — the scale-out story.
+- `docs/ARCHITECTURE.md` — backend architecture and rationale.
 - `AGENTS.md` (this file) — coding standards and conventions.
 
 This file wins for code-style decisions.
@@ -214,7 +209,7 @@ harness instead of brittle string-match unit tests.
 - Router agent: accuracy on hand-labelled message → tags pairs.
 - Scoring: scenario-based ranking checks.
 - Digest quality: LLM-as-judge with rubric.
-- Reference numbers tracked in `docs/EVAL_BASELINE.md`. Not a CI gate.
+- Reference numbers live in the eval harness output. Not a CI gate.
 
 ## 12. Workflow
 
@@ -234,10 +229,7 @@ creep is the most common failure mode.
 - Every module has a module-level docstring explaining its role.
 - Every non-obvious public function has arg/return docs.
 - Every top-level directory has a README.md.
-- `docs/ARCHITECTURE.md` records design decisions with rationale.
-- `docs/LEARNING_NOTES.md` is the engineer's personal log — observations
-  about embedding behavior, tool-use patterns, eval insights. Filled as
-  the project progresses, not at the end.
+- `docs/ARCHITECTURE.md` records the backend architecture and rationale.
 
 ## 14. Honest disagreement
 
