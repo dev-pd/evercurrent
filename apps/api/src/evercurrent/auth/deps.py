@@ -48,24 +48,23 @@ VerifierDep = Annotated[Auth0Verifier, Depends(get_auth0_verifier)]
 
 async def _dev_user(request: Request, session: AsyncSession) -> CurrentUser:
     impersonate = request.headers.get("x-impersonate-user")
-    member: OrgMembership | None = None
     async with admin_session_scope() as admin:
-        if impersonate:
+        base = (
+            await admin.execute(select(OrgMembership).order_by(OrgMembership.created_at).limit(1))
+        ).scalar_one_or_none()
+        if base is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="no members provisioned",
+            )
+        member = base
+        if impersonate and base.role == "admin":
             try:
-                member = await admin.get(OrgMembership, uuid.UUID(impersonate))
+                target = await admin.get(OrgMembership, uuid.UUID(impersonate))
             except ValueError:
-                member = None
-        if member is None:
-            member = (
-                await admin.execute(
-                    select(OrgMembership).order_by(OrgMembership.created_at).limit(1),
-                )
-            ).scalar_one_or_none()
-    if member is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="no members provisioned",
-        )
+                target = None
+            if target is not None and target.org_id == base.org_id:
+                member = target
     request.state.org_id = member.org_id
     await set_org_context(session, member.org_id)
     return CurrentUser(
@@ -74,6 +73,7 @@ async def _dev_user(request: Request, session: AsyncSession) -> CurrentUser:
         auth0_user_id=member.auth0_user_id,
         email=member.email,
         display_name=member.display_name,
+        role=base.role,
     )
 
 
@@ -139,6 +139,7 @@ async def require_user(
             await admin.commit()
         org_id = org_row.id
         membership_id = membership_row.id
+        member_role = membership_row.role
 
     request.state.org_id = org_id
     await set_org_context(session, org_id)
@@ -149,11 +150,12 @@ async def require_user(
         auth0_user_id=claims.sub,
         email=claims.email or "",
         display_name=claims.name or claims.email or claims.sub,
+        role=member_role,
     )
 
 
 class CurrentUser:
-    __slots__ = ("auth0_user_id", "display_name", "email", "membership_id", "org_id")
+    __slots__ = ("auth0_user_id", "display_name", "email", "membership_id", "org_id", "role")
 
     def __init__(
         self,
@@ -163,12 +165,27 @@ class CurrentUser:
         auth0_user_id: str,
         email: str,
         display_name: str,
+        role: str = "member",
     ) -> None:
         self.org_id = org_id
         self.membership_id = membership_id
         self.auth0_user_id = auth0_user_id
         self.email = email
         self.display_name = display_name
+        self.role = role
+
+    @property
+    def is_admin(self) -> bool:
+        return self.role == "admin"
 
 
 CurrentUserDep = Annotated[CurrentUser, Depends(require_user)]
+
+
+async def require_admin(user: CurrentUserDep) -> CurrentUser:
+    if not user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="admin only")
+    return user
+
+
+AdminUserDep = Annotated[CurrentUser, Depends(require_admin)]

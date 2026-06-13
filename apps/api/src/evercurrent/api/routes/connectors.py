@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func, select
 from starlette.responses import RedirectResponse
 
-from evercurrent.auth.deps import CurrentUserDep, SessionDep
+from evercurrent.auth.deps import AdminUserDep, SessionDep
 from evercurrent.config import get_settings
 from evercurrent.connectors.dropbox import install as dropbox_install
 from evercurrent.connectors.dropbox.client import DropboxAPIError, DropboxClient
@@ -60,7 +60,7 @@ def _vault() -> TokenVault:
 @router.get("")
 async def list_connectors(
     session: SessionDep,
-    current_user: CurrentUserDep,
+    current_user: AdminUserDep,
 ) -> list[ConnectorSummary]:
     rows = (
         (
@@ -97,7 +97,7 @@ async def list_connectors(
 
 
 @router.post("/slack/install")
-async def slack_install_start(current_user: CurrentUserDep) -> InstallResponse:
+async def slack_install_start(current_user: AdminUserDep) -> InstallResponse:
     settings = get_settings()
     if settings.slack_client_id is None:
         raise HTTPException(
@@ -161,7 +161,7 @@ class DropboxSyncResult(BaseModel):
 
 
 @router.post("/dropbox/install")
-async def dropbox_install_start(current_user: CurrentUserDep) -> InstallResponse:
+async def dropbox_install_start(current_user: AdminUserDep) -> InstallResponse:
     settings = get_settings()
     if settings.dropbox_client_id is None:
         raise HTTPException(
@@ -205,8 +205,10 @@ async def dropbox_oauth_callback(
 @router.get("/{connector_id}/dropbox/folders")
 async def list_dropbox_folders(
     session: SessionDep,
+    current_user: AdminUserDep,
     connector_id: uuid.UUID,
 ) -> list[DropboxFolderSummary]:
+    _ = current_user
     connector = (
         await session.execute(
             select(models.Connector).where(
@@ -233,9 +235,11 @@ async def list_dropbox_folders(
 @router.post("/{connector_id}/dropbox/sync")
 async def sync_dropbox_folder(
     session: SessionDep,
+    current_user: AdminUserDep,
     connector_id: uuid.UUID,
     payload: DropboxFolderSelection,
 ) -> DropboxSyncResult:
+    _ = current_user
     settings = get_settings()
     try:
         result = await dropbox_sync_folder(
@@ -261,7 +265,7 @@ async def toggle_channel_ingest(
     external_id: str,
     payload: ChannelTogglePayload,
     session: SessionDep,
-    current_user: CurrentUserDep,
+    current_user: AdminUserDep,
 ) -> dict[str, bool]:
     row = (
         await session.execute(
