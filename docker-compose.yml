@@ -16,6 +16,7 @@ services:
       start_period: 5s
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     expose:
       - "5432"
 
@@ -39,6 +40,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://evercurrent:evercurrent@postgres:5432/evercurrent}
+      APP_DATABASE_URL: ${APP_DATABASE_URL:-postgresql+asyncpg://app_rw:app_rw@postgres:5432/evercurrent}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}

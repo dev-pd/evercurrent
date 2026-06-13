@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from evercurrent.auth.auth0 import Auth0Verifier, InvalidTokenError
 from evercurrent.config import get_settings
 from evercurrent.db.models import Org, OrgMembership
-from evercurrent.db.session import get_sessionmaker
+from evercurrent.db.session import admin_session_scope, get_sessionmaker
 from evercurrent.tenancy.rls import set_org_context
 
 log = structlog.get_logger(__name__)
@@ -49,17 +49,18 @@ VerifierDep = Annotated[Auth0Verifier, Depends(get_auth0_verifier)]
 async def _dev_user(request: Request, session: AsyncSession) -> CurrentUser:
     impersonate = request.headers.get("x-impersonate-user")
     member: OrgMembership | None = None
-    if impersonate:
-        try:
-            member = await session.get(OrgMembership, uuid.UUID(impersonate))
-        except ValueError:
-            member = None
-    if member is None:
-        member = (
-            await session.execute(
-                select(OrgMembership).order_by(OrgMembership.created_at).limit(1),
-            )
-        ).scalar_one_or_none()
+    async with admin_session_scope() as admin:
+        if impersonate:
+            try:
+                member = await admin.get(OrgMembership, uuid.UUID(impersonate))
+            except ValueError:
+                member = None
+        if member is None:
+            member = (
+                await admin.execute(
+                    select(OrgMembership).order_by(OrgMembership.created_at).limit(1),
+                )
+            ).scalar_one_or_none()
     if member is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -108,43 +109,43 @@ async def require_user(
             detail="token has no org_id claim",
         )
 
-    org_row = (
-        await session.execute(
-            select(Org).where(Org.auth0_org_id == claims.org_id),
-        )
-    ).scalar_one_or_none()
-    if org_row is None:
-        if dev:
-            return await _dev_user(request, session)
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="org not provisioned",
-        )
+    async with admin_session_scope() as admin:
+        org_row = (
+            await admin.execute(select(Org).where(Org.auth0_org_id == claims.org_id))
+        ).scalar_one_or_none()
+        if org_row is None:
+            if dev:
+                return await _dev_user(request, session)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="org not provisioned",
+            )
+        membership_row = (
+            await admin.execute(
+                select(OrgMembership).where(
+                    OrgMembership.org_id == org_row.id,
+                    OrgMembership.auth0_user_id == claims.sub,
+                ),
+            )
+        ).scalar_one_or_none()
+        if membership_row is None:
+            membership_row = OrgMembership(
+                org_id=org_row.id,
+                auth0_user_id=claims.sub,
+                email=claims.email or "",
+                display_name=claims.name or claims.email or claims.sub,
+            )
+            admin.add(membership_row)
+            await admin.commit()
+        org_id = org_row.id
+        membership_id = membership_row.id
 
-    membership_row = (
-        await session.execute(
-            select(OrgMembership).where(
-                OrgMembership.org_id == org_row.id,
-                OrgMembership.auth0_user_id == claims.sub,
-            ),
-        )
-    ).scalar_one_or_none()
-    if membership_row is None:
-        membership_row = OrgMembership(
-            org_id=org_row.id,
-            auth0_user_id=claims.sub,
-            email=claims.email or "",
-            display_name=claims.name or claims.email or claims.sub,
-        )
-        session.add(membership_row)
-        await session.flush()
-
-    request.state.org_id = org_row.id
-    await set_org_context(session, org_row.id)
+    request.state.org_id = org_id
+    await set_org_context(session, org_id)
 
     return CurrentUser(
-        org_id=org_row.id,
-        membership_id=membership_row.id,
+        org_id=org_id,
+        membership_id=membership_id,
         auth0_user_id=claims.sub,
         email=claims.email or "",
         display_name=claims.name or claims.email or claims.sub,

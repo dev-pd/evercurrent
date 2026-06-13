@@ -9,12 +9,13 @@ import structlog
 from fastapi import APIRouter, Header, HTTPException, Request, Response, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from evercurrent.auth.deps import SessionDep
 from evercurrent.config import get_settings
 from evercurrent.connectors.slack.events import handle_event as handle_slack_event
 from evercurrent.connectors.slack.tasks import enqueue_route_message
 from evercurrent.db.models import Org, OrgMembership
+from evercurrent.db.session import admin_session_scope
 
 log = structlog.get_logger(__name__)
 
@@ -53,7 +54,7 @@ def _verify_signature(body: bytes, signature: str | None) -> None:
         )
 
 
-async def _handle_org_created(session: SessionDep, payload: Auth0OrgEvent) -> None:
+async def _handle_org_created(session: AsyncSession, payload: Auth0OrgEvent) -> None:
     existing = (
         await session.execute(select(Org).where(Org.auth0_org_id == payload.org_id))
     ).scalar_one_or_none()
@@ -61,7 +62,7 @@ async def _handle_org_created(session: SessionDep, payload: Auth0OrgEvent) -> No
         session.add(Org(auth0_org_id=payload.org_id, name=payload.org_name or payload.org_id))
 
 
-async def _handle_org_deleted(session: SessionDep, payload: Auth0OrgEvent) -> None:
+async def _handle_org_deleted(session: AsyncSession, payload: Auth0OrgEvent) -> None:
     existing = (
         await session.execute(select(Org).where(Org.auth0_org_id == payload.org_id))
     ).scalar_one_or_none()
@@ -69,7 +70,7 @@ async def _handle_org_deleted(session: SessionDep, payload: Auth0OrgEvent) -> No
         await session.delete(existing)
 
 
-async def _handle_member_added(session: SessionDep, payload: Auth0OrgEvent) -> None:
+async def _handle_member_added(session: AsyncSession, payload: Auth0OrgEvent) -> None:
     if payload.user_id is None or payload.user_email is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -101,7 +102,7 @@ async def _handle_member_added(session: SessionDep, payload: Auth0OrgEvent) -> N
         )
 
 
-async def _handle_member_removed(session: SessionDep, payload: Auth0OrgEvent) -> None:
+async def _handle_member_removed(session: AsyncSession, payload: Auth0OrgEvent) -> None:
     if payload.user_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -127,7 +128,6 @@ async def _handle_member_removed(session: SessionDep, payload: Auth0OrgEvent) ->
 @router.post("/auth0")
 async def auth0_webhook(
     request: Request,
-    session: SessionDep,
     x_evercurrent_signature: Annotated[str | None, Header()] = None,
 ) -> dict[str, Any]:
     body = await request.body()
@@ -141,28 +141,29 @@ async def auth0_webhook(
         "member.removed": _handle_member_removed,
     }
     handler = handlers[payload.type]
-    await handler(session, payload)
-    await session.commit()
+    async with admin_session_scope() as session:
+        await handler(session, payload)
+        await session.commit()
     return {"ok": True}
 
 
 @router.post("/slack")
 async def slack_webhook(
     request: Request,
-    session: SessionDep,
     x_slack_signature: Annotated[str | None, Header()] = None,
     x_slack_request_timestamp: Annotated[str | None, Header()] = None,
 ) -> Response:
     body = await request.body()
     settings = get_settings()
-    result = await handle_slack_event(
-        session=session,
-        settings=settings,
-        body=body,
-        timestamp=x_slack_request_timestamp,
-        signature=x_slack_signature,
-        enqueue_route_message=enqueue_route_message,
-    )
+    async with admin_session_scope() as session:
+        result = await handle_slack_event(
+            session=session,
+            settings=settings,
+            body=body,
+            timestamp=x_slack_request_timestamp,
+            signature=x_slack_signature,
+            enqueue_route_message=enqueue_route_message,
+        )
     return Response(
         content=json.dumps(result.body),
         status_code=result.status_code,

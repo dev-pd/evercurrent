@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default="postgresql+asyncpg://evercurrent:evercurrent@postgres:5432/evercurrent",
     )
+    app_database_url: str | None = Field(default=None)
     redis_url: str = Field(default="redis://redis:6379/0")
 
     anthropic_api_key: str | None = None
