@@ -11,10 +11,6 @@
   touch, wait for `go`, implement, run `make lint`, verify, then
   commit with a Conventional Commit. Stop; don't auto-start the next
   task.
-- When stuck, prefer using the `planner` subagent over guessing.
-  (`Use the planner subagent to think through how to ...`)
-- For frequent operations (new route, new component, new task, new
-  prompt, new migration), check `.claude/skills/` first.
 - Path-scoped rules in `.claude/rules/` auto-load on matching
   files (`apps/api/**/*.py`, `apps/web/**/*.{ts,tsx}`).
 
