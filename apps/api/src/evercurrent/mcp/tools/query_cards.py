@@ -1,10 +1,9 @@
 """query_cards tool.
 
-SQL filter over the `cards` table. The `cards` table doesn't exist yet
-(Phase 6); for now this queries the `decisions` table and maps it onto
-the `CardRef` shape so agents written in Phase 5 can consume a stable
-contract. When the `cards` table lands, this tool flips its SELECT
-target without touching the response schema or any agent code.
+SQL filter over the `cards` table (extracted decisions/risks/questions).
+Cards are org-scoped (RLS); `project_id` is currently null on every row so
+it is not used as a filter. `kind`/`status` params are cast to `text` so
+asyncpg can infer the type of the NULL-or-equals predicate.
 """
 
 from __future__ import annotations
@@ -20,26 +19,22 @@ from evercurrent.mcp.schemas import CardRef
 
 log = structlog.get_logger(__name__)
 
-# TODO(phase-6): switch to cards table. For now we read `decisions` and
-# treat `kind` as a fixed string "decision" since the decisions table has
-# no per-row kind column.
 _SQL = text(
     """
     SELECT
-        d.id AS id,
-        'decision' AS kind,
-        d.summary AS summary,
-        d.status AS status,
-        d.decided_at AS decided_at
-    FROM decisions d
-    WHERE d.project_id = :project_id
-      AND (:kind IS NULL OR :kind = 'decision')
-      AND (:status IS NULL OR d.status = :status)
-    ORDER BY d.decided_at DESC
+        id,
+        kind,
+        summary,
+        status,
+        affected_subsystems,
+        decided_at
+    FROM cards
+    WHERE (CAST(:kind AS text) IS NULL OR kind = :kind)
+      AND (CAST(:status AS text) IS NULL OR status = :status)
+    ORDER BY created_at DESC
     LIMIT :limit
     """,
 ).bindparams(
-    bindparam("project_id"),
     bindparam("kind"),
     bindparam("status"),
     bindparam("limit"),
@@ -54,16 +49,12 @@ async def query_cards(
     status: str | None = None,
     limit: int = 25,
 ) -> list[CardRef]:
-    """Return cards (placeholder: decisions) matching the kind + status filters."""
+    """Return knowledge cards matching the kind + status filters, recent first."""
     start = time.perf_counter()
+    _ = project_id  # org-scoped via RLS; cards.project_id is null
     result = await session.execute(
         _SQL,
-        {
-            "project_id": project_id,
-            "kind": kind,
-            "status": status,
-            "limit": limit,
-        },
+        {"kind": kind, "status": status, "limit": limit},
     )
     rows = list(result.mappings())
 
@@ -73,6 +64,7 @@ async def query_cards(
             kind=r["kind"],
             summary=r["summary"],
             status=r["status"],
+            affected_subsystems=list(r["affected_subsystems"] or []),
             decided_at=r["decided_at"],
         )
         for r in rows
@@ -82,7 +74,6 @@ async def query_cards(
     log.info(
         "mcp.tool_call",
         tool_name="query_cards",
-        project_id=str(project_id),
         kind=kind,
         status=status,
         result_count=len(out),

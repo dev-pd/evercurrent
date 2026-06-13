@@ -18,13 +18,18 @@ Each insight has:
 
 from __future__ import annotations
 
-from typing import Annotated
+import datetime as dt
+import json
+import uuid
+from typing import Annotated, Any
 
 import structlog
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import text
 
 from evercurrent.auth.deps import CurrentUserDep, SessionDep
+from evercurrent.eve import run_eve
 
 log = structlog.get_logger(__name__)
 
@@ -78,29 +83,80 @@ class ProactiveInsight(BaseModel):
     impact_summary: dict[str, str]  # cost, schedule, revenue
 
 
+def _normalize(emitted: dict[str, Any], *, insight_id: str, when: str) -> dict[str, Any]:
+    """Fill required ProactiveInsight fields the agent may have omitted."""
+    sources = [
+        {
+            "kind": s.get("kind", "slack"),
+            "channel": s.get("channel"),
+            "author": s.get("author"),
+            "snippet": s.get("snippet", ""),
+            "ts": s.get("ts"),
+        }
+        for s in (emitted.get("sources") or [])
+    ]
+    return {
+        "id": insight_id,
+        "req_id": emitted.get("req_id") or "—",
+        "title": emitted.get("title") or "Untitled insight",
+        "detected_at": when,
+        "summary": emitted.get("summary") or "",
+        "before": emitted.get("before") or [],
+        "after": emitted.get("after") or [],
+        "affected_subsystems": emitted.get("affected_subsystems") or [],
+        "conflicts": emitted.get("conflicts") or [],
+        "sources": sources,
+        "suggested_action": emitted.get("suggested_action")
+        or {"label": "Review with the team", "invitees": [], "description": ""},
+        "impact_summary": emitted.get("impact_summary") or {},
+    }
+
+
 @router.get("", response_model=list[ProactiveInsight])
 async def list_insights(
     session: SessionDep,
     user: CurrentUserDep,
     limit: Annotated[int, Query(ge=1, le=20)] = 5,
 ) -> list[ProactiveInsight]:
-    """Proactive insights for the current member.
+    """Stored Eve insights, most recent first. RLS scopes to the caller's org."""
+    _ = user
+    rows = (
+        await session.execute(
+            text("SELECT payload FROM insights ORDER BY created_at DESC LIMIT :n"),
+            {"n": limit},
+        )
+    ).all()
+    return [ProactiveInsight(**row[0]) for row in rows]
 
-    Insight synthesis is not wired yet; returns an empty set until the
-    generation pipeline (message stream + RAG over specs) lands.
-    """
-    _ = (session, user, limit)  # RLS already applied by deps
-    return []
 
+@router.post("/generate", response_model=ProactiveInsight)
+async def generate_insight(session: SessionDep, user: CurrentUserDep) -> ProactiveInsight:
+    """Run the Eve agent over recent activity, store + return the insight."""
+    project = (await session.execute(text("SELECT id FROM projects LIMIT 1"))).first()
+    if project is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="no project")
 
-@router.get("/{insight_id}", response_model=ProactiveInsight)
-async def get_insight(
-    session: SessionDep,
-    user: CurrentUserDep,
-    insight_id: str,
-) -> ProactiveInsight:
-    _ = (session, user)
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"insight {insight_id} not found",
+    emitted = await run_eve(session, project_id=uuid.UUID(str(project[0])))
+    if emitted is None:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Eve produced no insight",
+        )
+
+    insight_id = str(uuid.uuid4())
+    when = dt.datetime.now(dt.UTC).isoformat()
+    payload = _normalize(emitted, insight_id=insight_id, when=when)
+    insight = ProactiveInsight(**payload)  # validate before storing
+
+    # Eve's read tools share this session; a failed read can abort the tx.
+    # Reads are throwaway, so roll back to a clean tx before persisting.
+    await session.rollback()
+    await session.execute(
+        text(
+            "INSERT INTO insights (org_id, payload) VALUES (:org, CAST(:p AS jsonb))",
+        ),
+        {"org": str(user.org_id), "p": json.dumps(payload)},
     )
+    await session.commit()
+    log.info("eve.insight_stored", insight_id=insight_id, title=insight.title)
+    return insight

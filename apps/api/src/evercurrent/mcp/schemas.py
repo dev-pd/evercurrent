@@ -41,11 +41,7 @@ class ChunkRef(BaseModel):
 
 
 class CardRef(BaseModel):
-    """A reference to a Knowledge Card (Phase 6).
-
-    Until the `cards` table lands, `query_cards` returns this shape
-    sourced from the `decisions` table as a placeholder.
-    """
+    """A reference to a Knowledge Card (decision/risk/question)."""
 
     model_config = ConfigDict(strict=True, frozen=True)
 
@@ -53,6 +49,7 @@ class CardRef(BaseModel):
     kind: str
     summary: str
     status: str
+    affected_subsystems: list[str] = []
     decided_at: dt.datetime | None = None
 
 

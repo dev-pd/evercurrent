@@ -23,22 +23,23 @@ _SQL = text(
     """
     SELECT
         m.id AS id,
-        c.name AS channel,
-        u.display_name AS author,
+        COALESCE(m.channel, '') AS channel,
+        m.author_display_name AS author,
         m.text AS text,
-        m.ts AS posted_at
+        m.posted_at AS posted_at
     FROM messages m
-    JOIN channels c ON c.id = m.channel_id
-    JOIN users u ON u.id = m.author_id
-    WHERE m.project_id = :project_id
-      AND m.text ILIKE :pattern
-    ORDER BY m.ts DESC
+    WHERE m.text ILIKE ANY(:patterns)
+    ORDER BY m.posted_at DESC
     LIMIT :limit
     """,
 ).bindparams(
-    bindparam("project_id"),
-    bindparam("pattern"),
+    bindparam("patterns"),
     bindparam("limit"),
+)
+
+_MIN_TOKEN_LEN = 3
+_STOPWORDS = frozenset(
+    {"the", "and", "for", "with", "from", "that", "this", "what", "any", "are"},
 )
 
 
@@ -66,10 +67,17 @@ async def search_messages(
         )
         return []
 
-    pattern = f"%{cleaned}%"
+    _ = project_id  # org-scoped via RLS; messages.project_id is null
+    # Keyword OR-match: a multi-word query hits any message containing any
+    # significant token, plus the full phrase. Beats a single literal ILIKE
+    # that would match nothing for compound queries.
+    tokens = [
+        w for w in cleaned.lower().split() if len(w) >= _MIN_TOKEN_LEN and w not in _STOPWORDS
+    ]
+    patterns = [f"%{cleaned}%", *(f"%{w}%" for w in tokens[:8])]
     result = await session.execute(
         _SQL,
-        {"project_id": project_id, "pattern": pattern, "limit": limit},
+        {"patterns": patterns, "limit": limit},
     )
     rows = list(result.mappings())
 
