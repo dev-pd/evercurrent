@@ -1,6 +1,3 @@
-###############################################################################
-# Builder
-###############################################################################
 FROM python:3.13-slim AS builder
 
 ENV PYTHONUNBUFFERED=1 \
@@ -17,10 +14,7 @@ RUN apt-get update \
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-COPY pyproject.toml uv.lock README.md ./
-# Dev deps (ruff, ty, pytest) are baked into the image so `make lint`
-# and `make test` work inside docker. Phase 9 (production polish) will
-# split a dev image from a slimmer prod image.
+COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project
 
@@ -31,9 +25,6 @@ COPY tests ./tests
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen
 
-###############################################################################
-# Runtime
-###############################################################################
 FROM python:3.13-slim AS runtime
 
 ENV PYTHONUNBUFFERED=1 \

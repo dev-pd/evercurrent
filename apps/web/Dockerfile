@@ -1,9 +1,5 @@
-###############################################################################
-# Builder
-###############################################################################
 FROM node:25-alpine AS builder
 
-# node:25-alpine ships without corepack — install pnpm directly.
 RUN npm install -g pnpm@latest
 
 WORKDIR /app
@@ -18,10 +14,6 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
-###############################################################################
-# Dev (linting + tests + interactive use, ships all deps + source). Build via
-# `docker build --target dev` or compose with `target: dev`.
-###############################################################################
 FROM node:25-alpine AS dev
 
 RUN apk add --no-cache bash \
@@ -29,7 +21,6 @@ RUN apk add --no-cache bash \
 
 WORKDIR /app
 
-# Pull deps + source from the builder so we don't reinstall.
 COPY --from=builder /app/node_modules /app/node_modules
 COPY --from=builder /app /app
 
@@ -38,9 +29,6 @@ ENV NODE_ENV=development \
 
 CMD ["pnpm", "dev"]
 
-###############################################################################
-# Runtime (production standalone server, no dev deps)
-###############################################################################
 FROM node:25-alpine AS runtime
 
 RUN addgroup -g 1001 -S nodejs \

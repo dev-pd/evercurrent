@@ -1,9 +1,5 @@
 name: evercurrent
 
-# Everything runs in docker. No service ports are bound to the host except
-# nginx — all access goes through http://localhost:8080. Inter-service
-# communication uses the docker network (service names as DNS).
-
 services:
   postgres:
     image: pgvector/pgvector:pg17
@@ -67,14 +63,12 @@ services:
         condition: service_healthy
     expose:
       - "8000"
-    # Bind mounts for dev — host edits propagate into the container so ruff
-    # --fix / pytest changes land on disk without a rebuild. The image still
-    # copies the same paths at build time so it stays portable.
     volumes:
       - ./apps/api/src:/app/src
       - ./apps/api/tests:/app/tests
       - ./apps/api/alembic:/app/alembic
-      - ./apps/api/alembic.ini:/app/alembic.ini      - ./apps/api/pyproject.toml:/app/pyproject.toml
+      - ./apps/api/alembic.ini:/app/alembic.ini
+      - ./apps/api/pyproject.toml:/app/pyproject.toml
 
   worker:
     build:
@@ -196,9 +190,6 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
 
-  # `web-dev` runs the same image at the builder target (with all node_modules
-  # + source). It is not started by default; use `docker compose --profile dev
-  # up web-dev` or `docker compose run --rm web-dev pnpm lint`.
   web-dev:
     profiles: ["dev"]
     build:
@@ -209,14 +200,11 @@ services:
     command: ["pnpm", "dev"]
     environment:
       NODE_ENV: development
-    # Mount the whole host source tree over /app, preserve the image's
-    # node_modules with a named volume so they survive across runs.
     volumes:
       - ./apps/web:/app
       - web_dev_node_modules:/app/node_modules
       - web_dev_next:/app/.next
 
-  # ----- Monitoring stack (opt-in: docker compose --profile monitor up) ------
   prometheus:
     profiles: ["monitor"]
     image: prom/prometheus:v3.0.1
