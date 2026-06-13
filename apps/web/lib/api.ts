@@ -56,6 +56,7 @@ interface FetchContext {
   token: string | null;
   pathPrefix: string;
   impersonate?: string | null;
+  authHeaders?: Record<string, string>;
 }
 
 async function apiFetch<T>(
@@ -72,6 +73,9 @@ async function apiFetch<T>(
   }
   if (ctx.impersonate) {
     headers["X-Impersonate-User"] = ctx.impersonate;
+  }
+  if (ctx.authHeaders) {
+    Object.assign(headers, ctx.authHeaders);
   }
   if (options.body !== undefined) {
     headers["Content-Type"] = "application/json";
@@ -232,14 +236,24 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
 export async function apiServer(impersonate?: string | null): Promise<ApiClient> {
   return createClient(async () => {
     let token: string | null = null;
+    let authHeaders: Record<string, string> | undefined;
     try {
       const { auth0 } = await import("@/lib/auth0");
       const result = await auth0.getAccessToken();
       token = result?.token ?? null;
+      const session = await auth0.getSession();
+      const user = session?.user;
+      if (user?.sub) {
+        authHeaders = {
+          "X-Auth-Sub": String(user.sub),
+          "X-Auth-Email": String(user.email ?? ""),
+          "X-Auth-Name": String(user.name ?? user.email ?? ""),
+        };
+      }
     } catch {
       token = null;
     }
-    return { baseUrl: INTERNAL_API_URL, token, pathPrefix: "", impersonate };
+    return { baseUrl: INTERNAL_API_URL, token, pathPrefix: "", impersonate, authHeaders };
   });
 }
 

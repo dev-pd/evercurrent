@@ -34,6 +34,11 @@ async function forward(request: NextRequest, segments: string[]): Promise<NextRe
   if (impersonate) {
     headers["X-Impersonate-User"] = impersonate;
   }
+  if (session.user.sub) {
+    headers["X-Auth-Sub"] = String(session.user.sub);
+    headers["X-Auth-Email"] = String(session.user.email ?? "");
+    headers["X-Auth-Name"] = String(session.user.name ?? session.user.email ?? "");
+  }
 
   const body =
     request.method === "GET" || request.method === "HEAD" ? undefined : await request.arrayBuffer();

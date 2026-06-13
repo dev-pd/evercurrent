@@ -5,17 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import { ChevronDown, Eye } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
-
-const ROLE_LABEL: Record<string, string> = {
-  mech: "Mechanical",
-  ee: "Electrical",
-  fw: "Firmware",
-  sw: "Software",
-  qa: "QA",
-  supply: "Supply Chain",
-  em: "Eng Manager",
-  pm: "Product",
-};
+import { roleLabel } from "@/lib/roles";
 
 export function ViewAsSwitcher() {
   const router = useRouter();
@@ -50,7 +40,7 @@ export function ViewAsSwitcher() {
       >
         {members.map((m) => (
           <option key={m.id} value={m.id}>
-            {m.display_name} — {ROLE_LABEL[m.eng_role ?? ""] ?? m.eng_role ?? "Member"}
+            {m.display_name} — {roleLabel(m.eng_role)}
           </option>
         ))}
       </select>

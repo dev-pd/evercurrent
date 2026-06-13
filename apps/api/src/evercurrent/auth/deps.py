@@ -46,12 +46,49 @@ def get_auth0_verifier(request: Request) -> Auth0Verifier:
 VerifierDep = Annotated[Auth0Verifier, Depends(get_auth0_verifier)]
 
 
+async def _resolve_dev_base(admin: AsyncSession, request: Request) -> OrgMembership | None:
+    """Resolve the real dev caller: the logged-in Auth0 user (by sub), creating
+    their membership in the org on first sight; falls back to the first member."""
+    sub = request.headers.get("x-auth-sub")
+    if sub:
+        existing = (
+            await admin.execute(select(OrgMembership).where(OrgMembership.auth0_user_id == sub))
+        ).scalar_one_or_none()
+        if existing is not None:
+            return existing
+        org = (
+            await admin.execute(select(Org).order_by(Org.created_at).limit(1))
+        ).scalar_one_or_none()
+        if org is not None:
+            has_admin = (
+                await admin.execute(
+                    select(OrgMembership.id).where(
+                        OrgMembership.org_id == org.id,
+                        OrgMembership.role == "admin",
+                    ),
+                )
+            ).first() is not None
+            email = request.headers.get("x-auth-email") or ""
+            name = request.headers.get("x-auth-name") or email or sub
+            created = OrgMembership(
+                org_id=org.id,
+                auth0_user_id=sub,
+                email=email,
+                display_name=name,
+                role="member" if has_admin else "admin",
+            )
+            admin.add(created)
+            await admin.commit()
+            return created
+    return (
+        await admin.execute(select(OrgMembership).order_by(OrgMembership.created_at).limit(1))
+    ).scalar_one_or_none()
+
+
 async def _dev_user(request: Request, session: AsyncSession) -> CurrentUser:
     impersonate = request.headers.get("x-impersonate-user")
     async with admin_session_scope() as admin:
-        base = (
-            await admin.execute(select(OrgMembership).order_by(OrgMembership.created_at).limit(1))
-        ).scalar_one_or_none()
+        base = await _resolve_dev_base(admin, request)
         if base is None:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

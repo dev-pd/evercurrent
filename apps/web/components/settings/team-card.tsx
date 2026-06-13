@@ -4,31 +4,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
+import { ENG_ROLES } from "@/lib/roles";
+import { messages } from "@/lib/messages";
 import type { MemberSummary } from "@/lib/types";
 
-const ROLES = [
-  { value: "", label: "— role —" },
-  { value: "mech", label: "Mechanical" },
-  { value: "ee", label: "Electrical" },
-  { value: "fw", label: "Firmware" },
-  { value: "qa", label: "QA" },
-  { value: "supply", label: "Supply chain" },
-  { value: "em", label: "Eng manager" },
-];
+const t = messages.team;
 
 export function TeamCard({ members }: { members: MemberSummary[] }) {
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold text-[var(--text-primary)]">Team</h2>
-      <p className="text-xs text-[var(--text-muted)]">
-        Assign each member their engineering role and the subsystems they own — this is what
-        personalizes their digest.
-      </p>
+      <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t.heading}</h2>
+      <p className="text-xs text-[var(--text-muted)]">{t.hint}</p>
       <div className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-white">
         {members.length === 0 ? (
-          <div className="p-4 text-sm text-[var(--text-muted)]">
-            No members yet. They appear here after their first login.
-          </div>
+          <div className="p-4 text-sm text-[var(--text-muted)]">{t.empty}</div>
         ) : (
           members.map((m, i) => <MemberRow key={m.id} member={m} divider={i > 0} />)
         )}
@@ -79,7 +68,8 @@ function MemberRow({ member, divider }: { member: MemberSummary; divider: boolea
         }}
         className="rounded-md border border-[var(--border-default)] bg-white px-2 py-1 text-sm"
       >
-        {ROLES.map((r) => (
+        <option value="">{t.rolePlaceholder}</option>
+        {ENG_ROLES.map((r) => (
           <option key={r.value} value={r.value}>
             {r.label}
           </option>
@@ -91,7 +81,7 @@ function MemberRow({ member, divider }: { member: MemberSummary; divider: boolea
           setSubs(e.target.value);
           setState("idle");
         }}
-        placeholder="subsystems, comma-separated"
+        placeholder={t.subsystemsPlaceholder}
         className="min-w-0 flex-1 rounded-md border border-[var(--border-default)] bg-white px-2 py-1 text-sm"
       />
       <button
@@ -102,7 +92,7 @@ function MemberRow({ member, divider }: { member: MemberSummary; divider: boolea
       >
         {state === "saving" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
         {state === "saved" && <Check className="h-3.5 w-3.5 text-emerald-600" />}
-        {state === "saved" ? "Saved" : "Save"}
+        {state === "saved" ? t.saved : t.save}
       </button>
     </div>
   );

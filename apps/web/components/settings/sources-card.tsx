@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { Check, Cloud, Loader2, MessageSquare } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
+import { messages } from "@/lib/messages";
 import type { ConnectorSummary } from "@/lib/types";
 
+const t = messages.sources;
+
 const SOURCES = [
-  { kind: "slack", label: "Slack", desc: "Ingest channel messages", icon: MessageSquare },
-  { kind: "dropbox", label: "Dropbox", desc: "Ingest spec PDFs", icon: Cloud },
+  { kind: "slack", label: "Slack", desc: t.slackDesc, icon: MessageSquare },
+  { kind: "dropbox", label: "Dropbox", desc: t.dropboxDesc, icon: Cloud },
 ] as const;
 
 export function SourcesCard({ connectors }: { connectors: ConnectorSummary[] }) {
@@ -21,7 +24,7 @@ export function SourcesCard({ connectors }: { connectors: ConnectorSummary[] }) 
       const { redirect_url } = await apiBrowser().startInstall(kind);
       window.location.assign(redirect_url);
     } catch {
-      setError(`Could not start ${kind} connection (is it configured?).`);
+      setError(t.failed(kind));
       setBusy(null);
     }
   }
