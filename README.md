@@ -98,13 +98,13 @@ This works on a real Slack workspace in about two minutes.
    workspace, copy the bot token (`xoxb-...`).
 2. Create channels `#mech-design`, `#qa-testing`, `#supply-chain`,
    `#general`. Invite the bot to each.
-3. `export SLACK_DEMO_BOT_TOKEN=xoxb-...`
-4. `make slack-seed` — posts 30 days of hardware-team backfill messages.
-5. Open the dashboard. Pick a member. Click "Regenerate digest." Watch
+3. Connect the workspace via the Dropbox/Slack OAuth install flow, then
+   post a few cross-subsystem messages in those channels by hand.
+4. Open the dashboard. Pick a member. Click "Regenerate digest." Watch
    Sonnet draft a three-section briefing with citation pills.
-6. Post a new message in `#mech-design` from your phone: *"Decided:
+5. Post a new message in `#mech-design` from your phone: *"Decided:
    switching BRK-A1 to AL-7075-T6. ECO-178 drafted."*
-7. Within ~2 seconds a Card appears on the dashboard with topic `eco`,
+6. Within ~2 seconds a Card appears on the dashboard with topic `eco`,
    urgency `high`, entities `[BRK-A1, AL-7075-T6, ECO-178]`. The
    linked Slack thread is one click away.
 

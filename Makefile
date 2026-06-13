@@ -130,7 +130,7 @@ eval-digest: ## Digest LLM-as-judge eval only (ANTHROPIC_API_KEY required)
 # ----- Dev utilities ---------------------------------------------------------
 
 .PHONY: ngrok
-ngrok: ## Expose port 8000 publicly for Slack/Drive webhooks (needs `ngrok` on PATH)
+ngrok: ## Expose port 8000 publicly for Slack webhooks (needs `ngrok` on PATH)
 	@command -v ngrok >/dev/null 2>&1 || { echo "Install ngrok: brew install ngrok/ngrok/ngrok"; exit 1; }
 	ngrok http 8000
 
