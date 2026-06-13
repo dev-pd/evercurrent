@@ -1,6 +1,3 @@
-// Dashboard-specific skeleton. The shell (sidebar/header/rail) is persistent in
-// the (app) layout, so this only fills the content area: context bar + the three
-// digest columns it will resolve into.
 function Shimmer({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded-md bg-[var(--surface-muted)] ${className}`} />;
 }

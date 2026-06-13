@@ -1,7 +1,5 @@
 "use client";
 
-// Catches errors thrown in the root layout itself. Must render its own
-// <html>/<body> because the layout failed.
 export default function GlobalError({ reset }: { error: Error; reset: () => void }) {
   return (
     <html lang="en">

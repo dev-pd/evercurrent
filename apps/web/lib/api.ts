@@ -26,9 +26,6 @@ import {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-// Server components run inside the web container and must reach the API by its
-// absolute internal URL. NEXT_PUBLIC_API_URL is browser-facing (e.g. "/api"
-// behind nginx) and is relative — useless for server-side fetch().
 const INTERNAL_API_URL = process.env.INTERNAL_API_URL ?? "http://api:8000";
 
 export class ApiError extends Error {
@@ -229,9 +226,5 @@ export function getApiBaseUrl(): string {
 }
 
 export function getStreamUrl(projectId: string): string {
-  // nginx routes /api/v1/events straight to the API with proxy_buffering off
-  // (real SSE); the route is unauthenticated. Keep this relative so the
-  // browser hits nginx, not the buffering Next.js proxy. Backend route is
-  // /api/v1/events (no /stream suffix).
   return `/api/v1/events?project_id=${encodeURIComponent(projectId)}`;
 }

@@ -1,6 +1,3 @@
-// Shared loading skeleton for every authed page. Renders inside the persistent
-// shell (the layout's <main>), so navigating never tears down the sidebar,
-// header, or Eve rail — only this content area shimmers until the page resolves.
 function Shimmer({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded-md bg-[var(--surface-muted)] ${className}`} />;
 }

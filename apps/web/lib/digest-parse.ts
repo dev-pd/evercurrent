@@ -14,16 +14,11 @@ const HEADER_TO_BUCKET: Record<string, Bucket> = {
   "top priorities": "top_priority",
   "watch-outs": "watch_outs",
   "watch outs": "watch_outs",
-  "watchouts": "watch_outs",
+  watchouts: "watch_outs",
   fyi: "fyi",
   "for your information": "fyi",
 };
 
-/**
- * Parse the Sonnet digest markdown (## Bucket headers + `- bullet [msg:uuid]`
- * lines) into structured bullets per bucket. The markdown carries the
- * personalized reasoning; the raw `items[]` only carry source messages.
- */
 export function parseDigest(md: string | null | undefined): ParsedDigest {
   const out: ParsedDigest = { top_priority: [], watch_outs: [], fyi: [] };
   if (!md) return out;
@@ -33,7 +28,10 @@ export function parseDigest(md: string | null | undefined): ParsedDigest {
     const line = raw.trim();
     const header = line.match(/^#{1,4}\s+(.*)$/);
     if (header) {
-      const key = header[1].toLowerCase().replace(/[*:_`]/g, "").trim();
+      const key = header[1]
+        .toLowerCase()
+        .replace(/[*:_`]/g, "")
+        .trim();
       current = HEADER_TO_BUCKET[key] ?? null;
       continue;
     }

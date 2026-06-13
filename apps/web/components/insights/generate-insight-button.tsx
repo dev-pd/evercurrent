@@ -5,11 +5,6 @@ import { useRouter } from "next/navigation";
 import { Loader2, Sparkles } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
 
-/**
- * Runs the Eve agent on demand. Eve loops over its read tools (messages,
- * specs, decision cards), then emits one grounded cross-subsystem insight,
- * which the server persists. We refresh the route to show it.
- */
 export function GenerateInsightButton() {
   const router = useRouter();
   const [running, setRunning] = useState(false);

@@ -42,12 +42,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   ]);
 
   const memberList = members ?? [];
-  const currentMember =
-    memberList.find((m) => m.id === asMember) ?? memberList[0] ?? null;
+  const currentMember = memberList.find((m) => m.id === asMember) ?? memberList[0] ?? null;
   const projectId = projects?.[0]?.id ?? null;
 
-  // Beneficial KPIs (not the bucket counts shown below): activity, program
-  // progress, deadline, and decisions touching the viewer's subsystems.
   const [today, timeline, cards, focus] = await Promise.all([
     projectId ? safeFetch(() => client.getToday(projectId)) : Promise.resolve(null),
     projectId ? safeFetch(() => client.getTimeline(projectId)) : Promise.resolve(null),
@@ -73,28 +70,28 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   return (
     <div className="mx-auto flex h-full max-w-6xl flex-col gap-4">
-        <ContextBar
-          currentMember={currentMember}
-          phase={phase}
-          dayIndex={dayIndex}
-          summary={summary}
-          projectId={projectId}
-          generatedAt={digest?.generated_at ?? null}
-          kpis={kpis}
+      <ContextBar
+        currentMember={currentMember}
+        phase={phase}
+        dayIndex={dayIndex}
+        summary={summary}
+        projectId={projectId}
+        generatedAt={digest?.generated_at ?? null}
+        kpis={kpis}
+      />
+
+      <FocusPanel focus={focus ?? []} />
+
+      <AnomalyBanner anomalies={digest?.anomalies ?? []} />
+
+      {digest === null ? (
+        <EmptyState
+          title="No digest yet."
+          hint="Connect Slack and regenerate to draft the first briefing."
         />
-
-        <FocusPanel focus={focus ?? []} />
-
-        <AnomalyBanner anomalies={digest?.anomalies ?? []} />
-
-        {digest === null ? (
-          <EmptyState
-            title="No digest yet."
-            hint="Connect Slack and regenerate to draft the first briefing."
-          />
-        ) : (
-          <DigestColumns buckets={buckets} />
-        )}
+      ) : (
+        <DigestColumns buckets={buckets} />
+      )}
     </div>
   );
 }

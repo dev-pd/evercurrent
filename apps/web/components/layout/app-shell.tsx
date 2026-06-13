@@ -21,7 +21,6 @@ const NAV: NavItem[] = [
 interface AppShellProps {
   children: ReactNode;
   orgName?: string;
-  /** Pages own their scroll, so the shell stays fixed-height. */
   eveRail?: boolean;
 }
 

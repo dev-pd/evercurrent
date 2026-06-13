@@ -3,7 +3,6 @@ interface EmptyStateProps {
   hint?: string;
 }
 
-/** Consistent dashed empty-state block used across pages. */
 export function EmptyState({ title, hint }: EmptyStateProps) {
   return (
     <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-white p-8 text-center">

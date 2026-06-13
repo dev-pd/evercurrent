@@ -36,9 +36,7 @@ async function forward(request: NextRequest, segments: string[]): Promise<NextRe
   }
 
   const body =
-    request.method === "GET" || request.method === "HEAD"
-      ? undefined
-      : await request.arrayBuffer();
+    request.method === "GET" || request.method === "HEAD" ? undefined : await request.arrayBuffer();
 
   const upstream = await fetch(url, {
     method: request.method,
