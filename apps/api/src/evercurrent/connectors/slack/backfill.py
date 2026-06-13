@@ -150,7 +150,10 @@ async def _persist_one(
     if not external_id:
         return (False, False)
 
-    if raw.get("subtype") is not None:
+    # Allow bot_message (one bot posting as persona usernames); skip other
+    # subtypes (channel joins, edits, etc.).
+    subtype = raw.get("subtype")
+    if subtype is not None and subtype != "bot_message":
         return (False, False)
 
     payload_json = _json_dumps(raw)
@@ -184,7 +187,7 @@ async def _persist_one(
     text_body = str(raw.get("text", "") or "")
     posted_at_epoch = float(external_id) if external_id else 0.0
     thread_ts = str(raw.get("thread_ts") or "")
-    author = str(raw.get("user") or raw.get("bot_id") or "unknown")
+    author = str(raw.get("username") or raw.get("user") or raw.get("bot_id") or "unknown")
 
     inserted_msg = False
     try:

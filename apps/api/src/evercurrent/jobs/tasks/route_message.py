@@ -289,7 +289,12 @@ async def _route(
         text_body = str(event.get("text") or "")
         slack_user_id = event.get("user")
         slack_user_str = str(slack_user_id) if slack_user_id else None
-        author_display = slack_user_str or str(event.get("bot_id") or "") or "unknown"
+        username = event.get("username")
+        author_display = (
+            str(username)
+            if username
+            else slack_user_str or str(event.get("bot_id") or "") or "unknown"
+        )
         try:
             posted_at_epoch = float(external_id)
         except ValueError:

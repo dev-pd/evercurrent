@@ -129,7 +129,7 @@ async def _provision_authors(session: SessionDep, client: SlackClient, org_id: u
                 text(
                     "SELECT DISTINCT author_display_name FROM messages "
                     "WHERE org_id = :o AND author_membership_id IS NULL "
-                    "AND author_display_name LIKE 'U%'",
+                    "AND author_display_name <> 'unknown'",
                 ),
                 {"o": str(org_id)},
             )
@@ -140,11 +140,16 @@ async def _provision_authors(session: SessionDep, client: SlackClient, org_id: u
 
     provisioned = 0
     for slack_uid in authors:
-        try:
-            info = (await client.users_info(user=slack_uid)).get("user", {})
-            name = info.get("real_name") or info.get("name") or slack_uid
-        except Exception as exc:  # noqa: BLE001
-            log.warning("slack.sync.user_lookup_failed", user=slack_uid, error=str(exc))
+        # Real Slack user id -> resolve the real name; a persona username is
+        # already the display name (one bot posting as personas).
+        if slack_uid.startswith("U") and " " not in slack_uid:
+            try:
+                info = (await client.users_info(user=slack_uid)).get("user", {})
+                name = info.get("real_name") or info.get("name") or slack_uid
+            except Exception as exc:  # noqa: BLE001
+                log.warning("slack.sync.user_lookup_failed", user=slack_uid, error=str(exc))
+                name = slack_uid
+        else:
             name = slack_uid
 
         member_id = (
