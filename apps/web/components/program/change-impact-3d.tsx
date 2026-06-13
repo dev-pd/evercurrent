@@ -11,25 +11,19 @@ const Subsystem3D = dynamic(() => import("./subsystem-3d"), {
   ),
 });
 
-export function ChangeImpact3D({
-  subsystems,
-  highlighted,
-}: {
-  subsystems: string[];
-  highlighted: string[];
-}) {
+export function ChangeImpact3D({ highlighted }: { highlighted: string[] }) {
   return (
-    <div className="glass glass-sheen rounded-xl border border-[var(--glass-border)] p-1">
+    <div className="glass rounded-xl border border-[var(--glass-border)] p-1">
       <div className="px-4 pt-3 pb-1">
         <h3 className="text-xs font-semibold tracking-wider text-[var(--text-secondary)] uppercase">
           Change impact
         </h3>
         <p className="text-[11px] text-[var(--text-muted)]">
-          Subsystems Eve flagged glow and connect to the core — drag to rotate.
+          The Atlas v2 robot — the part Eve flagged glows. Drag to rotate.
         </p>
       </div>
-      <div className="h-72">
-        <Subsystem3D subsystems={subsystems} highlighted={highlighted} />
+      <div className="h-80">
+        <Subsystem3D highlighted={highlighted} />
       </div>
     </div>
   );
