@@ -27,6 +27,14 @@ class MemberUpdate(BaseModel):
     owned_subsystems: list[str] | None = None
 
 
+class MemberCreate(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    display_name: str
+    eng_role: str | None = None
+    owned_subsystems: list[str] = []
+
+
 async def _load_member(session: SessionDep, membership_id: uuid.UUID) -> MemberSummary:
     row = (
         (
@@ -75,6 +83,33 @@ async def list_members(session: SessionDep, user: CurrentUserDep) -> list[Member
         )
         for r in rows
     ]
+
+
+@router.post("", response_model=MemberSummary, status_code=status.HTTP_201_CREATED)
+async def create_member(
+    body: MemberCreate,
+    session: SessionDep,
+    admin: AdminUserDep,
+) -> MemberSummary:
+    new_id = uuid.uuid4()
+    await session.execute(
+        text(
+            "INSERT INTO org_memberships "
+            "(id, org_id, auth0_user_id, display_name, email, role, eng_role, owned_subsystems) "
+            "VALUES (:id, :org, :sub, :name, '', 'member', :role, CAST(:subs AS text[]))",
+        ),
+        {
+            "id": str(new_id),
+            "org": str(admin.org_id),
+            "sub": f"persona:{new_id}",
+            "name": body.display_name,
+            "role": body.eng_role,
+            "subs": body.owned_subsystems,
+        },
+    )
+    member = await _load_member(session, new_id)
+    await session.commit()
+    return member
 
 
 @router.patch("/{membership_id}", response_model=MemberSummary)

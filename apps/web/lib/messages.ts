@@ -28,5 +28,7 @@ export const messages = {
     subsystemsPlaceholder: "subsystems, comma-separated",
     save: "Save",
     saved: "Saved",
+    namePlaceholder: "Add a member by name…",
+    add: "Add",
   },
 } as const;

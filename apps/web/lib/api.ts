@@ -112,6 +112,11 @@ async function apiFetch<T>(
 export interface ApiClient {
   getMe(): Promise<Me>;
   listMembers(): Promise<MemberSummary[]>;
+  createMember(body: {
+    display_name: string;
+    eng_role?: string | null;
+    owned_subsystems?: string[];
+  }): Promise<MemberSummary>;
   updateMember(
     id: string,
     body: { eng_role?: string | null; owned_subsystems?: string[] },
@@ -160,6 +165,12 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
     },
     async listMembers() {
       return apiFetch("/api/v1/members", memberListSchema, await getCtx());
+    },
+    async createMember(body) {
+      return apiFetch("/api/v1/members", memberSummarySchema, await getCtx(), {
+        method: "POST",
+        body,
+      });
     },
     async updateMember(id, body) {
       return apiFetch(`/api/v1/members/${id}`, memberSummarySchema, await getCtx(), {

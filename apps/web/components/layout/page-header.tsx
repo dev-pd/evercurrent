@@ -9,7 +9,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, action, toolbar }: PageHeaderProps) {
   return (
-    <div className="sticky top-0 z-20 -mt-5 border-b border-[var(--border-default)] bg-[var(--surface-bg)] pt-5">
+    <div className="sticky top-0 z-20 -mt-5 border-b border-[var(--glass-border)] bg-white/55 pt-5 backdrop-blur-xl">
       <div className={`flex items-end justify-between gap-3 ${toolbar ? "pb-3" : "pb-4"}`}>
         <div className="min-w-0">
           <h1 className="text-lg font-semibold text-[var(--text-primary)]">{title}</h1>
