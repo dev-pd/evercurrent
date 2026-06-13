@@ -15,7 +15,7 @@ export function TimelineBoard({ timeline }: TimelineBoardProps) {
   const cols = { gridTemplateColumns: `repeat(${span}, minmax(0, 1fr))` };
 
   return (
-    <section className="overflow-hidden rounded-xl border border-[var(--border-default)] bg-white">
+    <section className="glass glass-sheen overflow-hidden rounded-xl border border-[var(--glass-border)]">
       <header className="flex items-center justify-between border-b border-[var(--border-default)] px-5 py-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
           <Plane className="h-4 w-4 text-[var(--color-accent-600)]" aria-hidden="true" />

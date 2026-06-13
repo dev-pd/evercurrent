@@ -20,7 +20,7 @@ export function KnowledgeCard({ card }: KnowledgeCardProps) {
   const updated = formatTs(card.updated_at);
 
   return (
-    <article className="flex flex-col gap-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+    <article className="glass-strong flex flex-col gap-6 rounded-lg border border-[var(--glass-border)] p-6">
       <header className="flex flex-col gap-2 border-b border-zinc-200 pb-4">
         <div className="flex items-center gap-2 text-xs text-zinc-500">
           <span className="rounded-full bg-zinc-100 px-2 py-0.5 font-medium text-zinc-700">

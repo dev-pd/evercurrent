@@ -46,7 +46,7 @@ export function ContextBar({
   kpis,
 }: ContextBarProps) {
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-[var(--border-default)] bg-white px-5 py-4">
+    <div className="glass glass-sheen flex flex-col gap-3 rounded-xl border border-[var(--glass-border)] px-5 py-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[var(--color-accent-600)] text-white">

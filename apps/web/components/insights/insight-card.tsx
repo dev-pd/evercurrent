@@ -23,7 +23,7 @@ function formatDetectedAt(iso: string): string {
 
 export function InsightCard({ insight }: InsightCardProps) {
   return (
-    <article className="overflow-hidden rounded-xl border border-[var(--color-accent-200)] bg-gradient-to-br from-white to-[var(--color-accent-50)]">
+    <article className="glass-strong glass-sheen overflow-hidden rounded-xl border border-[var(--glass-border)]">
       <header className="flex items-start gap-3 border-b border-[var(--color-accent-100)] px-5 py-4">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--color-accent-600)] text-white">
           <Sparkles className="h-4 w-4" aria-hidden="true" />

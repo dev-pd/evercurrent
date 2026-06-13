@@ -45,8 +45,8 @@ export function AppShell({
     ? ({ "--color-accent-600": accent, "--color-accent-700": accent } as CSSProperties)
     : undefined;
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--surface-bg)]" style={themeStyle}>
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-[var(--border-default)] bg-white sm:flex">
+    <div className="flex h-screen overflow-hidden" style={themeStyle}>
+      <aside className="glass glass-sheen hidden w-56 shrink-0 flex-col border-r border-[var(--glass-border)] sm:flex">
         <div className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--border-default)] px-4">
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-accent-600)] text-sm font-bold text-white">
             {monogram ? (
@@ -84,7 +84,7 @@ export function AppShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--border-default)] bg-white px-4 sm:px-6">
+        <header className="glass flex h-14 shrink-0 items-center gap-2 border-b border-[var(--glass-border)] px-4 sm:px-6">
           <span className="text-sm font-semibold text-[var(--text-primary)]">{workspace}</span>
           {phaseLabel && (
             <span className="rounded bg-[var(--surface-muted)] px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-[var(--text-muted)] uppercase">
