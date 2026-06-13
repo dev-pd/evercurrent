@@ -22,7 +22,7 @@ import structlog
 
 log = structlog.get_logger(__name__)
 
-TOKEN_URL = "https://api.dropboxapi.com/oauth2/token"
+TOKEN_URL = "https://api.dropboxapi.com/oauth2/token"  # noqa: S105 — OAuth endpoint URL, not a secret
 API_BASE = "https://api.dropboxapi.com/2"
 CONTENT_BASE = "https://content.dropboxapi.com/2"
 
@@ -71,7 +71,7 @@ async def exchange_code_for_tokens(
     }
     async with httpx.AsyncClient(timeout=_TIMEOUT) as http:
         response = await http.post(TOKEN_URL, data=data)
-    if response.status_code != 200:
+    if response.status_code != httpx.codes.OK:
         raise DropboxAPIError(response.status_code, response.text)
     body = response.json()
     return TokenSet(
@@ -97,7 +97,7 @@ async def refresh_access_token(
     }
     async with httpx.AsyncClient(timeout=_TIMEOUT) as http:
         response = await http.post(TOKEN_URL, data=data)
-    if response.status_code != 200:
+    if response.status_code != httpx.codes.OK:
         raise DropboxAPIError(response.status_code, response.text)
     body = response.json()
     return TokenSet(
@@ -126,7 +126,7 @@ class DropboxClient:
         }
         async with httpx.AsyncClient(timeout=_TIMEOUT) as http:
             response = await http.post(f"{API_BASE}{path}", headers=headers, json=body)
-        if response.status_code != 200:
+        if response.status_code != httpx.codes.OK:
             raise DropboxAPIError(response.status_code, response.text)
         return response.json()
 
@@ -169,7 +169,7 @@ class DropboxClient:
                 f"{CONTENT_BASE}/files/download",
                 headers=headers,
             )
-        if response.status_code != 200:
+        if response.status_code != httpx.codes.OK:
             raise DropboxAPIError(response.status_code, response.text)
         return response.content
 

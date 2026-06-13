@@ -96,20 +96,6 @@ class AgentChatRequest(BaseModel):
     query: Annotated[str, Field(min_length=1, max_length=4000)]
 
 
-class DecisionResponse(BaseModel):
-    model_config = ConfigDict(strict=True)
-
-    id: uuid.UUID
-    summary: str
-    rationale: str | None
-    decided_by: str
-    decided_at: dt.datetime
-    source_message_ids: list[uuid.UUID]
-    affected_subsystems: list[str]
-    status: str
-    confidence: float
-
-
 class MessageResponse(BaseModel):
     model_config = ConfigDict(strict=True)
 

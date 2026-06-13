@@ -55,6 +55,7 @@ _TOP_N_SCORED = 20
 _PRIOR_DIGESTS_LIMIT = 3
 _OPEN_CARDS_LIMIT = 20
 _MAX_TOKENS = 2048
+_PREVIEW_MAX_CHARS = 220
 
 # Rendering plain text into a Sonnet prompt — never HTML. Autoescape
 # would corrupt quoted message text and JSON-shaped instructions.
@@ -226,7 +227,7 @@ def _parse_draft(payload: Any) -> DigestDraft:
     return DigestDraft.model_validate(payload)
 
 
-def _stub_draft_from_scored(scored: list) -> DigestDraft:  # noqa: ANN001
+def _stub_draft_from_scored(scored: list) -> DigestDraft:
     """Fallback when the LLM provider is unavailable.
 
     Builds a deterministic digest from the top-scored messages so the
@@ -237,7 +238,7 @@ def _stub_draft_from_scored(scored: list) -> DigestDraft:  # noqa: ANN001
     watch = scored[8:16]
     fyi = scored[16:24]
 
-    def _bullets(items: list) -> str:  # noqa: ANN001
+    def _bullets(items: list) -> str:
         if not items:
             return "_None._"
         lines = []
@@ -246,8 +247,8 @@ def _stub_draft_from_scored(scored: list) -> DigestDraft:  # noqa: ANN001
             channel = getattr(it, "channel", "")
             urgency = getattr(it, "urgency", None) or "normal"
             preview = (getattr(it, "text", "") or "").replace("\n", " ").strip()
-            if len(preview) > 220:
-                preview = preview[:217] + "…"
+            if len(preview) > _PREVIEW_MAX_CHARS:
+                preview = preview[: _PREVIEW_MAX_CHARS - 3] + "…"
             channel_tag = f"#{channel}" if channel else ""
             lines.append(
                 f"- **{author}** {channel_tag} [{urgency}] — {preview}",

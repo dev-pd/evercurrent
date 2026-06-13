@@ -10,7 +10,6 @@ from evercurrent.config import get_settings
 class ModelTier(StrEnum):
     TAGGING = "tagging"
     DIGEST = "digest"
-    DECISIONS = "decisions"
     AGENT = "agent"
     DOC_GEN = "doc_gen"
 
@@ -22,7 +21,6 @@ def model_for(tier: ModelTier) -> str:
     return {
         ModelTier.TAGGING: haiku,
         ModelTier.DIGEST: sonnet,
-        ModelTier.DECISIONS: sonnet,
         ModelTier.AGENT: sonnet,
         ModelTier.DOC_GEN: sonnet,
     }[tier]

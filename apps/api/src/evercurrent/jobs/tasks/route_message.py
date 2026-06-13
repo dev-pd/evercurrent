@@ -241,7 +241,6 @@ async def _write_tag(
 def _enqueue_followups(
     *,
     message_id: uuid.UUID,
-    org_id: uuid.UUID,
     decision: RouterDecision,
 ) -> None:
     """Enqueue Card-build + scoring tasks via Celery `send_task`.
@@ -400,7 +399,6 @@ async def _route(
 
     _enqueue_followups(
         message_id=message_id,
-        org_id=org_id,
         decision=decision,
     )
 

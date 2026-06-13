@@ -32,6 +32,9 @@ from evercurrent.ingestion.tasks import ingest_pdf_bytes
 
 log = structlog.get_logger(__name__)
 
+# Refresh the access token if it expires within this window.
+_TOKEN_REFRESH_SKEW_SECONDS = 60
+
 
 async def _ensure_fresh_token(
     *,
@@ -42,9 +45,9 @@ async def _ensure_fresh_token(
 ) -> str:
     """Return a usable access token, refreshing if needed."""
     blob = decode_token_blob(vault.decrypt(connector.credentials_secret))
-    expires_at = int(blob.get("expires_at", 0))
+    expires_at = int(str(blob.get("expires_at", 0)))
     refresh = blob.get("refresh_token")
-    if expires_at - int(time.time()) > 60:
+    if expires_at - int(time.time()) > _TOKEN_REFRESH_SKEW_SECONDS:
         return str(blob["access_token"])
 
     if not refresh or settings.dropbox_client_id is None or settings.dropbox_client_secret is None:
@@ -118,7 +121,7 @@ async def sync_folder(
     try:
         entries = await client.list_folder(path=folder_path, recursive=True)
     except DropboxAPIError as exc:
-        log.error("dropbox.sync.list_failed", error=str(exc))
+        log.exception("dropbox.sync.list_failed", error=str(exc))
         raise
 
     pdf_entries = [e for e in entries if _is_pdf(e)]
