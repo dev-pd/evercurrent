@@ -10,7 +10,7 @@ export default function NotFound() {
         </span>
 
         <div>
-          <p className="font-mono text-sm font-semibold uppercase tracking-widest text-[var(--color-accent-600)]">
+          <p className="font-mono text-sm font-semibold tracking-widest text-[var(--color-accent-600)] uppercase">
             404
           </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">

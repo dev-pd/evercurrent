@@ -24,12 +24,12 @@ export function TimelineBoard({ timeline }: TimelineBoardProps) {
         <span className="text-[11px] text-[var(--text-muted)]">{timeline.fcs_label}</span>
       </header>
 
-      <div className="px-5 pb-5 pt-4">
+      <div className="px-5 pt-4 pb-5">
         <p className="mb-4 text-xs text-[var(--text-secondary)]">{timeline.summary}</p>
 
         <div className="relative">
           <div
-            className="grid border-b border-[var(--border-default)] pb-1.5 text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]"
+            className="grid border-b border-[var(--border-default)] pb-1.5 text-[10px] font-medium tracking-wider text-[var(--text-muted)] uppercase"
             style={cols}
           >
             {timeline.months.map((m, idx) => (

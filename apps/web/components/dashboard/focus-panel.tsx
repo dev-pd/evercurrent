@@ -13,7 +13,7 @@ export function FocusPanel({ focus }: { focus: FocusTopic[] }) {
     <div className="rounded-xl border border-[var(--border-default)] bg-white px-5 py-3">
       <div className="mb-2 flex items-center gap-2">
         <Target className="h-3.5 w-3.5 text-[var(--color-accent-600)]" aria-hidden="true" />
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+        <h2 className="text-xs font-semibold tracking-wider text-[var(--text-secondary)] uppercase">
           What you&apos;re tracking now
         </h2>
         <span className="text-[11px] text-[var(--text-muted)]">

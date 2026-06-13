@@ -33,7 +33,9 @@ export default function Error({
             your digest.
           </p>
           {error.digest && (
-            <p className="mt-2 font-mono text-[11px] text-[var(--text-muted)]">ref: {error.digest}</p>
+            <p className="mt-2 font-mono text-[11px] text-[var(--text-muted)]">
+              ref: {error.digest}
+            </p>
           )}
         </div>
 

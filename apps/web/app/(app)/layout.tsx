@@ -26,7 +26,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const project = projects?.[0];
 
   return (
-    <AppShell orgName={me?.org_name ?? ""} phase={project?.current_phase} day={project?.current_day}>
+    <AppShell
+      orgName={me?.org_name ?? ""}
+      phase={project?.current_phase}
+      day={project?.current_day}
+    >
       {children}
     </AppShell>
   );

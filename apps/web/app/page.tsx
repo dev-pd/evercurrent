@@ -25,19 +25,17 @@ export default async function Home() {
 
       <section className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-start justify-center gap-8 px-6 py-16">
         <div className="flex flex-col gap-3">
-          <span className="font-mono text-[11px] uppercase tracking-wider text-[var(--color-accent-700)]">
+          <span className="font-mono text-[11px] tracking-wider text-[var(--color-accent-700)] uppercase">
             For hardware engineering teams
           </span>
           <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-5xl">
             Stop drowning in Slack. <br />
-            <span className="text-[var(--text-secondary)]">
-              See what actually changed.
-            </span>
+            <span className="text-[var(--text-secondary)]">See what actually changed.</span>
           </h1>
           <p className="max-w-xl text-base text-[var(--text-secondary)]">
-            EverCurrent reads your team&apos;s Slack, specs, and ECOs.
-            Surfaces decisions, risks, and cross-functional dependencies.
-            Personalized to your role and the phase you&apos;re in.
+            EverCurrent reads your team&apos;s Slack, specs, and ECOs. Surfaces decisions, risks,
+            and cross-functional dependencies. Personalized to your role and the phase you&apos;re
+            in.
           </p>
         </div>
 

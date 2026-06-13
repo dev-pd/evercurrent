@@ -24,24 +24,24 @@ export default async function InsightsPage() {
 
   return (
     <PageContainer>
-        <PageHeader
-          title="Insights"
-          subtitle="Proactive changes Eve detected across requirements, specs, and downstream impact."
-          action={<GenerateInsightButton />}
-        />
+      <PageHeader
+        title="Insights"
+        subtitle="Proactive changes Eve detected across requirements, specs, and downstream impact."
+        action={<GenerateInsightButton />}
+      />
 
-        {insights.length === 0 ? (
-          <EmptyState
-            title="No insights yet."
-            hint="Eve surfaces requirement changes and cross-subsystem conflicts here as they appear."
-          />
-        ) : (
-          <div className="flex flex-col gap-6">
-            {insights.map((insight) => (
-              <InsightCard key={insight.id} insight={insight} />
-            ))}
-          </div>
-        )}
+      {insights.length === 0 ? (
+        <EmptyState
+          title="No insights yet."
+          hint="Eve surfaces requirement changes and cross-subsystem conflicts here as they appear."
+        />
+      ) : (
+        <div className="flex flex-col gap-6">
+          {insights.map((insight) => (
+            <InsightCard key={insight.id} insight={insight} />
+          ))}
+        </div>
+      )}
     </PageContainer>
   );
 }

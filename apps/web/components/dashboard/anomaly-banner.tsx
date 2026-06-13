@@ -10,10 +10,7 @@ export function AnomalyBanner({ anomalies }: AnomalyBannerProps) {
   if (anomalies.length === 0) return null;
 
   return (
-    <section
-      aria-label="Anomalies"
-      className="rounded-lg border border-amber-200 bg-amber-50 p-4"
-    >
+    <section aria-label="Anomalies" className="rounded-lg border border-amber-200 bg-amber-50 p-4">
       <header className="mb-2 flex items-center gap-2">
         <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />
         <h2 className="text-sm font-semibold text-amber-900">You might be missing</h2>

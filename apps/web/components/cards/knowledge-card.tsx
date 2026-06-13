@@ -31,9 +31,7 @@ export function KnowledgeCard({ card }: KnowledgeCardProps) {
             <span>confidence: {card.confidence.toFixed(2)}</span>
           )}
         </div>
-        <h1 className="text-xl font-semibold tracking-tight text-zinc-900">
-          {card.summary}
-        </h1>
+        <h1 className="text-xl font-semibold tracking-tight text-zinc-900">{card.summary}</h1>
         <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
           {decided && <span>decided: {decided}</span>}
           {updated && <span>updated: {updated}</span>}
@@ -57,9 +55,7 @@ export function KnowledgeCard({ card }: KnowledgeCardProps) {
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
-          Impact
-        </h2>
+        <h2 className="mb-2 text-sm font-semibold tracking-wide text-zinc-700 uppercase">Impact</h2>
         <CardEdgesList edges={card.edges} />
       </section>
 

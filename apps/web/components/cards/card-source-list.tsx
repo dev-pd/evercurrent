@@ -35,10 +35,7 @@ export function CardSourceList({ sources }: CardSourceListProps) {
       {sources.map((source) => {
         const ts = formatTs(source.ts);
         return (
-          <li
-            key={source.id}
-            className="rounded-md border border-zinc-200 bg-white p-3 text-sm"
-          >
+          <li key={source.id} className="rounded-md border border-zinc-200 bg-white p-3 text-sm">
             <div className="flex items-center gap-2 text-xs text-zinc-500">
               {sourceIcon(source.kind)}
               <span>{source.channel ?? source.kind}</span>

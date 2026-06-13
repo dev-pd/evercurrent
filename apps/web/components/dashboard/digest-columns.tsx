@@ -35,7 +35,7 @@ const ORDER: Bucket[] = ["top_priority", "watch_outs", "fyi"];
 function BulletCard({ bullet, accent }: { bullet: DigestBullet; accent: string }) {
   return (
     <article
-      className={`rounded-lg border border-[var(--border-default)] border-l-2 ${accent} bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow`}
+      className={`rounded-lg border border-l-2 border-[var(--border-default)] ${accent} bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow`}
     >
       <p className="text-sm leading-relaxed text-[var(--text-primary)]">{bullet.text}</p>
     </article>
@@ -56,7 +56,7 @@ function DigestColumn({ bucket, bullets }: { bucket: Bucket; bullets: DigestBull
             aria-hidden="true"
           />
           <h2 className="text-sm font-semibold text-[var(--text-primary)]">{meta.label}</h2>
-          <span className="font-mono text-xs tabular-nums text-[var(--text-muted)]">
+          <span className="font-mono text-xs text-[var(--text-muted)] tabular-nums">
             {bullets.length}
           </span>
         </div>

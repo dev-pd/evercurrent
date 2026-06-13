@@ -37,19 +37,19 @@ export default async function TimelinePage({ searchParams }: TimelinePageProps) 
 
   return (
     <PageContainer>
-        <PageHeader
-          title="Timeline"
-          subtitle="Program phases and subsystem progress across the NPI schedule."
-        />
+      <PageHeader
+        title="Timeline"
+        subtitle="Program phases and subsystem progress across the NPI schedule."
+      />
 
-        {timeline ? (
-          <TimelineBoard timeline={timeline} />
-        ) : (
-          <EmptyState
-            title="No timeline yet."
-            hint="Once a project exists, its phase plan and subsystem lanes show here."
-          />
-        )}
+      {timeline ? (
+        <TimelineBoard timeline={timeline} />
+      ) : (
+        <EmptyState
+          title="No timeline yet."
+          hint="Once a project exists, its phase plan and subsystem lanes show here."
+        />
+      )}
     </PageContainer>
   );
 }

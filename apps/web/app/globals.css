@@ -18,13 +18,13 @@
   --color-accent-900: oklch(0.27 0.1 268);
 
   /* Subsystem palette — keep saturation low so cards aren't noisy */
-  --color-subsystem-chassis: oklch(0.55 0.05 240);     /* slate-ish */
-  --color-subsystem-power: oklch(0.65 0.16 60);        /* amber */
-  --color-subsystem-firmware: oklch(0.56 0.21 268);    /* indigo */
-  --color-subsystem-qa: oklch(0.6 0.14 160);           /* emerald */
-  --color-subsystem-supply: oklch(0.55 0.18 300);      /* violet */
-  --color-subsystem-compliance: oklch(0.6 0.08 200);   /* steel */
-  --color-subsystem-mfg: oklch(0.55 0.12 30);          /* warm grey/red */
+  --color-subsystem-chassis: oklch(0.55 0.05 240); /* slate-ish */
+  --color-subsystem-power: oklch(0.65 0.16 60); /* amber */
+  --color-subsystem-firmware: oklch(0.56 0.21 268); /* indigo */
+  --color-subsystem-qa: oklch(0.6 0.14 160); /* emerald */
+  --color-subsystem-supply: oklch(0.55 0.18 300); /* violet */
+  --color-subsystem-compliance: oklch(0.6 0.08 200); /* steel */
+  --color-subsystem-mfg: oklch(0.55 0.12 30); /* warm grey/red */
 }
 
 :root {

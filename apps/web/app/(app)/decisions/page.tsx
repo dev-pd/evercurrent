@@ -44,93 +44,87 @@ export default async function DecisionsPage({ searchParams }: DecisionsPageProps
 
   return (
     <PageContainer>
-        <PageHeader
-          title="Decisions"
-          subtitle="Structured decisions, risks, and actions extracted from team chatter and docs."
-          action={
-            <span className="font-mono text-xs tabular-nums text-[var(--text-muted)]">
-              {filtered.length}/{cards.length}
-            </span>
-          }
-          toolbar={
-            <div className="flex flex-wrap gap-1.5">
-              <FilterChip href="/decisions" label="All" active={!params.kind && !params.status} />
-              <FilterChip
-                href="/decisions?status=open"
-                label="Open"
-                active={params.status === "open"}
-              />
-              <FilterChip
-                href="/decisions?kind=decision"
-                label="Decisions"
-                active={params.kind === "decision"}
-              />
-              <FilterChip
-                href="/decisions?kind=risk"
-                label="Risks"
-                active={params.kind === "risk"}
-              />
-              <FilterChip
-                href="/decisions?kind=action"
-                label="Actions"
-                active={params.kind === "action"}
-              />
-            </div>
-          }
-        />
-
-        {filtered.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-white p-8 text-center">
-            <p className="text-sm font-medium text-[var(--text-primary)]">
-              No cards match this filter.
-            </p>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
-              Try a different filter or run a digest regeneration.
-            </p>
+      <PageHeader
+        title="Decisions"
+        subtitle="Structured decisions, risks, and actions extracted from team chatter and docs."
+        action={
+          <span className="font-mono text-xs text-[var(--text-muted)] tabular-nums">
+            {filtered.length}/{cards.length}
+          </span>
+        }
+        toolbar={
+          <div className="flex flex-wrap gap-1.5">
+            <FilterChip href="/decisions" label="All" active={!params.kind && !params.status} />
+            <FilterChip
+              href="/decisions?status=open"
+              label="Open"
+              active={params.status === "open"}
+            />
+            <FilterChip
+              href="/decisions?kind=decision"
+              label="Decisions"
+              active={params.kind === "decision"}
+            />
+            <FilterChip href="/decisions?kind=risk" label="Risks" active={params.kind === "risk"} />
+            <FilterChip
+              href="/decisions?kind=action"
+              label="Actions"
+              active={params.kind === "action"}
+            />
           </div>
-        ) : (
-          <ul className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-white">
-            {filtered.map((card, idx) => (
-              <li
-                key={card.id}
-                className={`group flex items-start gap-4 p-4 hover:bg-[var(--surface-muted)] ${
-                  idx > 0 ? "border-t border-[var(--border-default)]" : ""
-                }`}
+        }
+      />
+
+      {filtered.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-white p-8 text-center">
+          <p className="text-sm font-medium text-[var(--text-primary)]">
+            No cards match this filter.
+          </p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">
+            Try a different filter or run a digest regeneration.
+          </p>
+        </div>
+      ) : (
+        <ul className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-white">
+          {filtered.map((card, idx) => (
+            <li
+              key={card.id}
+              className={`group flex items-start gap-4 p-4 hover:bg-[var(--surface-muted)] ${
+                idx > 0 ? "border-t border-[var(--border-default)]" : ""
+              }`}
+            >
+              <span
+                className={`mt-0.5 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase ${kindStyle(card.kind)}`}
               >
-                <span
-                  className={`mt-0.5 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${kindStyle(card.kind)}`}
+                {card.kind}
+              </span>
+              <div className="min-w-0 flex-1">
+                <Link
+                  href={`/decisions/${card.id}`}
+                  className="block text-sm font-medium text-[var(--text-primary)] hover:text-[var(--color-accent-700)]"
                 >
-                  {card.kind}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/decisions/${card.id}`}
-                    className="block text-sm font-medium text-[var(--text-primary)] hover:text-[var(--color-accent-700)]"
-                  >
-                    {card.summary}
-                  </Link>
-                  <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-[var(--text-muted)]">
-                    <span className="font-mono uppercase tracking-wider">
-                      {card.status}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <MessageSquare className="h-3 w-3" aria-hidden="true" />
-                      {card.sources_count}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <GitBranch className="h-3 w-3" aria-hidden="true" />
-                      {card.edges_count}
-                    </span>
-                  </div>
+                  {card.summary}
+                </Link>
+                <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-[var(--text-muted)]">
+                  <span className="font-mono tracking-wider uppercase">{card.status}</span>
+                  <span className="inline-flex items-center gap-1">
+                    <MessageSquare className="h-3 w-3" aria-hidden="true" />
+                    {card.sources_count}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <GitBranch className="h-3 w-3" aria-hidden="true" />
+                    {card.edges_count}
+                  </span>
                 </div>
-                <ArrowUpRight
-                  className="h-4 w-4 text-[var(--text-muted)] opacity-0 transition-opacity group-hover:opacity-100"
-                  aria-hidden="true"
-                />
-              </li>
-            ))}
-          </ul>
-        )}
+              </div>
+              <ArrowUpRight
+                className="h-4 w-4 text-[var(--text-muted)] opacity-0 transition-opacity group-hover:opacity-100"
+                aria-hidden="true"
+              />
+            </li>
+          ))}
+        </ul>
+      )}
     </PageContainer>
   );
 }
