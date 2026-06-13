@@ -18,6 +18,7 @@ from evercurrent.connectors.dropbox.sync import sync_folder as dropbox_sync_fold
 from evercurrent.connectors.slack import install as slack_install
 from evercurrent.connectors.slack.crypto import TokenVault
 from evercurrent.db import models
+from evercurrent.db.session import admin_session_scope
 
 log = structlog.get_logger(__name__)
 
@@ -113,30 +114,28 @@ async def slack_install_start(current_user: AdminUserDep) -> InstallResponse:
 
 @router.get("/slack/oauth/callback")
 async def slack_oauth_callback(
-    session: SessionDep,
     code: Annotated[str, Query(min_length=1)],
     state: Annotated[str, Query(min_length=1)],
 ) -> RedirectResponse:
     settings = get_settings()
-    try:
-        connector_id = await slack_install.exchange_and_persist(
-            session=session,
-            settings=settings,
-            vault=_vault(),
-            code=code,
-            state_token=state,
-            installed_by_membership_id=None,
-        )
-    except slack_install.InstallStateError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        ) from exc
-
-    await session.commit()
+    async with admin_session_scope() as session:
+        try:
+            connector_id = await slack_install.exchange_and_persist(
+                session=session,
+                settings=settings,
+                vault=_vault(),
+                code=code,
+                state_token=state,
+                installed_by_membership_id=None,
+            )
+        except slack_install.InstallStateError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(exc),
+            ) from exc
+        await session.commit()
     log.info("slack.install.callback_complete", connector_id=str(connector_id))
-
-    return RedirectResponse(url="/connectors", status_code=status.HTTP_302_FOUND)
+    return RedirectResponse(url="/settings", status_code=status.HTTP_302_FOUND)
 
 
 class DropboxFolderSummary(BaseModel):
@@ -177,29 +176,28 @@ async def dropbox_install_start(current_user: AdminUserDep) -> InstallResponse:
 
 @router.get("/dropbox/oauth/callback")
 async def dropbox_oauth_callback(
-    session: SessionDep,
     code: Annotated[str, Query(min_length=1)],
     state: Annotated[str, Query(min_length=1)],
 ) -> RedirectResponse:
     settings = get_settings()
-    try:
-        connector_id = await dropbox_install.exchange_and_persist(
-            session=session,
-            settings=settings,
-            vault=_vault(),
-            code=code,
-            state_token=state,
-            installed_by_membership_id=None,
-        )
-    except dropbox_install.InstallStateError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        ) from exc
-
-    await session.commit()
+    async with admin_session_scope() as session:
+        try:
+            connector_id = await dropbox_install.exchange_and_persist(
+                session=session,
+                settings=settings,
+                vault=_vault(),
+                code=code,
+                state_token=state,
+                installed_by_membership_id=None,
+            )
+        except dropbox_install.InstallStateError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(exc),
+            ) from exc
+        await session.commit()
     log.info("dropbox.install.callback_complete", connector_id=str(connector_id))
-    return RedirectResponse(url="/connectors", status_code=status.HTTP_302_FOUND)
+    return RedirectResponse(url="/settings", status_code=status.HTTP_302_FOUND)
 
 
 @router.get("/{connector_id}/dropbox/folders")
