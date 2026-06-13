@@ -1,8 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { CircuitBoard, FileText, GanttChartSquare, Home, Settings } from "lucide-react";
+import { CircuitBoard, FileText, GanttChartSquare, Home, Settings, Sparkles } from "lucide-react";
 import { UserBadge } from "@/components/auth/user-badge";
-import { EveRail } from "@/components/layout/eve-rail";
 import { ViewAsSwitcher } from "@/components/layout/view-as-switcher";
 
 interface NavItem {
@@ -14,6 +13,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { href: "/dashboard", label: "Digest", icon: Home },
   { href: "/decisions", label: "Decisions", icon: FileText },
+  { href: "/insights", label: "Insights", icon: Sparkles },
   { href: "/timeline", label: "Timeline", icon: GanttChartSquare },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -65,7 +65,7 @@ export function AppShell({ children, orgName, eveRail = true }: AppShellProps) {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--border-default)] bg-white px-4 sm:px-6">
           <span className="text-sm font-semibold text-[var(--text-primary)]">{workspace}</span>
-          <span className="rounded bg-[var(--surface-muted)] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
+          <span className="rounded bg-[var(--surface-muted)] px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-[var(--text-muted)] uppercase">
             DVT · Day 42
           </span>
           <div className="ml-auto">
@@ -74,8 +74,6 @@ export function AppShell({ children, orgName, eveRail = true }: AppShellProps) {
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">{children}</main>
       </div>
-
-      {eveRail && <EveRail />}
     </div>
   );
 }

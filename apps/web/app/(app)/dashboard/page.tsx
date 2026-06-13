@@ -1,9 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { redirect } from "next/navigation";
-import { auth0 } from "@/lib/auth0";
 import { apiServer } from "@/lib/api";
-import { AppShell } from "@/components/layout/app-shell";
 import { ContextBar } from "@/components/dashboard/context-bar";
 import { FocusPanel } from "@/components/dashboard/focus-panel";
 import { DigestColumns } from "@/components/dashboard/digest-columns";
@@ -34,11 +31,6 @@ function buildSummary(topCount: number, name: string): string {
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  const session = await auth0.getSession();
-  if (!session?.user) {
-    redirect("/api/auth/login?returnTo=/dashboard");
-  }
-
   const params = await searchParams;
   const asMember = params.as ?? null;
   const client = await apiServer(asMember);
@@ -80,8 +72,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   ];
 
   return (
-    <AppShell>
-      <div className="mx-auto flex h-full max-w-6xl flex-col gap-4">
+    <div className="mx-auto flex h-full max-w-6xl flex-col gap-4">
         <ContextBar
           currentMember={currentMember}
           phase={phase}
@@ -104,7 +95,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         ) : (
           <DigestColumns buckets={buckets} />
         )}
-      </div>
-    </AppShell>
+    </div>
   );
 }

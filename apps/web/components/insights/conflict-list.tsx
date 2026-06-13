@@ -16,14 +16,14 @@ export function ConflictList({ conflicts, affectedSubsystems }: ConflictListProp
   return (
     <section className="border-t border-[var(--color-accent-100)] bg-white/60 px-5 py-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+        <h3 className="text-xs font-semibold tracking-wider text-[var(--text-secondary)] uppercase">
           Potential conflicts
         </h3>
         <div className="flex gap-1">
           {affectedSubsystems.map((s) => (
             <span
               key={s}
-              className="rounded-md border border-[var(--border-default)] bg-white px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-[var(--text-secondary)]"
+              className="rounded-md border border-[var(--border-default)] bg-white px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-[var(--text-secondary)] uppercase"
             >
               {s}
             </span>
@@ -38,11 +38,19 @@ export function ConflictList({ conflicts, affectedSubsystems }: ConflictListProp
           >
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-medium">{c.title}</span>
-                <span className="shrink-0 font-mono text-xs tabular-nums">{c.impact}</span>
+                <span className="shrink-0 rounded border border-current/20 bg-white/50 px-1.5 py-0.5 font-mono text-[10px] tracking-wide uppercase opacity-70">
+                  {c.subsystem}
+                </span>
               </div>
-              <p className="mt-0.5 text-xs opacity-80">{c.detail}</p>
+              <p className="mt-1 text-xs opacity-80">{c.detail}</p>
+              {c.impact && (
+                <p className="mt-1.5 text-xs">
+                  <span className="font-semibold tracking-wide uppercase opacity-60">Impact </span>
+                  <span className="opacity-90">{c.impact}</span>
+                </p>
+              )}
             </div>
           </li>
         ))}

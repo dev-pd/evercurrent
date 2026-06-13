@@ -8,7 +8,7 @@ interface InsightSourcesProps {
 export function InsightSources({ sources }: InsightSourcesProps) {
   return (
     <section className="border-t border-[var(--color-accent-100)] bg-white/60 px-5 py-4">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+      <h3 className="text-xs font-semibold tracking-wider text-[var(--text-secondary)] uppercase">
         Sources
       </h3>
       <ul className="mt-2 flex flex-col gap-1.5">

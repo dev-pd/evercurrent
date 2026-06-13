@@ -74,9 +74,7 @@ async function apiFetch<T>(
     headers["Content-Type"] = "application/json";
   }
 
-  const rewritten = ctx.pathPrefix
-    ? path.replace(/^\/api\/v1/, ctx.pathPrefix)
-    : path;
+  const rewritten = ctx.pathPrefix ? path.replace(/^\/api\/v1/, ctx.pathPrefix) : path;
 
   const response = await fetch(`${ctx.baseUrl}${rewritten}`, {
     method: options.method ?? "GET",
@@ -116,6 +114,7 @@ export interface ApiClient {
   getCard(id: string): Promise<CardResponse>;
   feedbackCard(id: string, useful: boolean): Promise<CardFeedbackResponse>;
   getInsights(limit?: number): Promise<ProactiveInsight[]>;
+  generateInsight(): Promise<ProactiveInsight>;
   getTimeline(projectId: string): Promise<Timeline>;
 }
 
@@ -180,15 +179,18 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
       return apiFetch(`/api/v1/cards/${id}`, cardResponseSchema, await getCtx());
     },
     async feedbackCard(id, useful) {
-      return apiFetch(
-        `/api/v1/cards/${id}/feedback`,
-        cardFeedbackResponseSchema,
-        await getCtx(),
-        { method: "POST", body: { signal: useful ? 1 : -1 } },
-      );
+      return apiFetch(`/api/v1/cards/${id}/feedback`, cardFeedbackResponseSchema, await getCtx(), {
+        method: "POST",
+        body: { signal: useful ? 1 : -1 },
+      });
     },
     async getInsights(limit = 5) {
       return apiFetch(`/api/v1/insights?limit=${limit}`, insightListSchema, await getCtx());
+    },
+    async generateInsight() {
+      return apiFetch(`/api/v1/insights/generate`, proactiveInsightSchema, await getCtx(), {
+        method: "POST",
+      });
     },
     async getTimeline(projectId) {
       return apiFetch(
@@ -217,9 +219,7 @@ export async function apiServer(impersonate?: string | null): Promise<ApiClient>
 export function apiBrowser(): ApiClient {
   return createClient(async () => {
     const impersonate =
-      typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search).get("as")
-        : null;
+      typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("as") : null;
     return { baseUrl: "", token: null, pathPrefix: "/api/proxy", impersonate };
   });
 }

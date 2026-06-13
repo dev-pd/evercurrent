@@ -1,9 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { notFound, redirect } from "next/navigation";
-import { auth0 } from "@/lib/auth0";
+import { notFound } from "next/navigation";
 import { apiServer } from "@/lib/api";
-import { AppShell } from "@/components/layout/app-shell";
 import { KnowledgeCard } from "@/components/cards/knowledge-card";
 import type { CardResponse } from "@/lib/types";
 
@@ -24,20 +22,14 @@ interface CardDetailPageProps {
 }
 
 export default async function CardDetailPage({ params }: CardDetailPageProps) {
-  const session = await auth0.getSession();
-  if (!session?.user) {
-    redirect("/api/auth/login");
-  }
   const { id } = await params;
   const card = await safeGetCard(id);
   if (!card) {
     notFound();
   }
   return (
-    <AppShell>
-      <div className="mx-auto max-w-3xl">
-        <KnowledgeCard card={card} />
-      </div>
-    </AppShell>
+    <div className="mx-auto max-w-3xl">
+      <KnowledgeCard card={card} />
+    </div>
   );
 }

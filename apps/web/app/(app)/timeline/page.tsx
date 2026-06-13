@@ -1,9 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { redirect } from "next/navigation";
-import { auth0 } from "@/lib/auth0";
 import { apiServer } from "@/lib/api";
-import { AppShell } from "@/components/layout/app-shell";
 import { PageContainer, PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TimelineBoard } from "@/components/timeline/timeline-board";
@@ -25,11 +22,6 @@ interface TimelinePageProps {
 }
 
 export default async function TimelinePage({ searchParams }: TimelinePageProps) {
-  const session = await auth0.getSession();
-  if (!session?.user) {
-    redirect("/api/auth/login?returnTo=/timeline");
-  }
-
   const params = await searchParams;
   const client = await apiServer();
 
@@ -44,8 +36,7 @@ export default async function TimelinePage({ searchParams }: TimelinePageProps) 
     : null;
 
   return (
-    <AppShell>
-      <PageContainer>
+    <PageContainer>
         <PageHeader
           title="Timeline"
           subtitle="Program phases and subsystem progress across the NPI schedule."
@@ -59,7 +50,6 @@ export default async function TimelinePage({ searchParams }: TimelinePageProps) 
             hint="Once a project exists, its phase plan and subsystem lanes show here."
           />
         )}
-      </PageContainer>
-    </AppShell>
+    </PageContainer>
   );
 }

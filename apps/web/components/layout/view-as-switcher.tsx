@@ -46,7 +46,7 @@ export function ViewAsSwitcher() {
         value={current}
         disabled={isPending}
         onChange={(e) => onSwitch(e.target.value)}
-        className="appearance-none rounded-md border border-[var(--border-default)] bg-white py-1.5 pl-8 pr-8 text-xs font-medium text-[var(--text-primary)] hover:border-[var(--border-strong)] disabled:opacity-60"
+        className="appearance-none rounded-md border border-[var(--border-default)] bg-white py-1.5 pr-8 pl-8 text-xs font-medium text-[var(--text-primary)] hover:border-[var(--border-strong)] disabled:opacity-60"
       >
         {members.map((m) => (
           <option key={m.id} value={m.id}>

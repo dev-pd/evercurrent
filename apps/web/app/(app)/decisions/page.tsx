@@ -1,11 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { ArrowUpRight, GitBranch, MessageSquare } from "lucide-react";
-import { auth0 } from "@/lib/auth0";
 import { apiServer } from "@/lib/api";
-import { AppShell } from "@/components/layout/app-shell";
 import { PageContainer, PageHeader } from "@/components/layout/page-header";
 import type { CardListItem } from "@/lib/types";
 
@@ -37,11 +34,6 @@ function kindStyle(kind: string): string {
 }
 
 export default async function DecisionsPage({ searchParams }: DecisionsPageProps) {
-  const session = await auth0.getSession();
-  if (!session?.user) {
-    redirect("/api/auth/login?returnTo=/decisions");
-  }
-
   const params = await searchParams;
   const cards = await safeListCards(params.project_id);
   const filtered = cards.filter((c) => {
@@ -51,8 +43,7 @@ export default async function DecisionsPage({ searchParams }: DecisionsPageProps
   });
 
   return (
-    <AppShell>
-      <PageContainer>
+    <PageContainer>
         <PageHeader
           title="Decisions"
           subtitle="Structured decisions, risks, and actions extracted from team chatter and docs."
@@ -61,35 +52,32 @@ export default async function DecisionsPage({ searchParams }: DecisionsPageProps
               {filtered.length}/{cards.length}
             </span>
           }
+          toolbar={
+            <div className="flex flex-wrap gap-1.5">
+              <FilterChip href="/decisions" label="All" active={!params.kind && !params.status} />
+              <FilterChip
+                href="/decisions?status=open"
+                label="Open"
+                active={params.status === "open"}
+              />
+              <FilterChip
+                href="/decisions?kind=decision"
+                label="Decisions"
+                active={params.kind === "decision"}
+              />
+              <FilterChip
+                href="/decisions?kind=risk"
+                label="Risks"
+                active={params.kind === "risk"}
+              />
+              <FilterChip
+                href="/decisions?kind=action"
+                label="Actions"
+                active={params.kind === "action"}
+              />
+            </div>
+          }
         />
-
-        <div className="flex flex-wrap gap-1.5">
-          <FilterChip
-            href="/decisions"
-            label="All"
-            active={!params.kind && !params.status}
-          />
-          <FilterChip
-            href="/decisions?status=open"
-            label="Open"
-            active={params.status === "open"}
-          />
-          <FilterChip
-            href="/decisions?kind=decision"
-            label="Decisions"
-            active={params.kind === "decision"}
-          />
-          <FilterChip
-            href="/decisions?kind=risk"
-            label="Risks"
-            active={params.kind === "risk"}
-          />
-          <FilterChip
-            href="/decisions?kind=action"
-            label="Actions"
-            active={params.kind === "action"}
-          />
-        </div>
 
         {filtered.length === 0 ? (
           <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-white p-8 text-center">
@@ -143,8 +131,7 @@ export default async function DecisionsPage({ searchParams }: DecisionsPageProps
             ))}
           </ul>
         )}
-      </PageContainer>
-    </AppShell>
+    </PageContainer>
   );
 }
 

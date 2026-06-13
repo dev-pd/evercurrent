@@ -29,7 +29,7 @@ export function InsightCard({ insight }: InsightCardProps) {
           <Sparkles className="h-4 w-4" aria-hidden="true" />
         </span>
         <div className="flex flex-1 flex-col gap-0.5">
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-[var(--color-accent-700)]">
+          <div className="flex items-center gap-2 text-[11px] tracking-wider text-[var(--color-accent-700)] uppercase">
             <span className="font-semibold">Eve</span>
             <span aria-hidden="true">·</span>
             <span className="font-mono">{insight.req_id}</span>
