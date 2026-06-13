@@ -65,9 +65,7 @@ async def get_user_context(
     """Return profile context for the given membership, or None if unknown."""
     start = time.perf_counter()
 
-    row = (
-        await session.execute(_SQL, {"membership_id": membership_id})
-    ).mappings().first()
+    row = (await session.execute(_SQL, {"membership_id": membership_id})).mappings().first()
 
     if row is None:
         log.info(

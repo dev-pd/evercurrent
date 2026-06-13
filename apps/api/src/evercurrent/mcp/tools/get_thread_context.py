@@ -60,9 +60,7 @@ async def get_thread_context(
     """Return the thread (root + replies) containing `message_id`, or None."""
     start = time.perf_counter()
 
-    initial = (
-        await session.execute(_LOOKUP_SQL, {"message_id": message_id})
-    ).mappings().first()
+    initial = (await session.execute(_LOOKUP_SQL, {"message_id": message_id})).mappings().first()
     if initial is None:
         log.info(
             "mcp.tool_call",
@@ -77,9 +75,7 @@ async def get_thread_context(
     if root_id == initial["id"]:
         root_row = initial
     else:
-        root_row = (
-            await session.execute(_LOOKUP_SQL, {"message_id": root_id})
-        ).mappings().first()
+        root_row = (await session.execute(_LOOKUP_SQL, {"message_id": root_id})).mappings().first()
         if root_row is None:
             root_row = initial
             root_id = initial["id"]
