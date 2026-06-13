@@ -14,6 +14,8 @@ export const meSchema = z.object({
   membership_id: z.string().uuid(),
   org_id: z.string().uuid(),
   org_name: z.string(),
+  branding: z.record(z.string(), z.string()).default({}),
+  role: z.string().default("member"),
   auth0_user_id: z.string(),
   email: z.string(),
   display_name: z.string(),

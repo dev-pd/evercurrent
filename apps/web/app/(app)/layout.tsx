@@ -30,6 +30,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       orgName={me?.org_name ?? ""}
       phase={project?.current_phase}
       day={project?.current_day}
+      accent={me?.branding.accent}
+      monogram={me?.branding.monogram}
     >
       {children}
     </AppShell>

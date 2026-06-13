@@ -23,6 +23,7 @@ class Org(Base):
         nullable=False,
         server_default="false",
     )
+    branding: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, server_default="{}")
     created_at: Mapped[dt.datetime] = _ts_default()
 
 

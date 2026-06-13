@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { CircuitBoard, FileText, GanttChartSquare, Home, Settings, Sparkles } from "lucide-react";
 import { UserBadge } from "@/components/auth/user-badge";
 import { ViewAsSwitcher } from "@/components/layout/view-as-switcher";
@@ -23,18 +23,35 @@ interface AppShellProps {
   orgName: string;
   phase?: string;
   day?: number;
+  accent?: string;
+  monogram?: string;
   eveRail?: boolean;
 }
 
-export function AppShell({ children, orgName, phase, day, eveRail = true }: AppShellProps) {
+export function AppShell({
+  children,
+  orgName,
+  phase,
+  day,
+  accent,
+  monogram,
+  eveRail = true,
+}: AppShellProps) {
   const workspace = orgName || "Workspace";
   const phaseLabel = phase ? `${phase.toUpperCase()}${day != null ? ` · Day ${day}` : ""}` : null;
+  const themeStyle = accent
+    ? ({ "--color-accent-600": accent, "--color-accent-700": accent } as CSSProperties)
+    : undefined;
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--surface-bg)]">
+    <div className="flex h-screen overflow-hidden bg-[var(--surface-bg)]" style={themeStyle}>
       <aside className="hidden w-56 shrink-0 flex-col border-r border-[var(--border-default)] bg-white sm:flex">
         <div className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--border-default)] px-4">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-accent-600)] text-white">
-            <CircuitBoard className="h-4 w-4" aria-hidden="true" />
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-accent-600)] text-sm font-bold text-white">
+            {monogram ? (
+              monogram.charAt(0).toUpperCase()
+            ) : (
+              <CircuitBoard className="h-4 w-4" aria-hidden="true" />
+            )}
           </span>
           <div className="flex min-w-0 flex-col leading-tight">
             <span className="truncate text-sm font-semibold tracking-tight">EverCurrent</span>
