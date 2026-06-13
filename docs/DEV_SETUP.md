@@ -8,7 +8,7 @@ First-time setup. Should take ~10 minutes.
 - Node 25 + pnpm 11 (only for `pnpm install` outside containers if you
   want IDE autocomplete; the runtime lives in docker)
 - Python 3.13 + uv (same — IDE only; docker runs the real thing)
-- ngrok (for Slack/Drive webhooks during dev)
+- ngrok (for Slack webhooks during dev)
 
 ## 1. Clone + env
 
@@ -53,7 +53,7 @@ pre-commit install
 Runs ruff + ty + eslint + prettier on staged files before every commit.
 First run may take ~30s installing hook envs.
 
-## 5. ngrok for webhooks (when working on Phase 3 + Phase 10)
+## 5. ngrok for webhooks (only needed for Slack)
 
 In a second terminal:
 
@@ -66,7 +66,6 @@ into:
 
 - Slack app dashboard → Event Subscriptions → Request URL (append
   `/api/v1/webhooks/slack`)
-- Google Drive → file watch registration (`/api/v1/webhooks/drive`)
 
 Also export it so subprocesses pick it up:
 
@@ -74,11 +73,11 @@ Also export it so subprocesses pick it up:
 export WEBHOOK_PUBLIC_URL=https://abc123.ngrok.app
 ```
 
-## Phase progression
+## How it fits together
 
-The repo is built phase-by-phase per `docs/phases/`. After Phase 1
-(this doc's target), continue with Phase 2 (Auth0 + RLS). Each phase
-doc has its own pre-requisites, tasks, and definition of done.
+The build is complete; see `docs/ARCHITECTURE.md` and
+`docs/SYSTEM_DESIGN.md` for the system design, and `docs/SETUP_SLACK.md`
+/ `docs/SETUP_AUTH0.md` for connecting the external services.
 
 ## Useful commands
 

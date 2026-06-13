@@ -1,7 +1,7 @@
 # EverCurrent
 
 EverCurrent is an agentic AI layer for hardware engineering teams. It
-ingests Slack channels and Google Drive PDFs, routes every event
+ingests Slack channels and Dropbox PDFs, routes every event
 through a Haiku-tier classifier, builds Knowledge Cards from the
 signal, and writes a personalised morning briefing per engineer per
 day. The product is not a chatbot — it is the autonomous worker behind
@@ -10,7 +10,7 @@ every screen, so two short visits a day replace the open-tab firehose.
 > A 90-second demo would walk: post a Slack message from a phone, watch
 > a Card slide into the dashboard within a second; click "regenerate"
 > on the digest, see three priority buckets with citation pills that
-> resolve back to the source Slack message and the Drive PDF.
+> resolve back to the source Slack message and the Dropbox PDF.
 
 ## What's built vs what's roadmap
 
@@ -26,7 +26,7 @@ every screen, so two short visits a day replace the open-tab firehose.
 | 7     | Scoring engine (pure Python, six signals)                   | done   |
 | 8     | Digest agent (Sonnet, per-user, idempotent)                 | done   |
 | 9     | Dashboard FE — cards-first, SSE live updates                | done   |
-| 10    | Drive connector + PDF ingest + pgvector RAG                 | done   |
+| 10    | Dropbox connector + PDF ingest + pgvector RAG               | done   |
 | 11    | Slack DM delivery + Subscriptions + quiet hours             | done   |
 | 12    | Eval harness + demo script + this README                    | done   |
 | —     | Linker agent (cross-source edges)                           | roadmap |
@@ -97,8 +97,9 @@ A reviewer with 30 minutes should open these four docs in order:
 Then `docs/CODE_TOUR.md` if they want a file-by-file walk before
 opening the codebase.
 
-`docs/phases/` is the build journal — one short doc per phase. Useful
-for understanding the order of decisions; not required reading.
+`docs/ARCHITECTURE.md` and `docs/SYSTEM_DESIGN.md` record the design
+decisions and data model. Useful for understanding why things are the
+way they are; not required reading.
 
 ## Try the agent yourself
 

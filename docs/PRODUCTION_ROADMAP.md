@@ -195,8 +195,7 @@ each lands a visible product feature and each builds on the previous.
 A Sonnet agent that runs per new Card. Calls `search_documents`,
 `search_messages`, `query_decisions` to find semantic neighbours.
 Persists `(from, to, edge_type, confidence)` rows. Unlocks the
-"impact preview" sidebar on every Card. Phase doc already exists at
-`docs/phases/PHASE_*` (deferred from take-home scope).
+"impact preview" sidebar on every Card (deferred from take-home scope).
 
 ### 2. Chat agent on the dashboard (weeks 2-3)
 

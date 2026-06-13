@@ -178,5 +178,4 @@ Have these tabs ready:
 - `docs/EVAL_BASELINE.md` — the four eval numbers.
 - `docs/AGENT_VS_WORKFLOW.md` — what the agent actually decides.
 
-*Most-likely grill questions are pre-answered in DECISIONS.md and the
-"Talking points" section of each phase doc under `docs/phases/`.*
+*Most-likely grill questions are pre-answered in `docs/DECISIONS.md`.*

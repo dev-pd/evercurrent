@@ -16,15 +16,17 @@ EverCurrent team.
 
 ## 2. Authoritative documents
 
-- `docs/phases/` — the authoritative build plan (one doc per phase).
-  This is the work list. `docs/archive/EVERCURRENT_BUILD_DOC.md` is
-  the pre-pivot historical version; do not use it.
+The step-by-step build is complete; the code is the source of truth.
+For context:
+
 - `docs/ARCHITECTURE.md` — design decisions and rationale.
+- `docs/SYSTEM_DESIGN.md` — data model, APIs, services.
+- `docs/AGENT_VS_WORKFLOW.md` — how the agents fit (incl. Eve).
+- `docs/DECISIONS.md` — every architectural choice with rationale.
 - `docs/PRODUCTION_ROADMAP.md` — the scale-out story.
 - `AGENTS.md` (this file) — coding standards and conventions.
 
-If anything in this file conflicts with the build doc, the build doc wins for
-scope. This file wins for code-style decisions.
+This file wins for code-style decisions.
 
 ## 3. Tech stack (locked, May 2026)
 
@@ -214,22 +216,18 @@ harness instead of brittle string-match unit tests.
 - Digest quality: LLM-as-judge with rubric.
 - Reference numbers tracked in `docs/EVAL_BASELINE.md`. Not a CI gate.
 
-## 12. Subphase workflow
+## 12. Workflow
 
-Every piece of work corresponds to a phase doc in `docs/phases/`.
-Workflow:
+1. Restate the goal in one sentence and list the files to be touched.
+2. Wait for `go` from the user.
+3. Implement only what was asked.
+4. Run `make lint` after implementation.
+5. Verify the change works.
+6. Commit with a Conventional Commit (`feat:`, `fix:`, `refactor:`, …).
+7. Stop. Do not auto-start the next task.
 
-1. Read the subphase: goal, tasks, definition of done.
-2. Restate the goal in one sentence and list the files to be touched.
-3. Wait for `go` from the user.
-4. Implement only what the subphase asks for.
-5. Run `make lint` after implementation.
-6. Verify the subphase's definition of done.
-7. Commit with `feat(phase-N.M): description`.
-8. Stop. Do not auto-start the next subphase.
-
-If you find yourself doing something not listed in the subphase, stop and
-ask. Scope creep is the most common failure mode.
+If you find yourself doing something not asked for, stop and ask. Scope
+creep is the most common failure mode.
 
 ## 13. Documentation
 

@@ -42,13 +42,12 @@ and should be skipped (and called out in the subphase commit message).
 
 ## Adding a new feature
 
-1. Find the right phase / subphase in `docs/phases/`.
-2. Restate the goal and the files you'll create / modify in your PR
+1. Restate the goal and the files you'll create / modify in your PR
    description.
-3. If a `.claude/skills/` skill matches (add-fastapi-route,
+2. If a `.claude/skills/` skill matches (add-fastapi-route,
    add-react-component, add-celery-task, add-llm-prompt, add-db-migration),
    follow that skill.
-4. New external dependencies require a paragraph of justification in
+3. New external dependencies require a paragraph of justification in
    the PR — the locked stack is deliberate.
 
 ## Database changes

@@ -323,7 +323,7 @@ code, not WHAT to build.
 | `add-llm-prompt/` | KEEP | prompt + schema scaffold |
 | `add-arq-task/` | REWRITE→`add-celery-task/`@0 | name + body (Arq long gone) |
 | `add-react-component/` | KEEP | component scaffold |
-| `execute-subphase/` | REWRITE@0 | update to point at `docs/phases/` |
+| `execute-subphase/` | REWRITE@0 | generic task workflow (no phase docs) |
 | `python.md` (rule) | KEEP | lint guidance |
 | `typescript.md` (rule) | KEEP | lint guidance |
 

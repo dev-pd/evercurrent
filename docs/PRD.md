@@ -4,7 +4,7 @@
 
 EverCurrent is the **nervous system** for a hardware engineering org.
 
-- **Sources** (read-only): Slack channels, Google Drive folders, GitHub
+- **Sources** (read-only): Slack channels, Dropbox folders, GitHub
   PRs, Jira tickets, CAD/PLM later. Org installs once via OAuth.
 - **Platform**: stores, links, scores, summarises. Per-user nervous
   system → "what should I know about right now, and why."
@@ -130,7 +130,7 @@ She doesn't open EverCurrent again until tomorrow morning.
 | Source         | What flows in                                       | How                          |
 |----------------|-----------------------------------------------------|------------------------------|
 | Slack          | channel messages + threads + reactions + file_share | Events API webhook + OAuth   |
-| Google Drive   | PDFs (PRD, BOM, ECOs, test reports), Google Docs    | Drive API + push notifications |
+| Dropbox        | PDFs (PRD, BOM, ECOs, test reports)                 | Dropbox API + webhooks       |
 | GitHub         | PR titles + descriptions + labels + merge events    | GitHub Apps + webhooks       |
 | Jira           | issue create / update / status change               | Jira webhooks                |
 | Email          | thread import per user (opt-in)                     | Gmail / Outlook OAuth        |
@@ -151,7 +151,7 @@ routed by an agent → enriched → scored → surfaced.
 
 ```
 ┌──────────────────────┐
-│  Connector webhook    │   Slack/Drive/GitHub/Jira/Email
+│  Connector webhook    │   Slack/Dropbox/GitHub/Jira/Email
 └──────────┬───────────┘
            │  RawEvent { org_id, source, payload, ts }
            ▼
@@ -379,7 +379,7 @@ Click any decision / risk / open question → opens the Card.
 │  ── Sources ──                                                    │
 │  📨 #mech-design · Sarah · Jun 6 06:14                            │
 │  📨 #qa-testing · Lin · Jun 6 09:14 (thermal failure orig)        │
-│  📄 PRD §3.2 Drive — torque spec                                  │
+│  📄 PRD §3.2 Dropbox — torque spec                                │
 │  📄 BOM rev C — AL-7075-T6 line                                   │
 │  🔗 PR #214 firmware retry count                                  │
 │                                                                   │
@@ -415,7 +415,7 @@ filter by phase: [DVT] ▣  · by kind: [PRD] [BOM] [ECO log] [Test]
    │ 4.2KB excerpt   │││ 2.1KB excerpt   ││ 1.8KB excerpt   │
    └─────────────────┘│└─────────────────┘└─────────────────┘
                        │
-   PDFs ingested from Drive auto-flow here. Phase tag editable.
+   PDFs ingested from Dropbox auto-flow here. Phase tag editable.
 ```
 
 Click a document → embedded viewer with section navigation. Hover any
@@ -444,7 +444,7 @@ Sidebar shows "Ask ✨ soon" disabled link as a teaser during the demo.
 ├───────────────────────────────────────────────────────────────────┤
 │  Slack          ✓ connected by David · 5 channels · 12k messages │
 │                  [pause] [pick channels] [remove]                │
-│  Google Drive   ✓ connected by Mei · 2 folders · 47 docs         │
+│  Dropbox        ✓ connected by Mei · 2 folders · 47 docs         │
 │                  [pause] [pick folders] [remove]                 │
 │  GitHub         ⊘ not connected                  [Connect →]     │
 │  Jira           ⊘ not connected                  [Connect →]     │
@@ -453,7 +453,7 @@ Sidebar shows "Ask ✨ soon" disabled link as a teaser during the demo.
 └───────────────────────────────────────────────────────────────────┘
 ```
 
-Org admins manage org-wide connectors (Slack, Drive, GitHub, Jira).
+Org admins manage org-wide connectors (Slack, Dropbox, GitHub, Jira).
 Users manage personal connectors (Email, Calendar).
 
 ### 7.9 Subscriptions
@@ -582,7 +582,7 @@ apps/api/src/evercurrent/
 | 1     | Clerk auth + orgs + memberships + RLS                      | 1-2  | ✓          |
 | 2     | Slack OAuth + Events ingest + backfill                     | 2-3  | ✓          |
 | 3     | Router agent + per-message enrichment                      | 1    | ✓          |
-| 4     | Drive connector (PDFs) + per-doc phase tag                 | 1    | ✓          |
+| 4     | Dropbox connector (PDFs) + per-doc phase tag               | 1    | ✓          |
 | 5     | Knowledge Cards + digest agent + per-user briefing         | 2    | ✓          |
 | 6     | Dashboard rebuild (cards-first, not days-of-week)          | 1    | ✓          |
 | 7     | Slack DM delivery + Subscriptions + quiet hours            | 1    | ✓          |

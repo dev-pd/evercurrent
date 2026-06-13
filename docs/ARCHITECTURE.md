@@ -78,7 +78,7 @@ flowchart TB
     C --> D[score_messages_for_user<br/>pure Python]
     D --> E[generate_all_digests_for_day(N)<br/>Claude Sonnet]
     E --> F[(digests table)]
-    C --> G[(decisions table)]
+    C --> G[(cards table)]
     B --> H[(message_tags table)]
 ```
 
