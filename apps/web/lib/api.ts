@@ -123,6 +123,9 @@ export interface ApiClient {
   ): Promise<MemberSummary>;
   listConnectors(): Promise<ConnectorSummary[]>;
   startInstall(kind: "slack" | "dropbox"): Promise<InstallResponse>;
+  syncSlack(
+    connectorId: string,
+  ): Promise<{ channels: number; raw_events: number; members: number }>;
   getFocus(): Promise<FocusTopic[]>;
   focusSignal(topic: string, delta: number): Promise<FocusTopic[]>;
   listProjects(): Promise<Project[]>;
@@ -185,6 +188,14 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
       return apiFetch(`/api/v1/connectors/${kind}/install`, installResponseSchema, await getCtx(), {
         method: "POST",
       });
+    },
+    async syncSlack(connectorId) {
+      return apiFetch(
+        `/api/v1/connectors/${connectorId}/slack/sync`,
+        z.object({ channels: z.number(), raw_events: z.number(), members: z.number() }),
+        await getCtx(),
+        { method: "POST" },
+      );
     },
     async getFocus() {
       return apiFetch("/api/v1/focus", focusListSchema, await getCtx());

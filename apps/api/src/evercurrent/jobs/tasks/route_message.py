@@ -50,9 +50,12 @@ def _extract_slack_event(payload: Any) -> dict[str, Any] | None:
     if not isinstance(payload, dict):
         return None
     event = payload.get("event")
-    if not isinstance(event, dict):
-        return None
-    return event
+    if isinstance(event, dict):
+        return event
+    # Backfill stores the bare conversations.history message (no envelope).
+    if payload.get("type") == "message":
+        return payload
+    return None
 
 
 async def _upsert_message(

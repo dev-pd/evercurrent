@@ -169,7 +169,15 @@ async def _persist_one(
                 "payload": payload_json,
             },
         )
-        inserted_raw = result.scalar_one_or_none() is not None
+        raw_event_id = result.scalar_one_or_none()
+        inserted_raw = raw_event_id is not None
+        if raw_event_id is not None:
+            from evercurrent.jobs.celery_app import celery_app  # noqa: PLC0415
+
+            celery_app.send_task(
+                "evercurrent.route_message",
+                kwargs={"raw_event_id": str(raw_event_id)},
+            )
     except IntegrityError:
         await session.rollback()
 

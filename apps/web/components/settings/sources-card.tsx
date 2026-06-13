@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Cloud, Loader2, MessageSquare } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Check, Cloud, Loader2, MessageSquare, RefreshCw } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
 import { messages } from "@/lib/messages";
 import type { ConnectorSummary } from "@/lib/types";
@@ -60,9 +61,12 @@ export function SourcesCard({ connectors }: { connectors: ConnectorSummary[] }) 
                 </div>
               </div>
               {connected ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
-                  <Check className="h-3 w-3" /> Connected
-                </span>
+                <div className="flex items-center gap-2">
+                  {s.kind === "slack" && <SyncButton connectorId={connector.id} />}
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+                    <Check className="h-3 w-3" /> Connected
+                  </span>
+                </div>
               ) : (
                 <button
                   type="button"
@@ -80,5 +84,40 @@ export function SourcesCard({ connectors }: { connectors: ConnectorSummary[] }) 
       </div>
       {error && <p className="text-xs text-red-700">{error}</p>}
     </section>
+  );
+}
+
+function SyncButton({ connectorId }: { connectorId: string }) {
+  const router = useRouter();
+  const [state, setState] = useState<"idle" | "syncing" | "done">("idle");
+  const [label, setLabel] = useState("Sync");
+
+  async function sync() {
+    setState("syncing");
+    try {
+      const r = await apiBrowser().syncSlack(connectorId);
+      setLabel(`${r.raw_events} msgs · ${r.members} people`);
+      setState("done");
+      router.refresh();
+    } catch {
+      setLabel("Failed");
+      setState("idle");
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={sync}
+      disabled={state === "syncing"}
+      className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-white px-2.5 py-1 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-muted)] disabled:opacity-60"
+    >
+      {state === "syncing" ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <RefreshCw className="h-3.5 w-3.5" />
+      )}
+      {state === "syncing" ? "Syncing…" : label}
+    </button>
   );
 }
