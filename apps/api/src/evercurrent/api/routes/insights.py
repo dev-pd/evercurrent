@@ -99,11 +99,13 @@ async def list_insights(
     user: CurrentUserDep,
     limit: Annotated[int, Query(ge=1, le=20)] = 5,
 ) -> list[ProactiveInsight]:
-    _ = user
     rows = (
         await session.execute(
-            text("SELECT payload FROM insights ORDER BY created_at DESC LIMIT :n"),
-            {"n": limit},
+            text(
+                "SELECT payload FROM insights WHERE org_id = :org "
+                "ORDER BY created_at DESC LIMIT :n",
+            ),
+            {"org": str(user.org_id), "n": limit},
         )
     ).all()
     return [ProactiveInsight(**row[0]) for row in rows]

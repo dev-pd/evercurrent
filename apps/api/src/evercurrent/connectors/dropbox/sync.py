@@ -132,7 +132,7 @@ async def sync_folder(
                 file=entry.name,
                 size=len(pdf_bytes),
             )
-        except (DropboxAPIError, Exception) as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001
             log.warning(
                 "dropbox.sync.file_failed",
                 file=entry.name,
