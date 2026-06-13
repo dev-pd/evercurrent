@@ -1,10 +1,3 @@
-"""Pure-Python relevance scoring.
-
-Six deterministic signals are combined as a weighted sum, then clamped to
-`[0, 1]`. No I/O, no LLM, sub-millisecond. The breakdown is part of the
-return value so the dashboard can answer "why is this in my top 5."
-"""
-
 from __future__ import annotations
 
 from evercurrent.scoring.schemas import ScoreInput, ScoreResult
@@ -59,7 +52,6 @@ def _cross_functional(inp: ScoreInput) -> float:
 
 
 def score(inp: ScoreInput, weights: Weights | None = None) -> ScoreResult:
-    """Score one (message, member) pair. Pure function, deterministic."""
     w = weights or DEFAULT_WEIGHTS
     breakdown: dict[str, float] = {
         "role_match": _role_match(inp),

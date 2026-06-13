@@ -1,16 +1,3 @@
-"""Pydantic schemas for the Router agent.
-
-`RouterDecision` is the agent's structured output. We persist topic,
-urgency, entities, and affected_roles into `message_tags`; we read
-`should_create_card`, `card_kind`, `card_summary`, and `confidence`
-to decide whether to enqueue `build_card`.
-
-Cross-field invariant: if `should_create_card` is True, both
-`card_kind` and `card_summary` must be present. We enforce that with a
-`model_validator(mode='after')` so the agent loop catches drift via a
-`ValidationError` and triggers the single-retry path.
-"""
-
 from __future__ import annotations
 
 from typing import Literal, Self
@@ -22,8 +9,6 @@ CardKindT = Literal["decision", "risk", "question"]
 
 
 class RouterDecision(BaseModel):
-    """Structured output from the Router agent."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     topic: str | None
@@ -45,16 +30,12 @@ class RouterDecision(BaseModel):
                 )
                 raise ValueError(msg)
         elif self.card_kind is not None or self.card_summary is not None:
-            msg = (
-                "should_create_card=False requires both card_kind and "
-                "card_summary to be null"
-            )
+            msg = "should_create_card=False requires both card_kind and card_summary to be null"
             raise ValueError(msg)
         return self
 
 
 def fallback_decision() -> RouterDecision:
-    """Uncategorised fallback when the LLM cannot produce a valid decision."""
     return RouterDecision(
         topic=None,
         urgency="normal",

@@ -1,5 +1,3 @@
-"""Message + tag domain models."""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -56,8 +54,6 @@ class MessageTag(BaseModel):
 
 
 class EnrichedMessage(BaseModel):
-    """A message joined with its tag (if enrichment has run yet)."""
-
     model_config = ConfigDict(strict=True)
 
     message: Message

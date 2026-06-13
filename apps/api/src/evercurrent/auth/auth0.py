@@ -1,14 +1,3 @@
-"""Auth0 access-token verification.
-
-JWTs are signed with the tenant's RS256 key. We pull the JWKS from
-`https://{domain}/.well-known/jwks.json` and verify signature + issuer
-+ audience + expiry. The verified payload is a `Auth0Claims` Pydantic
-model.
-
-The JWKS is cached for a TTL because Auth0 rotates keys infrequently.
-On verification failure we refresh the cache once before giving up.
-"""
-
 from __future__ import annotations
 
 import time
@@ -48,12 +37,6 @@ class _JwksCache:
 
 
 class Auth0Verifier:
-    """Verifies Auth0-issued JWTs.
-
-    Pure async, no global state — instances are constructed per-process
-    and held on `app.state` for the lifespan of the FastAPI app.
-    """
-
     def __init__(
         self,
         *,
@@ -74,7 +57,6 @@ class Auth0Verifier:
         await self._client.aclose()
 
     async def verify(self, token: str) -> Auth0Claims:
-        """Verify a bearer token, returning typed claims on success."""
         try:
             unverified_header = jwt.get_unverified_header(token)
         except JWTError as exc:
@@ -130,4 +112,4 @@ class Auth0Verifier:
 
 
 class InvalidTokenError(Exception):
-    """Raised when a token fails Auth0 verification."""
+    pass

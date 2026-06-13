@@ -75,9 +75,12 @@ non-negotiables from `AGENTS.md` §6, plus operational specifics.
 - `from x import *` — always explicit imports.
 - Mutable default arguments (`def f(x: list = [])` — use `None` and check).
 - Implicit string concatenation in lists.
-- Comments that describe what the code does. Only comment WHY when the
-  code's intent is non-obvious.
-- Docstrings that are just a re-stating of the function name.
+- Inline comments. Rename/refactor instead; reserve a one-line comment
+  for a genuinely non-obvious *why* (workaround, spec quirk).
+- Docstrings by default. Add one terse line only when a module's or
+  function's purpose isn't obvious from its name.
+- Never strip functional directives (`# noqa`, `# type: ignore`,
+  `# ruff:`, `# pyright:`, shebangs) — they are not comments.
 
 ## When you're about to add a dependency
 

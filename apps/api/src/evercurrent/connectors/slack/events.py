@@ -1,25 +1,3 @@
-"""Slack Events API webhook handler.
-
-Flow:
-
-1. Read raw body bytes once (FastAPI's body stream is single-use).
-2. If `type == "url_verification"`, echo back the `challenge` —
-   Slack accepts this as ownership proof, no HMAC required.
-3. Otherwise verify the HMAC over the raw bytes using
-   `X-Slack-Signature` + `X-Slack-Request-Timestamp` with a 5-minute
-   skew window.
-4. Look up the `Connector` by `(kind='slack', external_team_id)`.
-   If missing or inactive, return 200 (we never want Slack to retry
-   forever).
-5. Manually set RLS context to the connector's org — there's no user
-   in the webhook path.
-6. Insert into `raw_events` with `(source='slack',
-   external_id=event_ts)`. On unique-violation, swallow and return —
-   that's our idempotency.
-7. Enqueue `route_message(raw_event_id)` on Celery.
-8. Return 200 within the 3-second budget Slack enforces.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -46,19 +24,11 @@ SIGNATURE_SKEW_SECONDS = 60 * 5
 
 
 class EnqueueRouteMessage(Protocol):
-    """Callable signature for the route_message enqueuer.
-
-    Kept abstract so tests can substitute a recording fake without
-    importing Celery at all.
-    """
-
     def __call__(self, *, raw_event_id: uuid.UUID) -> None: ...
 
 
 @dataclass(frozen=True)
 class SlackHandlerResult:
-    """What the events handler decided to do, surfaced for the route + tests."""
-
     status_code: int
     body: dict[str, Any]
     raw_event_id: uuid.UUID | None = None
@@ -72,11 +42,6 @@ def verify_signature(
     signing_secret: str,
     now: float | None = None,
 ) -> bool:
-    """Verify a Slack v0 HMAC-SHA256 signature in constant time.
-
-    Reject if `timestamp` is more than 5 minutes off from `now` —
-    that's the replay protection Slack documents.
-    """
     if not timestamp or not signature or not signing_secret:
         return False
     try:
@@ -87,11 +52,14 @@ def verify_signature(
     if abs(current - ts_float) > SIGNATURE_SKEW_SECONDS:
         return False
     basestring = f"v0:{timestamp}:".encode() + body
-    expected = "v0=" + hmac.new(
-        signing_secret.encode(),
-        basestring,
-        hashlib.sha256,
-    ).hexdigest()
+    expected = (
+        "v0="
+        + hmac.new(
+            signing_secret.encode(),
+            basestring,
+            hashlib.sha256,
+        ).hexdigest()
+    )
     return hmac.compare_digest(expected, signature)
 
 
@@ -105,7 +73,6 @@ async def handle_event(
     enqueue_route_message: EnqueueRouteMessage | None = None,
     now: float | None = None,
 ) -> SlackHandlerResult:
-    """Run the full event handler pipeline. Returns the result the route returns."""
     payload = _parse_envelope(body)
 
     if payload.type == "url_verification":
@@ -168,9 +135,6 @@ async def handle_event(
         try:
             enqueue_route_message(raw_event_id=raw_event_id)
         except Exception as exc:  # noqa: BLE001
-            # Enqueue failures must not poison the webhook ack — Slack
-            # would retry forever otherwise. Log and move on; a sweep job
-            # in Phase 5 will pick up orphans.
             log.warning(
                 "slack.events.enqueue_failed",
                 raw_event_id=str(raw_event_id),
@@ -188,8 +152,6 @@ def _parse_envelope(body: bytes) -> SlackEventEnvelope:
     try:
         data = json.loads(body.decode())
     except (UnicodeDecodeError, json.JSONDecodeError):
-        # Slack never sends non-JSON; treat as malformed and let the
-        # caller short-circuit to a 200 via empty envelope.
         return SlackEventEnvelope(type="event_callback")
     return SlackEventEnvelope.model_validate(data)
 
@@ -201,7 +163,6 @@ async def _persist_raw_event(
     external_id: str,
     body: bytes,
 ) -> uuid.UUID | None:
-    """Insert the raw payload, swallow duplicate-key violations."""
     payload_json = body.decode()
     try:
         result = await session.execute(

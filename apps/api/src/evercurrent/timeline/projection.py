@@ -1,11 +1,3 @@
-"""Pure projection logic for the timeline.
-
-The phase ladder is the canonical hardware NPI sequence (EVT → DVT → PVT →
-MP). Durations are fixed here because they are not persisted per project;
-everything else (calendar anchor, current position, lane set) is driven by the
-project's real fields. No I/O — callers pass plain values in.
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -33,7 +25,6 @@ TOTAL_MONTHS = TOTAL_DAYS / DAYS_PER_MONTH
 
 
 def _phase_windows() -> list[tuple[str, int, int]]:
-    """Each phase as (label, start_day, end_day) on the cumulative ladder."""
     windows: list[tuple[str, int, int]] = []
     cursor = 0
     for label, days in PHASE_LADDER:
@@ -65,8 +56,7 @@ def _build_phases(current_day: int) -> list[PhaseBlock]:
 def _month_labels(start_date: dt.date) -> list[str]:
     count = math.ceil(TOTAL_MONTHS)
     return [
-        (start_date + dt.timedelta(days=i * DAYS_PER_MONTH)).strftime("%b")
-        for i in range(count)
+        (start_date + dt.timedelta(days=i * DAYS_PER_MONTH)).strftime("%b") for i in range(count)
     ]
 
 
@@ -84,8 +74,7 @@ def _build_lanes(subsystems: list[str], current_day: int) -> list[Lane]:
 
 def _summary(project_name: str, current_phase: str, progress_pct: int) -> str:
     return (
-        f"{project_name} is in {current_phase}. "
-        f"~{progress_pct}% through the planned NPI schedule."
+        f"{project_name} is in {current_phase}. ~{progress_pct}% through the planned NPI schedule."
     )
 
 

@@ -1,5 +1,3 @@
-"""Request middleware: request ID + structlog context binding."""
-
 from __future__ import annotations
 
 import time

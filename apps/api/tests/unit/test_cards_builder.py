@@ -1,16 +1,3 @@
-"""Unit tests for `cards.builder.build_card`.
-
-We mock the AsyncSession + the LLM + the MCP client to keep the test
-deterministic. Assertions:
-
-- happy path: a Card row + N CardSource rows are written, and the
-  builder returns the new card_id with `existing=False`.
-- idempotency: when `get_existing_card` already returns a row, the LLM
-  is never called and we return that row with `existing=True`.
-- IntegrityError race: insert raises IntegrityError; we fall back to
-  `get_existing_card` and return the existing row.
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -143,7 +130,8 @@ def _patch_meta_and_project(
     message_text: str = "Switching to AlumWest.",
 ) -> None:
     async def fake_load_message_meta(
-        _session: Any, _message_id: uuid.UUID,
+        _session: Any,
+        _message_id: uuid.UUID,
     ) -> dict[str, Any] | None:
         return {
             "id": _message_id,
@@ -156,15 +144,20 @@ def _patch_meta_and_project(
         }
 
     async def fake_resolve_project_context(
-        _session: Any, _project_id: uuid.UUID | None,
+        _session: Any,
+        _project_id: uuid.UUID | None,
     ) -> tuple[str, list[str]]:
         return "DVT", ["thermal", "powertrain"]
 
     monkeypatch.setattr(
-        builder_mod, "_load_message_meta", fake_load_message_meta,
+        builder_mod,
+        "_load_message_meta",
+        fake_load_message_meta,
     )
     monkeypatch.setattr(
-        builder_mod, "_resolve_project_context", fake_resolve_project_context,
+        builder_mod,
+        "_resolve_project_context",
+        fake_resolve_project_context,
     )
 
 
@@ -318,5 +311,4 @@ async def test_build_card_handles_integrity_error_race(
     assert result["existing"] is True
     assert len(captured["insert_calls"]) == 1
     fake_session.rollback.assert_awaited()
-    # source rows are not written when the race loses
     assert len(captured["source_calls"]) == 0

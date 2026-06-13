@@ -1,6 +1,3 @@
-"""Document routes. PDFs are ingested via the Dropbox connector (sync);
-this only lists what's been ingested."""
-
 from __future__ import annotations
 
 import uuid
@@ -23,9 +20,6 @@ async def list_documents(
     project_id: Annotated[uuid.UUID | None, Query()] = None,
     phase: Annotated[str | None, Query()] = None,
 ) -> list[DocumentResponse]:
-    """List project documents. Optional `phase` filters to docs whose
-    `phases` array contains the requested phase (or have an empty phases
-    list, meaning all-phase docs)."""
     if project_id is None:
         projects = await ProjectRepository(session).list_all()
         if not projects:

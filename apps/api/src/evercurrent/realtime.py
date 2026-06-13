@@ -1,16 +1,3 @@
-"""Realtime pub/sub bridge between Celery workers and the API.
-
-Celery tasks call `publish_event(...)` over a sync Redis client to push
-a JSON event onto a per-project channel. The FastAPI `/events` SSE
-endpoint subscribes to that channel via an async Redis client and
-relays the events out to the browser. EventSource on the frontend
-swaps the polling heartbeat for server-pushed updates.
-
-Channel: `events:{project_id}`
-Events: `digest.updated`, `message.synthesized`, `phase.changed`,
-        `decisions.updated`
-"""
-
 from __future__ import annotations
 
 import json
@@ -37,11 +24,6 @@ def publish_event(
     event_type: str,
     payload: dict[str, Any] | None = None,
 ) -> None:
-    """Publish a JSON event to a project's realtime channel.
-
-    Sync — safe to call from Celery task bodies. No-op on connection
-    errors so a transient Redis blip never fails a task.
-    """
     body = json.dumps({"type": event_type, **(payload or {})}, default=str)
     try:
         client = redis_sync.Redis.from_url(_redis_url())

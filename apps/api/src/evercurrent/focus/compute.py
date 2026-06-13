@@ -1,16 +1,7 @@
-"""Pure focus computation.
-
-A member's focus = owned subsystems (role) + role-adjacent concerns + current
-phase concerns + learned behaviour (feedback-tuned topic weights). The result
-is a ranked, normalized set of focus topics with provenance + trend, so the UI
-can show *why* something is in focus and the digest judge can weight by it.
-"""
-
 from __future__ import annotations
 
 from evercurrent.focus.schemas import FocusSource, FocusTopic, FocusTrend
 
-# Concerns each engineering role tends to track beyond its owned subsystems.
 ROLE_ADJACENT: dict[str, list[str]] = {
     "mech": ["chassis", "thermal", "tolerance"],
     "ee": ["power", "thermal", "firmware"],
@@ -30,7 +21,7 @@ _LABELS: dict[str, str] = {
 _W_OWNED = 0.7
 _W_ADJACENT = 0.4
 _W_PHASE = 0.5
-_W_LEARNED = 0.6  # max contribution from a +1.0 topic weight
+_W_LEARNED = 0.6
 
 
 def _label(topic: str) -> str:

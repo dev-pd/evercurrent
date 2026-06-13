@@ -1,5 +1,3 @@
-"""FastAPI app factory and entrypoint for the EverCurrent backend."""
-
 from __future__ import annotations
 
 import contextlib

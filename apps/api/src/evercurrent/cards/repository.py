@@ -1,10 +1,3 @@
-"""Repository helpers for `cards` + `card_sources`.
-
-All reads / writes go through these functions so the routes never see
-raw SQL. RLS is set on the session by the caller (auth dep or task
-body); these helpers do not set or clear it.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -29,10 +22,6 @@ async def get_existing_card(
     triggering_message_id: uuid.UUID,
     kind: str,
 ) -> dict[str, Any] | None:
-    """Return the existing Card row for (message, kind), if any.
-
-    Used by the builder for the idempotency check before calling Sonnet.
-    """
     result = await session.execute(
         text(
             "SELECT id, org_id, project_id, kind, summary, body, status, "
@@ -62,7 +51,6 @@ async def insert_card(
     decided_at: Any | None,
     triggering_message_id: uuid.UUID,
 ) -> uuid.UUID:
-    """Insert a Card row, returning its id."""
     result = await session.execute(
         text(
             "INSERT INTO cards "
@@ -100,7 +88,6 @@ async def add_card_sources(
     card_id: uuid.UUID,
     refs: list[tuple[str, uuid.UUID]],
 ) -> None:
-    """Bulk-insert source refs for a Card. Deduplicates within the call."""
     seen: set[tuple[str, uuid.UUID]] = set()
     for kind, sid in refs:
         if (kind, sid) in seen:
@@ -130,8 +117,6 @@ async def list_cards(
     status: str | None = None,
     limit: int = 50,
 ) -> list[CardListItem]:
-    """List Cards, ordered by updated_at desc. RLS scopes to the caller's org;
-    `project_id` narrows to one project when given."""
     clauses = ["TRUE"]
     params: dict[str, Any] = {"limit": limit}
     if project_id is not None:
@@ -175,7 +160,6 @@ async def get_card(
     session: AsyncSession,
     card_id: uuid.UUID,
 ) -> CardResponse | None:
-    """Get one Card with expanded source snippets."""
     result = await session.execute(
         text(
             "SELECT id, kind, summary, body, status, confidence, "
@@ -228,7 +212,6 @@ async def _resolve_source_snippet(
     source_kind: str,
     source_id: uuid.UUID,
 ) -> str | None:
-    """Best-effort snippet lookup for a source citation."""
     if source_kind == "message":
         r = (
             await session.execute(
@@ -244,8 +227,7 @@ async def _resolve_source_snippet(
         r = (
             await session.execute(
                 text(
-                    "SELECT section_path, text FROM document_chunks "
-                    "WHERE id = :id",
+                    "SELECT section_path, text FROM document_chunks WHERE id = :id",
                 ),
                 {"id": str(source_id)},
             )

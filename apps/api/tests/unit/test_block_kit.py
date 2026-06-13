@@ -1,8 +1,3 @@
-"""Block Kit renderer tests.
-
-Pure: feed a markdown digest, assert on the returned block list shape.
-"""
-
 from __future__ import annotations
 
 from evercurrent.notify.block_kit import digest_to_blocks

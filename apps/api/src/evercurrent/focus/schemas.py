@@ -1,5 +1,3 @@
-"""Focus model schemas."""
-
 from __future__ import annotations
 
 from typing import Literal
@@ -15,6 +13,6 @@ class FocusTopic(BaseModel):
 
     topic: str
     label: str
-    weight: float  # 0..1, relative focus strength
-    sources: list[FocusSource]  # why this is in focus
-    trend: FocusTrend  # recent movement from learned behaviour
+    weight: float
+    sources: list[FocusSource]
+    trend: FocusTrend

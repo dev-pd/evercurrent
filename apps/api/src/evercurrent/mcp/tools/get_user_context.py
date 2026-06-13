@@ -1,12 +1,3 @@
-"""get_user_context tool.
-
-Given an `org_memberships.id`, returns the member's role and (best
-effort) their owned subsystems + topic weights. The new `org_memberships`
-table doesn't carry `owned_subsystems` or `topic_weights` yet; those
-live on the legacy `users` table, joined via `slack_user_id` (preferred)
-or `email`. If no `users` row matches, the lists/maps come back empty.
-"""
-
 from __future__ import annotations
 
 import time
@@ -62,7 +53,6 @@ async def get_user_context(
     *,
     membership_id: uuid.UUID,
 ) -> UserContext | None:
-    """Return profile context for the given membership, or None if unknown."""
     start = time.perf_counter()
 
     row = (await session.execute(_SQL, {"membership_id": membership_id})).mappings().first()

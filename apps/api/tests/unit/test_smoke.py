@@ -1,5 +1,3 @@
-"""Smoke test — proves the unit test runner works end-to-end."""
-
 from __future__ import annotations
 
 

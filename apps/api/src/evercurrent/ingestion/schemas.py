@@ -1,5 +1,3 @@
-"""Pydantic strict schemas for the ingestion pipeline."""
-
 from __future__ import annotations
 
 from typing import Annotated, Literal
@@ -8,8 +6,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class DocClassification(BaseModel):
-    """Haiku-judged verdict on whether a doc is decision-bearing."""
-
     model_config = ConfigDict(strict=True)
 
     is_decision: bool

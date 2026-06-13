@@ -1,10 +1,3 @@
-"""Tool specs Eve exposes to the model.
-
-READ_TOOLS are thin wrappers over the in-process MCP read tools (project_id is
-injected server-side, never by the LLM). EMIT_TOOL is the structured terminal
-action whose schema mirrors `ProactiveInsight`.
-"""
-
 from __future__ import annotations
 
 from evercurrent.llm.client import ToolSpec

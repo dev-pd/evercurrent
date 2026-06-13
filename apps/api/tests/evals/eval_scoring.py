@@ -1,12 +1,3 @@
-"""Scoring eval — 20 scenarios, pure-Python, no LLM.
-
-Each scenario gives one "focus" message with expected relative rank
-out of 20. We score the focus message against a population of 20
-deterministic distractor messages and check whether the focus sits at
-its expected rank. Aggregate metric: Spearman rank correlation between
-expected and actual ranks.
-"""
-
 from __future__ import annotations
 
 from typing import Any
@@ -111,7 +102,6 @@ _DISTRACTOR_TEMPLATES: list[dict[str, Any]] = [
 
 
 def _score_focus_rank(scenario: dict[str, Any]) -> int:
-    """Score the focus message against 20 distractors, return its 0-based rank."""
     member = scenario["member"]
     focus = scenario["message"]
     member_role = member["member_role"]
@@ -143,7 +133,6 @@ def _score_focus_rank(scenario: dict[str, Any]) -> int:
 
 
 def test_scoring_rank_correlation(scoring_scenarios: list[dict[str, Any]]) -> None:
-    """Per scenario, score focus + distractors; assert ranking matches expectation."""
     expected_ranks: list[int] = []
     actual_ranks: list[int] = []
     rows: list[tuple[str, ...]] = [

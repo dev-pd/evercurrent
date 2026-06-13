@@ -1,12 +1,3 @@
-"""Immediate DM for a critical Card.
-
-Smaller payload than the digest path: title + one-line summary + a
-single "Open card" button. The user can opt to override quiet hours
-for this kind by setting `value='override_quiet'` on their
-`urgent_immediate` subscription — otherwise we defer the same way the
-digest path does.
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -73,13 +64,17 @@ async def _load_subscription(
     membership_id: uuid.UUID,
 ) -> models.Subscription | None:
     return (
-        await session.execute(
-            select(models.Subscription).where(
-                models.Subscription.membership_id == membership_id,
-                models.Subscription.kind == _URGENT_KIND,
-            ),
+        (
+            await session.execute(
+                select(models.Subscription).where(
+                    models.Subscription.membership_id == membership_id,
+                    models.Subscription.kind == _URGENT_KIND,
+                ),
+            )
         )
-    ).scalars().first()
+        .scalars()
+        .first()
+    )
 
 
 def _card_blocks(card: models.Card) -> list[dict[str, Any]]:
@@ -116,7 +111,9 @@ def _card_blocks(card: models.Card) -> list[dict[str, Any]]:
 
 
 async def _load_bot_token(
-    session: AsyncSession, *, org_id: uuid.UUID,
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
 ) -> str | None:
     connector = (
         await session.execute(
@@ -152,7 +149,9 @@ async def deliver_urgent_dm(  # noqa: PLR0911
 ) -> DeliveryResult:
     now = now or dt.datetime.now(dt.UTC)
     loaded = await _load_card_member(
-        session, card_id=card_id, membership_id=membership_id,
+        session,
+        card_id=card_id,
+        membership_id=membership_id,
     )
     if loaded is None:
         return DeliveryResult(status="missing", reason="card_or_member_missing")
@@ -181,9 +180,7 @@ async def deliver_urgent_dm(  # noqa: PLR0911
         )
 
     override = (
-        subscription is not None
-        and subscription.value == _OVERRIDE_VALUE
-        and subscription.enabled
+        subscription is not None and subscription.value == _OVERRIDE_VALUE and subscription.enabled
     )
 
     tz = _zoneinfo_safe(membership.timezone)
@@ -199,7 +196,9 @@ async def deliver_urgent_dm(  # noqa: PLR0911
         )
     ):
         eta = quiet_hours.next_open(
-            now, tz=tz, quiet_end=membership.quiet_end,
+            now,
+            tz=tz,
+            quiet_end=membership.quiet_end,
         )
         return DeliveryResult(status="deferred", deferred_eta=eta)
 

@@ -1,5 +1,3 @@
-"""Project repository."""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -68,9 +66,6 @@ class ProjectRepository:
             return None
         row.current_phase = phase
         await self._s.flush()
-        # Server-side onupdate=func.now() leaves `updated_at` in an expired
-        # state; refresh so Pydantic from_attributes can read it without a
-        # lazy-load (which fails after the session greenlet has unwound).
         await self._s.refresh(row)
         return Project.model_validate(row)
 

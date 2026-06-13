@@ -1,5 +1,3 @@
-"""Async engine + session factory + FastAPI lifespan integration."""
-
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
@@ -58,14 +56,12 @@ def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
 
 @asynccontextmanager
 async def session_scope() -> AsyncIterator[AsyncSession]:
-    """Context manager for one-shot use outside FastAPI request scope."""
     sm = get_sessionmaker()
     async with sm() as session:
         yield session
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:
-    """FastAPI dependency. Yields one session per request."""
     sm = get_sessionmaker()
     async with sm() as session:
         yield session

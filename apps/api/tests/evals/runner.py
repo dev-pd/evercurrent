@@ -1,15 +1,3 @@
-"""Eval orchestrator helpers.
-
-Small pure utilities that the four eval scripts call:
-
-- baseline target lookup
-- pass/fail formatter (warn only; never fails a test)
-- set jaccard, precision@k, MRR, Spearman rank correlation
-
-Keep this dependency-free (stdlib only) so the harness works without
-numpy / scipy. Statistics here are simple enough to roll by hand.
-"""
-
 from __future__ import annotations
 
 import sys
@@ -67,12 +55,6 @@ BASELINES: dict[str, Baseline] = {
 
 
 def warn_if_below_baseline(name: str, observed: float) -> bool:
-    """Print to stderr if `observed` is below the baseline for `name`.
-
-    Deliberately not `warnings.warn` — the project's pytest config promotes
-    warnings to errors, and the eval contract says baseline misses should
-    be informational only, not gating.
-    """
     spec = BASELINES.get(name)
     if spec is None:
         print(f"[eval-baseline] no baseline registered for {name}", file=sys.stderr)
@@ -87,11 +69,7 @@ def warn_if_below_baseline(name: str, observed: float) -> bool:
     return True
 
 
-# ----- statistics ------------------------------------------------------------
-
-
 def jaccard(a: list[str], b: list[str]) -> float:
-    """Set jaccard similarity. Case-insensitive on string elements."""
     sa = {str(x).strip().lower() for x in a if str(x).strip()}
     sb = {str(x).strip().lower() for x in b if str(x).strip()}
     if not sa and not sb:
@@ -104,7 +82,6 @@ def jaccard(a: list[str], b: list[str]) -> float:
 
 
 def precision_at_k(retrieved: list[str], expected: list[str], k: int = 5) -> float:
-    """Fraction of top-k retrieved items that are in the expected set."""
     if k <= 0:
         return 0.0
     expected_set = set(expected)
@@ -116,7 +93,6 @@ def precision_at_k(retrieved: list[str], expected: list[str], k: int = 5) -> flo
 
 
 def mean_reciprocal_rank(retrieved: list[str], expected: list[str]) -> float:
-    """1 / (rank of the first expected item), or 0 if none of them appear."""
     expected_set = set(expected)
     for idx, item in enumerate(retrieved, start=1):
         if item in expected_set:
@@ -125,7 +101,6 @@ def mean_reciprocal_rank(retrieved: list[str], expected: list[str]) -> float:
 
 
 def spearman_rho(expected: list[int], actual: list[int]) -> float:
-    """Spearman rank correlation, no scipy. Handles ties via average rank."""
     if len(expected) != len(actual):
         msg = "expected and actual must be the same length"
         raise ValueError(msg)

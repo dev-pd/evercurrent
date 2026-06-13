@@ -1,11 +1,3 @@
-"""Slack OAuth install + callback.
-
-State token contains org_id + a timestamp + an HMAC signed with our
-own webhook secret. We use the same `connector_secret_key` as the
-token vault, hashed once with HMAC-SHA256 — separate-key separation
-isn't worth the take-home cost.
-"""
-
 from __future__ import annotations
 
 import base64
@@ -36,13 +28,11 @@ STATE_MAX_AGE_SECONDS = 600
 
 
 class InstallStateError(ValueError):
-    """Raised when an OAuth callback presents a missing/invalid `state`."""
+    pass
 
 
 @dataclass(frozen=True)
 class InstallState:
-    """Decoded payload encoded into the OAuth `state` query param."""
-
     org_id: uuid.UUID
     issued_at: int
 
@@ -55,7 +45,6 @@ def _state_secret(settings: Settings) -> bytes:
 
 
 def encode_state(org_id: uuid.UUID, *, settings: Settings, now: int | None = None) -> str:
-    """Build a signed OAuth state token: base64({org_id, issued_at, sig})."""
     issued_at = now if now is not None else int(time.time())
     body = {"org_id": str(org_id), "iat": issued_at}
     raw = json.dumps(body, separators=(",", ":")).encode()
@@ -88,7 +77,6 @@ def decode_state(
 
 
 def build_install_url(*, org_id: uuid.UUID, settings: Settings) -> str:
-    """Return the Slack OAuth consent URL for the given org."""
     if settings.slack_client_id is None:
         raise InstallStateError("slack_client_id not configured")
     redirect_uri = _redirect_uri(settings)
@@ -119,7 +107,6 @@ async def exchange_and_persist(
     installed_by_membership_id: uuid.UUID | None,
     slack_client: SlackClient | None = None,
 ) -> uuid.UUID:
-    """Exchange code for tokens, persist connector row, return connector id."""
     if settings.slack_client_id is None or settings.slack_client_secret is None:
         raise InstallStateError("slack oauth secrets not configured")
 

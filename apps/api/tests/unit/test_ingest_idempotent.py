@@ -1,21 +1,3 @@
-"""Unit test for `ingest_pdf_bytes` idempotency.
-
-The Drive webhook will fire `change` events that don't actually change
-the underlying file. We rely on UNIQUE `(source, external_id)` plus a
-fast-path branch in the task to make a re-ingest a no-op rather than a
-duplicate-row insert.
-
-Strategy:
-
-- Stub the embedder with a deterministic fake so we don't need Voyage.
-- Stub `extract_blocks` to return a fixed list (no fitz dependency).
-- Stub `session_scope` to return an in-memory recorder that captures
-  the (source, external_id) of every "INSERT" into documents.
-
-We then call `ingest_pdf_bytes` twice and assert the second call short-
-circuits without adding a second document row.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -52,14 +34,11 @@ class _DocRow:
 
 
 class _Recorder:
-    """Captures every document add + lookup, satisfies the async session API."""
-
     def __init__(self) -> None:
         self.documents: list[_DocRow] = []
         self.chunks_added = 0
         self.lookup_calls = 0
         self.delete_calls = 0
-        # Pre-populate a single Project so _resolve_default_project succeeds.
         self.project_id = uuid.uuid4()
 
     def reset_per_session(self) -> None:
@@ -101,21 +80,16 @@ class _Recorder:
 
         call_index = self.lookup_calls
         if call_index == 1:
-            # set_org_context — has no result we care about.
             return _Result(None)
         if call_index == 2:
-            # _resolve_default_project: return a fake project row (raw SQL).
             return _Result(str(self.project_id))
         if call_index == 3:
-            # _upsert_document SELECT — return the matching doc if exists.
             doc = self.documents[0] if self.documents else None
             return _Result(doc)
-        # _replace_chunks SELECT — return existing chunks (none here).
         return _Result(None)
 
     def add(self, row: Any) -> None:
         if isinstance(row, _DocRow) or row.__class__.__name__ == "Document":
-            # Coerce ORM Document instances into our fake shape.
             if not isinstance(row, _DocRow):
                 row = _DocRow(
                     source=row.source,
@@ -188,13 +162,10 @@ async def test_ingest_pdf_bytes_idempotent_by_external_id() -> None:
 
     assert result_first["chunks"] >= 1
     assert result_second.get("skipped") == "duplicate"
-    # Exactly one document row was created.
     assert len(recorder.documents) == 1
 
 
 class _ImmediateNone:
-    """An awaitable that evaluates to None — `classify_document` is mocked."""
-
     def __await__(self):  # type: ignore[no-untyped-def]
         async def _none() -> None:
             return None

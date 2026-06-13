@@ -1,5 +1,3 @@
-"""RAG indexer. Pipeline: doc → chunks → embeddings → pgvector."""
-
 from __future__ import annotations
 
 import uuid
@@ -19,7 +17,6 @@ async def index_document(
     *,
     embedder: EmbeddingProvider | None = None,
 ) -> int:
-    """Chunk + embed + replace all chunks for one document. Idempotent."""
     emb = embedder or get_embedder()
 
     async with session_scope() as session:
@@ -59,7 +56,6 @@ async def index_document(
 
 
 async def index_all_for_project(project_id: uuid.UUID) -> dict[str, int]:
-    """Index every document for a project. Returns {document_title: chunk_count}."""
     out: dict[str, int] = {}
     async with session_scope() as session:
         repo = DocumentRepository(session)
@@ -70,7 +66,6 @@ async def index_all_for_project(project_id: uuid.UUID) -> dict[str, int]:
 
 
 def main() -> None:
-    """CLI: `python -m evercurrent.rag.indexer --all` indexes every doc."""
     import argparse
 
     parser = argparse.ArgumentParser(description="Index project documents for RAG.")

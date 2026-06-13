@@ -1,9 +1,3 @@
-"""Pydantic schemas for the notify subsystem.
-
-Strict mode everywhere. Subscription kinds are a `Literal` so the API
-and the DB CHECK constraint stay in lockstep.
-"""
-
 from __future__ import annotations
 
 import datetime as dt

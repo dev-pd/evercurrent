@@ -1,5 +1,3 @@
-"""Unit tests for the deterministic timeline projection."""
-
 from __future__ import annotations
 
 import datetime as dt

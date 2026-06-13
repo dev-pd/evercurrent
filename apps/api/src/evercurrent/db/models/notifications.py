@@ -1,5 +1,3 @@
-"""Subscription + notification ORM models (Phase 11)."""
-
 from __future__ import annotations
 
 import datetime as dt

@@ -1,18 +1,9 @@
-"""Pydantic strict models for the Slack payload shapes we consume.
-
-Only the subset of fields we actually read is modelled. Slack adds
-fields liberally; `extra='ignore'` lets new ones slip past without
-breaking ingest.
-"""
-
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class SlackEventInner(BaseModel):
-    """The inner `event` object in an Events API envelope."""
-
     model_config = ConfigDict(strict=True, extra="ignore")
 
     type: str
@@ -26,11 +17,9 @@ class SlackEventInner(BaseModel):
 
 
 class SlackEventEnvelope(BaseModel):
-    """The outer Events API envelope Slack POSTs to our webhook."""
-
     model_config = ConfigDict(strict=True, extra="ignore")
 
-    type: str  # "event_callback" | "url_verification" | future Slack values
+    type: str
     token: str | None = None
     team_id: str | None = None
     api_app_id: str | None = None
@@ -41,8 +30,6 @@ class SlackEventEnvelope(BaseModel):
 
 
 class SlackOAuthResponse(BaseModel):
-    """Strict-typed `oauth.v2.access` response (subset we care about)."""
-
     model_config = ConfigDict(strict=True, extra="ignore")
 
     ok: bool
@@ -57,8 +44,6 @@ class SlackOAuthResponse(BaseModel):
 
 
 class SlackChannelSummary(BaseModel):
-    """One channel row from `conversations.list`."""
-
     model_config = ConfigDict(strict=True, extra="ignore")
 
     id: str

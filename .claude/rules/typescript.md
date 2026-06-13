@@ -105,7 +105,9 @@ the non-negotiables from `AGENTS.md` §7, plus React/Next.js specifics.
 - `useEffect` to sync state across components (use Zustand or lift state).
 - Inline anonymous components: `() => <div />` in JSX (causes re-renders).
 - `console.log` left in committed code.
-- Comments describing what JSX renders. The JSX is the description.
+- Inline comments and JSDoc. The code is the description; rename instead.
+  Keep only functional directives (`// eslint-disable`, `// @ts-expect-error`)
+  and `"use client"` / `"use server"`.
 
 ## When you're about to add a dependency
 

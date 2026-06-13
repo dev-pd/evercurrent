@@ -1,10 +1,3 @@
-"""Haiku-backed classifier: decision-bearing vs general context.
-
-The classifier takes the document title plus the first 3 chunks and asks
-Haiku to pick `{is_decision, kind, confidence, rationale}`. The boolean
-is what gates Card creation downstream.
-"""
-
 from __future__ import annotations
 
 import json
@@ -20,10 +13,7 @@ from evercurrent.llm.tiering import ModelTier
 log = structlog.get_logger(__name__)
 
 _PROMPT_PATH = Path(__file__).parent / "prompts" / "classify_doc.txt"
-_SYSTEM = (
-    "You are a precise classifier for hardware engineering documents. "
-    "Output JSON only."
-)
+_SYSTEM = "You are a precise classifier for hardware engineering documents. Output JSON only."
 _FIRST_N_CHUNKS = 3
 
 
@@ -45,7 +35,6 @@ async def classify_document(
     chunks: list[Chunk],
     provider: LLMProvider | None = None,
 ) -> DocClassification:
-    """Ask Haiku whether `title` + `chunks` represent a decision-bearing doc."""
     if not chunks:
         return DocClassification(
             is_decision=False,

@@ -1,5 +1,3 @@
-"""Model tiering: which Claude model handles which workload."""
-
 from __future__ import annotations
 
 from enum import StrEnum

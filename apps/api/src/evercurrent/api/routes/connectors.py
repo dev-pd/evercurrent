@@ -1,10 +1,3 @@
-"""Connectors API: install, list, channel toggles.
-
-Webhook endpoint for inbound Slack events lives in `webhooks.py` so
-all webhook surfaces share the same prefix + tag. This router holds
-the user-facing connector management endpoints.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -70,16 +63,22 @@ async def list_connectors(
     current_user: CurrentUserDep,
 ) -> list[ConnectorSummary]:
     rows = (
-        await session.execute(
-            select(models.Connector).where(models.Connector.org_id == current_user.org_id),
+        (
+            await session.execute(
+                select(models.Connector).where(models.Connector.org_id == current_user.org_id),
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     out: list[ConnectorSummary] = []
     for row in rows:
         channel_count = (
             await session.execute(
-                select(func.count()).select_from(models.ConnectorChannel).where(
+                select(func.count())
+                .select_from(models.ConnectorChannel)
+                .where(
                     models.ConnectorChannel.connector_id == row.id,
                 ),
             )
@@ -138,9 +137,6 @@ async def slack_oauth_callback(
     log.info("slack.install.callback_complete", connector_id=str(connector_id))
 
     return RedirectResponse(url="/connectors", status_code=status.HTTP_302_FOUND)
-
-
-# ----- Dropbox ------------------------------------------------------------
 
 
 class DropboxFolderSummary(BaseModel):
@@ -231,10 +227,7 @@ async def list_dropbox_folders(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"dropbox api error: {exc}",
         ) from exc
-    return [
-        DropboxFolderSummary(id=e.id, name=e.name, path=e.path_lower)
-        for e in entries
-    ]
+    return [DropboxFolderSummary(id=e.id, name=e.name, path=e.path_lower) for e in entries]
 
 
 @router.post("/{connector_id}/dropbox/sync")

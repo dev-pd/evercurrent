@@ -1,14 +1,3 @@
-"""Unit tests for the PyMuPDF-backed block extractor.
-
-We synthesise a minimal PDF in-memory with PyMuPDF itself so the test
-needs no committed binary fixture. The extractor is asserted to return
-Block tuples with the (page, bbox, text) shape, and to drop blocks
-under `MIN_BLOCK_CHARS`.
-
-PyMuPDF is an optional install (see PHASE_10 deps note); the whole
-module is skipped when it isn't available.
-"""
-
 from __future__ import annotations
 
 import pytest

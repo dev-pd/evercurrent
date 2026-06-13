@@ -1,12 +1,3 @@
-"""get_thread_context tool.
-
-Given a message id, returns the thread's root message and all replies
-in posted-at order. If the supplied message is itself a reply, the tool
-walks up to the root (`thread_root_id`). If the message has no thread
-(no root + no replies), returns a `ThreadContext` with that message as
-root and an empty replies list. Missing/unknown ids return `None`.
-"""
-
 from __future__ import annotations
 
 import time
@@ -20,8 +11,6 @@ from evercurrent.mcp.schemas import MessageRef, ThreadContext
 
 log = structlog.get_logger(__name__)
 
-# Post Phase-8 messages are denormalized (channel text + author_display_name
-# + posted_at) — no channels/users joins.
 _LOOKUP_SQL = text(
     """
     SELECT
@@ -57,7 +46,6 @@ async def get_thread_context(
     *,
     message_id: uuid.UUID,
 ) -> ThreadContext | None:
-    """Return the thread (root + replies) containing `message_id`, or None."""
     start = time.perf_counter()
 
     initial = (await session.execute(_LOOKUP_SQL, {"message_id": message_id})).mappings().first()

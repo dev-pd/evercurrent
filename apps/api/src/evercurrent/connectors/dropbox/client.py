@@ -1,16 +1,3 @@
-"""Async Dropbox API client.
-
-Wraps the subset of the Dropbox HTTP API the EverCurrent connector needs:
-
-- `exchange_code_for_tokens` — OAuth 2.0 code → access + refresh tokens
-- `refresh_access_token` — refresh-token grant
-- `list_folder` — list a folder's direct children
-- `download` — fetch a file's bytes
-
-Dropbox uses two API hosts: api.dropboxapi.com for RPC, and
-content.dropboxapi.com for streaming (download / upload).
-"""
-
 from __future__ import annotations
 
 import json
@@ -110,12 +97,6 @@ async def refresh_access_token(
 
 
 class DropboxClient:
-    """One client per request. Holds the access token.
-
-    Callers should refresh tokens via `refresh_access_token()` and
-    construct a new client when the cached token expires.
-    """
-
     def __init__(self, access_token: str) -> None:
         self._access_token = access_token
 
@@ -136,7 +117,6 @@ class DropboxClient:
         path: str = "",
         recursive: bool = False,
     ) -> list[FolderEntry]:
-        """List entries directly under `path` (empty string = root)."""
         body: dict[str, Any] = {
             "path": path,
             "recursive": recursive,
@@ -154,12 +134,10 @@ class DropboxClient:
         return entries
 
     async def list_root_folders(self) -> list[FolderEntry]:
-        """Top-level folders only — for the install picker."""
         all_entries = await self.list_folder(path="", recursive=False)
         return [e for e in all_entries if e.is_folder]
 
     async def download(self, *, path: str) -> bytes:
-        """Stream a file's bytes via the content endpoint."""
         headers = {
             "Authorization": f"Bearer {self._access_token}",
             "Dropbox-API-Arg": json.dumps({"path": path}),

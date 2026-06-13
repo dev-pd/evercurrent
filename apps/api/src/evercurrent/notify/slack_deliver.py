@@ -1,21 +1,3 @@
-"""Deliver a digest as a Slack DM.
-
-Flow:
-  1. Load the digest row and its owning member.
-  2. Load the member's `morning_digest` subscription; if disabled or
-     missing, persist a `skipped` notification row and return.
-  3. Compute quiet hours from the membership's timezone + quiet window;
-     when quiet, return a deferred result with the next-open UTC eta so
-     the Celery task wrapper can `apply_async(eta=...)` the retry.
-  4. Render Block Kit via the pure `block_kit.digest_to_blocks` helper.
-  5. Look up the org's Slack connector + decrypt the bot token; build a
-     `SlackClient` and call `chat.postMessage` with the DM target set to
-     the member's `slack_user_id`.
-  6. On success persist a `notifications` row carrying Slack's returned
-     `ts` + `channel`; on a persistent 429 raise `SlackRateLimitedError`
-     so the Celery wrapper triggers `retry_backoff=True`.
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -44,8 +26,6 @@ _CHANNEL_SKIPPED = "skipped"
 
 
 class SlackRateLimitedError(RuntimeError):
-    """Raised so the Celery wrapper triggers retry_backoff."""
-
     def __init__(self, retry_after: float | None = None) -> None:
         super().__init__("slack rate limited")
         self.retry_after = retry_after
@@ -60,14 +40,9 @@ class DeliveryResult:
 
 
 async def _load_digest_member(
-    session: AsyncSession, digest_id: uuid.UUID,
+    session: AsyncSession,
+    digest_id: uuid.UUID,
 ) -> tuple[models.Digest, models.OrgMembership] | None:
-    """Load a digest plus the `org_memberships` row it belongs to.
-
-    Phase 8 keys `digests` on `project_member_id` which equals an
-    `org_memberships.id` — so notification prefs (timezone, quiet hours,
-    slack_user_id) come from the same row.
-    """
     digest_row = (
         await session.execute(
             select(models.Digest).where(models.Digest.id == digest_id),
@@ -94,13 +69,17 @@ async def _load_subscription(
     kind: str,
 ) -> models.Subscription | None:
     return (
-        await session.execute(
-            select(models.Subscription).where(
-                models.Subscription.membership_id == membership_id,
-                models.Subscription.kind == kind,
-            ),
+        (
+            await session.execute(
+                select(models.Subscription).where(
+                    models.Subscription.membership_id == membership_id,
+                    models.Subscription.kind == kind,
+                ),
+            )
         )
-    ).scalars().first()
+        .scalars()
+        .first()
+    )
 
 
 def _zoneinfo_safe(tz_name: str) -> ZoneInfo:
@@ -146,13 +125,6 @@ async def deliver_digest_dm(  # noqa: PLR0911
     slack_client: SlackClient | None = None,
     now: dt.datetime | None = None,
 ) -> DeliveryResult:
-    """Send (or defer / skip) a digest DM for one user.
-
-    `force_quiet` lets the deferred re-enqueue bypass the quiet check
-    the second time around. `slack_client` is the injection seam for
-    tests; production callers leave it None and we build the client
-    from the org's stored token.
-    """
     now = now or dt.datetime.now(dt.UTC)
     loaded = await _load_digest_member(session, digest_id)
     if loaded is None:
@@ -194,7 +166,10 @@ async def deliver_digest_dm(  # noqa: PLR0911
         and quiet_start is not None
         and quiet_end is not None
         and quiet_hours.is_within_quiet(
-            now, tz=tz, quiet_start=quiet_start, quiet_end=quiet_end,
+            now,
+            tz=tz,
+            quiet_start=quiet_start,
+            quiet_end=quiet_end,
         )
     ):
         eta = quiet_hours.next_open(now, tz=tz, quiet_end=quiet_end)

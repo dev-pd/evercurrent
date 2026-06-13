@@ -1,11 +1,3 @@
-"""query_cards tool.
-
-SQL filter over the `cards` table (extracted decisions/risks/questions).
-Cards are org-scoped (RLS); `project_id` is currently null on every row so
-it is not used as a filter. `kind`/`status` params are cast to `text` so
-asyncpg can infer the type of the NULL-or-equals predicate.
-"""
-
 from __future__ import annotations
 
 import time
@@ -49,9 +41,8 @@ async def query_cards(
     status: str | None = None,
     limit: int = 25,
 ) -> list[CardRef]:
-    """Return knowledge cards matching the kind + status filters, recent first."""
     start = time.perf_counter()
-    _ = project_id  # org-scoped via RLS; cards.project_id is null
+    _ = project_id
     result = await session.execute(
         _SQL,
         {"kind": kind, "status": status, "limit": limit},

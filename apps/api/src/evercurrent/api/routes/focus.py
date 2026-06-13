@@ -1,13 +1,3 @@
-"""Focus routes — the member's adaptive relevance profile.
-
-GET  /api/v1/focus          -> current (impersonated) member's focus topics
-POST /api/v1/focus/signal   -> nudge a topic (boost/mute), returns new focus
-
-Focus combines role + phase + learned behaviour; the signal endpoint writes the
-learned part (org_memberships.topic_weights), so the UI can show focus shifting
-live.
-"""
-
 from __future__ import annotations
 
 import json
@@ -27,22 +17,30 @@ router = APIRouter(prefix="/api/v1/focus", tags=["focus"])
 
 async def _load_and_compute(session: SessionDep, membership_id: str) -> list[FocusTopic]:
     member = (
-        await session.execute(
-            text(
-                "SELECT eng_role, owned_subsystems, topic_weights "
-                "FROM org_memberships WHERE id = :id",
-            ),
-            {"id": membership_id},
+        (
+            await session.execute(
+                text(
+                    "SELECT eng_role, owned_subsystems, topic_weights "
+                    "FROM org_memberships WHERE id = :id",
+                ),
+                {"id": membership_id},
+            )
         )
-    ).mappings().first()
+        .mappings()
+        .first()
+    )
     if member is None:
         return []
 
     project = (
-        await session.execute(
-            text("SELECT current_phase, phase_concerns FROM projects LIMIT 1"),
+        (
+            await session.execute(
+                text("SELECT current_phase, phase_concerns FROM projects LIMIT 1"),
+            )
         )
-    ).mappings().first()
+        .mappings()
+        .first()
+    )
     phase_concerns: list[str] = []
     if project is not None:
         phase_concerns = list((project["phase_concerns"] or {}).get(project["current_phase"], []))
@@ -64,7 +62,7 @@ class FocusSignal(BaseModel):
     model_config = ConfigDict(strict=True)
 
     topic: str
-    delta: float  # +boost / -mute
+    delta: float
 
 
 @router.post("/signal", response_model=list[FocusTopic])
@@ -75,11 +73,15 @@ async def post_focus_signal(
 ) -> list[FocusTopic]:
     mid = str(user.membership_id)
     row = (
-        await session.execute(
-            text("SELECT topic_weights FROM org_memberships WHERE id = :id"),
-            {"id": mid},
+        (
+            await session.execute(
+                text("SELECT topic_weights FROM org_memberships WHERE id = :id"),
+                {"id": mid},
+            )
         )
-    ).mappings().first()
+        .mappings()
+        .first()
+    )
     weights: dict[str, float] = dict(row["topic_weights"] or {}) if row else {}
     key = payload.topic.strip().lower()
     weights[key] = max(-2.0, min(2.0, weights.get(key, 0.0) + payload.delta))

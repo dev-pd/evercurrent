@@ -1,5 +1,3 @@
-"""GET /api/v1/me — current user + org context."""
-
 from __future__ import annotations
 
 import uuid

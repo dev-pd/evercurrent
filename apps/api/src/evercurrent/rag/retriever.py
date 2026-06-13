@@ -1,5 +1,3 @@
-"""RAG retriever. pgvector cosine search with kind + phase filters."""
-
 from __future__ import annotations
 
 import uuid
@@ -37,13 +35,6 @@ async def search_documents(
     top_k: int = 5,
     embedder: EmbeddingProvider | None = None,
 ) -> list[ChunkResult]:
-    """Cosine ANN over `document_chunks` with optional kind + phase filters.
-
-    `phase`: restrict to documents whose `phases` array contains the given
-    project phase. PRD-like docs that apply to all phases match every
-    request; phase-scoped docs (test reports, ECO log) only match when
-    relevant.
-    """
     emb = embedder or get_embedder()
     query_vec = await emb.embed_query(query)
 

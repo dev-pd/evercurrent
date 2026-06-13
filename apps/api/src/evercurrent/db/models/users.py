@@ -1,5 +1,3 @@
-"""Per-project user ORM model (the legacy synthetic-user shape)."""
-
 from __future__ import annotations
 
 import datetime as dt

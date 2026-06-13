@@ -1,17 +1,3 @@
-"""Beat helper that fans out per-member digest jobs at 08:00 local.
-
-Celery Beat fires `enqueue_due_digests_now` every minute. We compute
-each membership's local clock from its IANA `timezone` and enqueue
-`generate_digest_for_member` for any whose local time falls inside the
-[08:00, 08:05) window. Idempotency on the `(member, day_index)` row
-means consecutive minutes in the window do not produce duplicate
-digests — the second invocation short-circuits inside `agent.generate_digest`.
-
-`day_index_for_member` computes the calendar-days delta in the member's
-own timezone since the project's `start_date`. We use `zoneinfo`, never
-a fixed offset, so DST flips do not drift the index.
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -47,11 +33,6 @@ def members_due_at(
     now_utc: dt.datetime,
     memberships: list[dict[str, object]],
 ) -> list[uuid.UUID]:
-    """Return membership ids whose local time is inside [08:00, 08:05).
-
-    Pure function — no DB. The caller supplies the candidate set so this
-    is unit-testable with freezegun.
-    """
     if now_utc.tzinfo is None:
         now_utc = now_utc.replace(tzinfo=dt.UTC)
 
@@ -71,11 +52,6 @@ async def day_index_for_member(
     org_id: uuid.UUID,
     now_utc: dt.datetime | None = None,
 ) -> int:
-    """Calendar days since project.start_date, in the member's local timezone.
-
-    Returns 0 for "the start day". Negative values are clamped to 0 so
-    pre-launch test rigs don't produce off-by-one digests.
-    """
     if now_utc is None:
         now_utc = dt.datetime.now(dt.UTC)
     elif now_utc.tzinfo is None:
@@ -129,12 +105,6 @@ async def enqueue_due_digests_now(
     enqueuer: Callable[[str, int, str], object] | None = None,
     now_utc: dt.datetime | None = None,
 ) -> list[dict[str, object]]:
-    """Scan memberships, enqueue one digest task per member whose local clock is in the window.
-
-    `enqueuer(project_member_id, day_index, phase)` is the side-effect.
-    Defaults to the Celery delay call. Returns a list of `{membership_id,
-    day_index, phase}` dicts for observability + testing.
-    """
     if now_utc is None:
         now_utc = dt.datetime.now(dt.UTC)
 
@@ -145,7 +115,10 @@ async def enqueue_due_digests_now(
 
         def _default_enqueue(mid: str, day_index: int, phase: str) -> object:
             return generate_digest_for_member.delay(
-                mid, day_index, phase, force=False,
+                mid,
+                day_index,
+                phase,
+                force=False,
             )
 
         enqueuer = _default_enqueue

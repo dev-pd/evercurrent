@@ -1,9 +1,3 @@
-"""Pydantic schemas for the timeline projection.
-
-Positions are expressed in *month units* (1 unit = 30 days) so the frontend
-can lay out phases and lanes on a month grid without re-deriving the calendar.
-"""
-
 from __future__ import annotations
 
 import uuid

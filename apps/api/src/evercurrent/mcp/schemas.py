@@ -1,12 +1,3 @@
-"""Pydantic strict response models for MCP tools.
-
-These are the contract between tools and agents. Strict mode means the
-agent sees a typed shape, not a loose dict. Frozen means tool responses
-are values, not mutable state. Each model carries the minimum fields
-required to render a citation in a digest or chat answer (id, snippet,
-source, posted_at where applicable).
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -16,8 +7,6 @@ from pydantic import BaseModel, ConfigDict
 
 
 class MessageRef(BaseModel):
-    """A reference to a single message, with enough context for a citation."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     id: uuid.UUID
@@ -29,8 +18,6 @@ class MessageRef(BaseModel):
 
 
 class ChunkRef(BaseModel):
-    """A reference to a document chunk returned by semantic search."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     document_id: uuid.UUID
@@ -41,8 +28,6 @@ class ChunkRef(BaseModel):
 
 
 class CardRef(BaseModel):
-    """A reference to a Knowledge Card (decision/risk/question)."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     id: uuid.UUID
@@ -54,8 +39,6 @@ class CardRef(BaseModel):
 
 
 class ThreadContext(BaseModel):
-    """A message thread: the root post + all its replies."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     root: MessageRef
@@ -63,8 +46,6 @@ class ThreadContext(BaseModel):
 
 
 class UserContext(BaseModel):
-    """A project member's profile, used by the agent to personalise output."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     membership_id: uuid.UUID

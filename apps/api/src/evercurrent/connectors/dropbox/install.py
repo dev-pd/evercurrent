@@ -1,13 +1,3 @@
-"""Dropbox OAuth install + callback.
-
-Mirrors the Drive install pattern: HMAC-signed state token over
-`(org_id, issued_at)`, code exchange via Dropbox `/oauth2/token`, and a
-Fernet-encrypted JSON blob stored in `connectors.credentials_secret`.
-
-Token blob shape:
-    {access_token, refresh_token, expires_at, account_id}
-"""
-
 from __future__ import annotations
 
 import base64
@@ -36,7 +26,7 @@ STATE_MAX_AGE_SECONDS = 600
 
 
 class InstallStateError(ValueError):
-    """Raised when an OAuth callback presents a missing/invalid `state`."""
+    pass
 
 
 @dataclass(frozen=True)

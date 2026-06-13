@@ -1,10 +1,3 @@
-"""Notification + subscription persistence.
-
-Repositories return domain-shaped payloads (Pydantic schemas where it
-makes sense, plain dicts where the caller will turn around and send to
-JSON anyway). Sessions are passed in — never created here.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -25,12 +18,16 @@ async def list_subscriptions(
     membership_id: uuid.UUID,
 ) -> list[SubscriptionItem]:
     rows = (
-        await session.execute(
-            select(models.Subscription).where(
-                models.Subscription.membership_id == membership_id,
-            ),
+        (
+            await session.execute(
+                select(models.Subscription).where(
+                    models.Subscription.membership_id == membership_id,
+                ),
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     out: list[SubscriptionItem] = []
     for row in rows:
         if row.kind not in _VALID_KINDS:
@@ -52,12 +49,6 @@ async def replace_subscriptions(
     membership_id: uuid.UUID,
     items: list[SubscriptionItem],
 ) -> list[SubscriptionItem]:
-    """Replace the full subscription set for a member atomically.
-
-    Caller is responsible for the transaction boundary (commit/rollback);
-    we just emit the delete + inserts on the provided session so the
-    whole replace is one unit of work.
-    """
     await session.execute(
         delete(models.Subscription).where(
             models.Subscription.membership_id == membership_id,

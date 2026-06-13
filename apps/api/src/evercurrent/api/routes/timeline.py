@@ -1,11 +1,3 @@
-"""Timeline routes — project phase/lane schedule for the Timeline page.
-
-The shape is computed by `timeline.projection` from the project's real
-`start_date`, `current_phase`, and `current_day`, plus the distinct
-subsystems owned by the project's members. Phase *durations* are the
-canonical NPI ladder (not persisted per project); everything else is real.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -25,7 +17,6 @@ router = APIRouter(prefix="/api/v1/timeline", tags=["timeline"])
 
 
 async def _project_subsystems(session: SessionDep, project_id: uuid.UUID) -> list[str]:
-    """Distinct subsystems owned by the project's members."""
     rows = await session.execute(
         select(func.distinct(func.unnest(UserModel.owned_subsystems))).where(
             UserModel.project_id == project_id,
@@ -40,7 +31,7 @@ async def get_timeline(
     user: CurrentUserDep,
     project_id: uuid.UUID,
 ) -> TimelineProjection:
-    _ = user  # RLS already applied by deps
+    _ = user
     project = await ProjectRepository(session).get_by_id(project_id)
     if project is None:
         raise HTTPException(

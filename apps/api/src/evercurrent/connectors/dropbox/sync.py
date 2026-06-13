@@ -1,13 +1,3 @@
-"""Dropbox folder sync — pull new PDFs into the ingestion pipeline.
-
-For dev/demo this is pull-based: the user clicks "Sync now" in the UI,
-the backend lists the watched folder, downloads any PDF that isn't
-already in the `documents` table (keyed by `(source, external_id)`),
-and runs the standard ingestion pipeline.
-
-Webhooks come later; the same `_ingest_entry` is the entry-point.
-"""
-
 from __future__ import annotations
 
 import time
@@ -32,7 +22,6 @@ from evercurrent.ingestion.tasks import ingest_pdf_bytes
 
 log = structlog.get_logger(__name__)
 
-# Refresh the access token if it expires within this window.
 _TOKEN_REFRESH_SKEW_SECONDS = 60
 
 
@@ -43,7 +32,6 @@ async def _ensure_fresh_token(
     vault: TokenVault,
     connector: models.Connector,
 ) -> str:
-    """Return a usable access token, refreshing if needed."""
     blob = decode_token_blob(vault.decrypt(connector.credentials_secret))
     expires_at = int(str(blob.get("expires_at", 0)))
     refresh = blob.get("refresh_token")
@@ -97,11 +85,6 @@ async def sync_folder(
     connector_id: uuid.UUID,
     folder_path: str,
 ) -> dict[str, Any]:
-    """List folder, ingest any unseen PDFs. Returns counts.
-
-    Idempotent: documents keyed by `(dropbox, file_id)` so re-runs are
-    no-ops on already-ingested files.
-    """
     connector = (
         await session.execute(
             select(models.Connector).where(models.Connector.id == connector_id),

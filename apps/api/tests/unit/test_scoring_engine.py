@@ -1,10 +1,3 @@
-"""TDD test suite for the v2 scoring engine.
-
-The engine is pure Python — no DB, no LLM, sub-millisecond. Every signal has
-at least one "on" and one "off" test. The named tests below are the contract
-spec required by `docs/phases/PHASE_7_SCORING.md`.
-"""
-
 from __future__ import annotations
 
 from typing import Any
@@ -16,7 +9,6 @@ from evercurrent.scoring.weights import Weights
 
 
 def _default_input(**overrides: Any) -> ScoreInput:
-    """Build a `ScoreInput` with neutral defaults overridden by kwargs."""
     base: dict[str, Any] = {
         "member_role": "mech",
         "owned_subsystems": [],

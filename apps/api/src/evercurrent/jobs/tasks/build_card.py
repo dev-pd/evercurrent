@@ -1,11 +1,3 @@
-"""Phase 6 build_card task: Sonnet-driven Knowledge Card builder.
-
-Looks up the triggering message, calls `cards.builder.build_card` to
-draft + persist the Card, then publishes an SSE `card_created` event
-AFTER the DB commit so subscribers never see an event for a row that
-isn't there yet.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -46,7 +38,6 @@ async def build_card(
     *,
     llm: LLMProvider | None = None,
 ) -> dict[str, Any]:
-    """Build a Card from a message + thread context, publishing SSE on commit."""
     parsed_message_id = uuid.UUID(message_id)
     org_id = await _load_message_org(parsed_message_id)
     if org_id is None:
@@ -76,9 +67,7 @@ async def build_card(
             "card_id": str(result["card_id"]),
             "kind": result.get("kind", kind),
             "summary": result.get("summary", summary_hint),
-            "project_id": (
-                str(result["project_id"]) if result.get("project_id") else None
-            ),
+            "project_id": (str(result["project_id"]) if result.get("project_id") else None),
             "existing": bool(result.get("existing", False)),
         },
     )

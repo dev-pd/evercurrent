@@ -1,29 +1,3 @@
-"""Sonnet-driven digest agent.
-
-`generate_digest` is the public entry point. It:
-
-1. Idempotency check: if a `(member, day_index)` row already exists and
-   `force=False`, return it without calling the LLM.
-2. Build the `DigestContext`:
-   - member profile (display_name, role, timezone, owned_subsystems,
-     topic_weights from `org_memberships`)
-   - project snapshot (name, current_phase, phase_concerns)
-   - top-20 scored items (scores JOIN messages JOIN message_tags)
-   - open Cards filtered to the member's `owned_subsystems`
-   - last 3 prior digests for continuity
-3. Render `prompts/system.txt` (static) and `prompts/user.txt.j2`
-   (Jinja2) over the context.
-4. Call Sonnet via `LLMProvider.complete_json` at `ModelTier.DIGEST`.
-5. Parse into `DigestDraft`. Drop any cited card/message ids that are
-   not in the input set (the model occasionally invents UUIDs that look
-   plausible) and log a warning.
-6. Persist the row via `repository.upsert_digest(...)`.
-
-The agent does NOT publish SSE; the Celery task wrapper does, after
-commit, so subscribers never see an event for a row that isn't visible
-yet.
-"""
-
 from __future__ import annotations
 
 import json
@@ -57,8 +31,6 @@ _OPEN_CARDS_LIMIT = 20
 _MAX_TOKENS = 2048
 _PREVIEW_MAX_CHARS = 220
 
-# Rendering plain text into a Sonnet prompt — never HTML. Autoescape
-# would corrupt quoted message text and JSON-shaped instructions.
 _jinja_env = Environment(
     undefined=StrictUndefined,
     trim_blocks=True,
@@ -91,17 +63,20 @@ async def _load_member_profile(
     session: AsyncSession,
     project_member_id: uuid.UUID,
 ) -> tuple[MemberProfile, uuid.UUID] | None:
-    """Load the membership row + return (profile, org_id)."""
     row = (
-        await session.execute(
-            text(
-                "SELECT id, org_id, display_name, role, eng_role, "
-                "owned_subsystems, topic_weights, timezone "
-                "FROM org_memberships WHERE id = :id",
-            ),
-            {"id": str(project_member_id)},
+        (
+            await session.execute(
+                text(
+                    "SELECT id, org_id, display_name, role, eng_role, "
+                    "owned_subsystems, topic_weights, timezone "
+                    "FROM org_memberships WHERE id = :id",
+                ),
+                {"id": str(project_member_id)},
+            )
         )
-    ).mappings().first()
+        .mappings()
+        .first()
+    )
     if row is None:
         return None
     org_id = uuid.UUID(str(row["org_id"]))
@@ -135,14 +110,17 @@ async def _load_project_snapshot(
             phase_concerns=[],
         )
     row = (
-        await session.execute(
-            text(
-                "SELECT id, name, current_phase, phase_concerns "
-                "FROM projects WHERE id = :id",
-            ),
-            {"id": str(project_id)},
+        (
+            await session.execute(
+                text(
+                    "SELECT id, name, current_phase, phase_concerns FROM projects WHERE id = :id",
+                ),
+                {"id": str(project_id)},
+            )
         )
-    ).mappings().first()
+        .mappings()
+        .first()
+    )
     if row is None:
         return ProjectSnapshot(
             project_id=project_id,
@@ -151,9 +129,7 @@ async def _load_project_snapshot(
             phase_concerns=[],
         )
     concerns_raw = row["phase_concerns"] or {}
-    concerns_list = (
-        list(concerns_raw.get(phase, [])) if isinstance(concerns_raw, dict) else []
-    )
+    concerns_list = list(concerns_raw.get(phase, [])) if isinstance(concerns_raw, dict) else []
     return ProjectSnapshot(
         project_id=uuid.UUID(str(row["id"])),
         name=str(row["name"] or "(unknown)"),
@@ -168,18 +144,11 @@ async def _resolve_project_id_for_member(
     project_member_id: uuid.UUID,
     org_id: uuid.UUID,
 ) -> uuid.UUID | None:
-    """Best-effort: pick the most-recent project owned by the same org.
-
-    The take-home schema does not yet materialise a `project_members`
-    link table, so we approximate "the member's project" as "the most
-    recent project in the same org". For demo data this is exact.
-    """
     _ = project_member_id
     row = (
         await session.execute(
             text(
-                "SELECT id FROM projects WHERE org_id = :oid "
-                "ORDER BY created_at DESC LIMIT 1",
+                "SELECT id FROM projects WHERE org_id = :oid ORDER BY created_at DESC LIMIT 1",
             ),
             {"oid": str(org_id)},
         )
@@ -195,7 +164,6 @@ def _filter_cited_ids(
     valid_card_ids: set[uuid.UUID],
     valid_message_ids: set[uuid.UUID],
 ) -> DigestDraft:
-    """Drop any cited UUIDs that didn't appear in the input set."""
     dropped_cards = [c for c in draft.card_ids if c not in valid_card_ids]
     dropped_msgs = [m for m in draft.message_ids if m not in valid_message_ids]
     if dropped_cards or dropped_msgs:
@@ -228,12 +196,6 @@ def _parse_draft(payload: Any) -> DigestDraft:
 
 
 def _stub_draft_from_scored(scored: list) -> DigestDraft:
-    """Fallback when the LLM provider is unavailable.
-
-    Builds a deterministic digest from the top-scored messages so the
-    demo still renders content. No LLM calls. Markdown sections mirror
-    what the LLM is asked to produce.
-    """
     top = scored[:8]
     watch = scored[8:16]
     fyi = scored[16:24]
@@ -280,11 +242,6 @@ async def generate_digest(
     phase: str,
     force: bool = False,
 ) -> Digest:
-    """Generate (or return) the digest for one member on one day_index.
-
-    Idempotent: a second call with `force=False` short-circuits without
-    a Sonnet roundtrip or any write.
-    """
     if not force:
         existing = await digest_repo.get_for_member_day(
             session,

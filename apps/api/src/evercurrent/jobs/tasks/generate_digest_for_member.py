@@ -1,13 +1,3 @@
-"""Per-member digest generation task.
-
-Wraps the async `digest.agent.generate_digest` so Celery can invoke it.
-Publishes the `digest_ready` SSE event after commit so the dashboard
-sees the row exactly when it's queryable.
-
-Idempotent: a retry that lands after the row was written returns the
-existing digest without a Sonnet roundtrip.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -33,7 +23,6 @@ async def generate_digest_for_member(
     *,
     llm: LLMProvider | None = None,
 ) -> dict[str, Any]:
-    """Generate a digest for one (member, day_index), publishing SSE on success."""
     parsed_member_id = uuid.UUID(project_member_id)
     provider = llm or get_provider()
 

@@ -1,11 +1,3 @@
-"""search_messages tool.
-
-Keyword search over `messages.text`, scoped to a project. No LLM, no
-embeddings. Returns hits ordered by recency. Implemented with `ILIKE` for
-now; can be upgraded to `to_tsvector` + GIN index later without changing
-the tool contract.
-"""
-
 from __future__ import annotations
 
 import time
@@ -50,10 +42,6 @@ async def search_messages(
     project_id: uuid.UUID,
     limit: int = 10,
 ) -> list[MessageRef]:
-    """Return up to `limit` messages whose text matches `query`, recent first.
-
-    Empty query string yields `[]` rather than every row in the project.
-    """
     start = time.perf_counter()
     cleaned = query.strip()
     if not cleaned:
@@ -67,10 +55,7 @@ async def search_messages(
         )
         return []
 
-    _ = project_id  # org-scoped via RLS; messages.project_id is null
-    # Keyword OR-match: a multi-word query hits any message containing any
-    # significant token, plus the full phrase. Beats a single literal ILIKE
-    # that would match nothing for compound queries.
+    _ = project_id
     tokens = [
         w for w in cleaned.lower().split() if len(w) >= _MIN_TOKEN_LEN and w not in _STOPWORDS
     ]

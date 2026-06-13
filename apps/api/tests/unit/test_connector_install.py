@@ -1,10 +1,3 @@
-"""Unit tests for the Slack OAuth install + callback flow.
-
-We don't reach a live Slack workspace; we mock the httpx transport and
-the AsyncSession. The point is to cover state-token signing, the OAuth
-code exchange happy path, and the reinstall (token update) path.
-"""
-
 from __future__ import annotations
 
 import time

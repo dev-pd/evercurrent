@@ -1,5 +1,3 @@
-"""Multi-tenancy ORM models: orgs + memberships (Phase 2)."""
-
 from __future__ import annotations
 
 import datetime as dt

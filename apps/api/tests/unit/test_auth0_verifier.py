@@ -1,10 +1,3 @@
-"""Unit tests for Auth0 JWT verification.
-
-Covers the deterministic edges: malformed header, unknown kid, expired
-token, wrong audience. Live network calls to Auth0 are mocked via
-httpx.MockTransport.
-"""
-
 from __future__ import annotations
 
 import time
@@ -23,7 +16,6 @@ _TEST_DOMAIN = "evercurrent-test.us.auth0.com"
 
 
 def _make_keypair() -> tuple[str, dict[str, Any]]:
-    """Build a deterministic RSA keypair as JWKS for tests."""
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     private_pem = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,

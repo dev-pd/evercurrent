@@ -1,5 +1,3 @@
-"""Digest + feedback ORM models."""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -17,13 +15,6 @@ if TYPE_CHECKING:
 
 
 class Digest(Base):
-    """Phase 8 digests: one row per (project_member, day_index).
-
-    Replaces the legacy (user_id, day, phase) shape. Citations are split
-    into `card_ids` and `message_ids` arrays so the dashboard does not
-    have to re-parse markdown.
-    """
-
     __tablename__ = "digests"
 
     id: Mapped[uuid.UUID] = _uuid_pk()

@@ -1,10 +1,3 @@
-"""Subscriptions API (Phase 11).
-
-GET returns the caller's current subscription set. PUT replaces the
-full set in a single transaction so partial state on crash is
-impossible.
-"""
-
 from __future__ import annotations
 
 import structlog

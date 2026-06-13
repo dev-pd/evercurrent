@@ -1,5 +1,3 @@
-"""Deliver an urgent Card alert as a Slack DM (Phase 11)."""
-
 from __future__ import annotations
 
 import uuid

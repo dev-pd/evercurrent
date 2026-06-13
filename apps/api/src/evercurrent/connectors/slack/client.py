@@ -1,13 +1,3 @@
-"""Async Slack Web API wrapper.
-
-Thin httpx-based client. We use the Web API for OAuth code exchange,
-channel discovery, history backfill, and orphan-parent fetch — no
-production-grade rate limiter here, just `Retry-After` honoured on
-429s. Slack's `slack-sdk` is the obvious alternative, but a focused
-wrapper around httpx keeps the dependency surface small and the
-mocking path trivial in tests.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -29,8 +19,6 @@ _DEFAULT_TIMEOUT = httpx.Timeout(10.0, connect=5.0)
 
 
 class SlackAPIError(RuntimeError):
-    """Raised when a Slack API call returns ok=false or a non-2xx HTTP code."""
-
     def __init__(self, method: str, error: str) -> None:
         super().__init__(f"slack {method} failed: {error}")
         self.method = method
@@ -38,8 +26,6 @@ class SlackAPIError(RuntimeError):
 
 
 class SlackClient:
-    """Minimal Slack Web API client. Stateless modulo the bot token."""
-
     def __init__(
         self,
         bot_token: str | None = None,
@@ -47,8 +33,6 @@ class SlackClient:
         client: httpx.AsyncClient | None = None,
     ) -> None:
         self._bot_token = bot_token
-        # When a client isn't injected (production path), build one with the
-        # auth header baked in. Tests inject a MockTransport-backed client.
         if client is None:
             headers: dict[str, str] = {}
             if bot_token is not None:
@@ -68,8 +52,6 @@ class SlackClient:
             await self._client.aclose()
 
     async def _post(self, method: str, payload: dict[str, Any]) -> dict[str, Any]:
-        # Slack treats application/x-www-form-urlencoded as preferred for the
-        # legacy/web API; we keep that to stay compatible with very old scopes.
         for _attempt in range(3):
             resp = await self._client.post(f"/{method}", data=payload)
             if resp.status_code == 429:
@@ -81,8 +63,6 @@ class SlackClient:
             data: dict[str, Any] = resp.json()
             if not data.get("ok", False):
                 err = str(data.get("error", "unknown_error"))
-                # Some "errors" are advisory (e.g. `not_in_channel` during
-                # backfill); we surface them and let the caller decide.
                 raise SlackAPIError(method, err)
             return data
         raise SlackAPIError(method, "rate_limited_persistent")
@@ -110,7 +90,6 @@ class SlackClient:
         code: str,
         redirect_uri: str,
     ) -> SlackOAuthResponse:
-        """Exchange an OAuth `code` for a bot token. No bot-token auth used."""
         resp = await self._client.post(
             "/oauth.v2.access",
             data={
@@ -139,7 +118,6 @@ class SlackClient:
         return await self._get("conversations.list", params)
 
     async def list_all_channels(self) -> list[SlackChannelSummary]:
-        """Paginate `conversations.list` and return the merged channel list."""
         out: list[SlackChannelSummary] = []
         cursor: str | None = None
         while True:
@@ -200,6 +178,5 @@ class SlackClient:
         if icon_url is not None:
             payload["icon_url"] = icon_url
         if blocks is not None:
-            # Slack wants `blocks` as JSON-encoded when posting via form data.
             payload["blocks"] = json.dumps(blocks)
         return await self._post("chat.postMessage", payload)

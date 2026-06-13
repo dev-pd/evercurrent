@@ -1,13 +1,3 @@
-"""PyMuPDF-based PDF text + position extractor.
-
-PyMuPDF returns blocks in reading order with a per-block bounding box.
-Each block we surface holds enough info for downstream chunking + a
-future "highlight the citation on the embedded viewer" UX.
-
-PyMuPDF (`fitz`) is an optional install — see PHASE_10 deps note. We
-guard the import so the module can be linted + type-checked without it.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -24,15 +14,13 @@ _BLOCK_TUPLE_MIN_LEN = 5
 
 @dataclass(frozen=True)
 class Block:
-    """One block from a PDF page. `bbox` is (x0, y0, x1, y1)."""
-
     page: int
     bbox: tuple[float, float, float, float]
     text: str
 
 
 class PDFDependencyError(RuntimeError):
-    """Raised when PyMuPDF (`fitz`) is not installed."""
+    pass
 
 
 if TYPE_CHECKING:
@@ -55,10 +43,6 @@ def _ensure_fitz() -> Any:
 
 
 def extract_blocks(pdf_source: bytes | Path | str) -> list[Block]:
-    """Extract blocks from a PDF. Skips blocks below MIN_BLOCK_CHARS.
-
-    Accepts raw bytes (Drive download) or a path (mock-drive path).
-    """
     mod = _ensure_fitz()
     if isinstance(pdf_source, (str, Path)):
         doc = mod.open(str(pdf_source))
@@ -71,7 +55,6 @@ def extract_blocks(pdf_source: bytes | Path | str) -> list[Block]:
             page = doc.load_page(page_index)
             raw_blocks = page.get_text("blocks") or []
             for raw in raw_blocks:
-                # PyMuPDF block tuple: (x0, y0, x1, y1, text, block_no, block_type)
                 if len(raw) < _BLOCK_TUPLE_MIN_LEN:
                     continue
                 x0, y0, x1, y1, text = raw[0], raw[1], raw[2], raw[3], raw[4]

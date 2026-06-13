@@ -1,10 +1,3 @@
-"""Unit tests for the Fernet-backed connector token vault.
-
-The vault wraps a Fernet key. We assert round-trip equality + that a
-ciphertext encrypted under one key fails cleanly when decrypted with
-a different key.
-"""
-
 from __future__ import annotations
 
 import pytest

@@ -1,5 +1,3 @@
-"""Celery task status probe."""
-
 from __future__ import annotations
 
 from celery.result import AsyncResult
@@ -10,8 +8,6 @@ from evercurrent.jobs.celery_app import celery_app
 
 router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 
-# Celery states we want the UI to treat as "still working" — the dashboard
-# polls until status flips out of these.
 _PENDING_STATES = {"PENDING", "RECEIVED", "STARTED", "RETRY"}
 
 
@@ -28,12 +24,6 @@ class JobStatusResponse(BaseModel):
 
 @router.get("/{job_id}", response_model=JobStatusResponse)
 async def get_status(job_id: str) -> JobStatusResponse:
-    """Return Celery task state for `job_id`.
-
-    Statuses: PENDING / RECEIVED / STARTED / SUCCESS / FAILURE / RETRY /
-    REVOKED. The frontend treats anything outside SUCCESS / FAILURE /
-    REVOKED as still-running and keeps polling.
-    """
     async_result: AsyncResult[object] = AsyncResult(job_id, app=celery_app)
     state = async_result.state
     result: dict[str, object] | None = None

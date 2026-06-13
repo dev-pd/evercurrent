@@ -1,10 +1,3 @@
-"""Unit tests for the Slack events handler.
-
-We stub the AsyncSession + the enqueue callback. The handler logic
-itself (signature verify + envelope parse + RLS context + raw_event
-insert + enqueue) is exercised end-to-end against the stubs.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -61,7 +54,6 @@ def _fake_session(
         if calls["n"] == 1:
             return connector_lookup
         if calls["n"] == 2:
-            # set_org_context: returns nothing useful.
             return MagicMock()
         return insert_lookup
 

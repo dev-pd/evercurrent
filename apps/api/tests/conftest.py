@@ -1,11 +1,3 @@
-"""Root pytest fixtures.
-
-testcontainers provides an ephemeral Postgres (with pgvector) and Redis
-per test session. Integration tests share the containers but each test
-runs in its own transaction that rolls back at teardown — isolation
-without spin-up cost per test.
-"""
-
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterator
@@ -56,7 +48,6 @@ async def engine(database_url: str) -> AsyncIterator[AsyncEngine]:
 
 @pytest_asyncio.fixture
 async def db_session(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
-    """Per-test session bound to a transaction that always rolls back."""
     async with engine.connect() as conn:
         trans = await conn.begin()
         session = async_sessionmaker(bind=conn, expire_on_commit=False)()

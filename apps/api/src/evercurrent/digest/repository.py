@@ -1,12 +1,3 @@
-"""Persistence + read helpers for the v2 `digests` table.
-
-The agent calls `upsert_digest(...)` after Sonnet returns a parsed
-`DigestDraft`. The routes call `get_latest_for_member(...)` and
-`get_for_member_day(...)`. The scheduler calls `list_active_memberships(...)`.
-
-All SQL stays here so the agent module is purely orchestration.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -33,18 +24,21 @@ async def get_for_member_day(
     project_member_id: uuid.UUID,
     day_index: int,
 ) -> Digest | None:
-    """Return the digest row for (member, day_index) if it exists."""
     row = (
-        await session.execute(
-            text(
-                "SELECT id, org_id, project_member_id, day_index, phase, "
-                "       content_md, card_ids, message_ids, generated_at "
-                "FROM digests "
-                "WHERE project_member_id = :mid AND day_index = :d",
-            ),
-            {"mid": str(project_member_id), "d": day_index},
+        (
+            await session.execute(
+                text(
+                    "SELECT id, org_id, project_member_id, day_index, phase, "
+                    "       content_md, card_ids, message_ids, generated_at "
+                    "FROM digests "
+                    "WHERE project_member_id = :mid AND day_index = :d",
+                ),
+                {"mid": str(project_member_id), "d": day_index},
+            )
         )
-    ).mappings().first()
+        .mappings()
+        .first()
+    )
     if row is None:
         return None
     return Digest.model_validate(dict(row))
@@ -55,19 +49,22 @@ async def get_latest_for_member(
     *,
     project_member_id: uuid.UUID,
 ) -> Digest | None:
-    """Return the most recent digest row for the member, by day_index DESC."""
     row = (
-        await session.execute(
-            text(
-                "SELECT id, org_id, project_member_id, day_index, phase, "
-                "       content_md, card_ids, message_ids, generated_at "
-                "FROM digests "
-                "WHERE project_member_id = :mid "
-                "ORDER BY day_index DESC, generated_at DESC LIMIT 1",
-            ),
-            {"mid": str(project_member_id)},
+        (
+            await session.execute(
+                text(
+                    "SELECT id, org_id, project_member_id, day_index, phase, "
+                    "       content_md, card_ids, message_ids, generated_at "
+                    "FROM digests "
+                    "WHERE project_member_id = :mid "
+                    "ORDER BY day_index DESC, generated_at DESC LIMIT 1",
+                ),
+                {"mid": str(project_member_id)},
+            )
         )
-    ).mappings().first()
+        .mappings()
+        .first()
+    )
     if row is None:
         return None
     return Digest.model_validate(dict(row))
@@ -80,24 +77,26 @@ async def list_recent_for_member(
     before_day_index: int,
     limit: int = 3,
 ) -> list[PriorDigest]:
-    """Return the most recent `limit` digests strictly before `before_day_index`."""
     rows = (
-        await session.execute(
-            text(
-                "SELECT day_index, content_md FROM digests "
-                "WHERE project_member_id = :mid AND day_index < :d "
-                "ORDER BY day_index DESC LIMIT :lim",
-            ),
-            {
-                "mid": str(project_member_id),
-                "d": before_day_index,
-                "lim": limit,
-            },
+        (
+            await session.execute(
+                text(
+                    "SELECT day_index, content_md FROM digests "
+                    "WHERE project_member_id = :mid AND day_index < :d "
+                    "ORDER BY day_index DESC LIMIT :lim",
+                ),
+                {
+                    "mid": str(project_member_id),
+                    "d": before_day_index,
+                    "lim": limit,
+                },
+            )
         )
-    ).mappings().all()
+        .mappings()
+        .all()
+    )
     return [
-        PriorDigest(day_index=int(r["day_index"]), content_md=str(r["content_md"]))
-        for r in rows
+        PriorDigest(day_index=int(r["day_index"]), content_md=str(r["content_md"])) for r in rows
     ]
 
 
@@ -112,7 +111,6 @@ async def upsert_digest(
     card_ids: list[uuid.UUID],
     message_ids: list[uuid.UUID],
 ) -> Digest:
-    """Insert or overwrite the digest for (member, day_index)."""
     stmt = (
         pg_insert(DigestModel)
         .values(
@@ -147,23 +145,26 @@ async def top_scored_items_for_member(
     project_member_id: uuid.UUID,
     limit: int = 20,
 ) -> list[ScoredItem]:
-    """Return the top-N scored messages for the member, score DESC."""
     rows = (
-        await session.execute(
-            text(
-                "SELECT s.message_id, s.score, "
-                "       mt.topic AS topic, mt.urgency AS urgency, "
-                "       m.channel AS channel, m.author_display_name AS author, "
-                "       m.text AS text, m.posted_at AS posted_at "
-                "FROM scores s "
-                "JOIN messages m ON m.id = s.message_id "
-                "LEFT JOIN message_tags mt ON mt.message_id = m.id "
-                "WHERE s.project_member_id = :mid "
-                "ORDER BY s.score DESC, m.posted_at DESC LIMIT :lim",
-            ),
-            {"mid": str(project_member_id), "lim": limit},
+        (
+            await session.execute(
+                text(
+                    "SELECT s.message_id, s.score, "
+                    "       mt.topic AS topic, mt.urgency AS urgency, "
+                    "       m.channel AS channel, m.author_display_name AS author, "
+                    "       m.text AS text, m.posted_at AS posted_at "
+                    "FROM scores s "
+                    "JOIN messages m ON m.id = s.message_id "
+                    "LEFT JOIN message_tags mt ON mt.message_id = m.id "
+                    "WHERE s.project_member_id = :mid "
+                    "ORDER BY s.score DESC, m.posted_at DESC LIMIT :lim",
+                ),
+                {"mid": str(project_member_id), "lim": limit},
+            )
         )
-    ).mappings().all()
+        .mappings()
+        .all()
+    )
     return [
         ScoredItem(
             message_id=uuid.UUID(str(r["message_id"])),
@@ -186,11 +187,6 @@ async def open_cards_for_member_subsystems(
     owned_subsystems: list[str],
     limit: int = 20,
 ) -> list[CardSummary]:
-    """Return open Cards whose affected_subsystems intersect with member's owned set.
-
-    Empty `owned_subsystems` returns `[]` — without an owned set we have
-    no signal to filter cards by, and the digest is not a generic dump.
-    """
     if not owned_subsystems:
         return []
 
@@ -204,16 +200,20 @@ async def open_cards_for_member_subsystems(
         params["pid"] = str(project_id)
 
     rows = (
-        await session.execute(
-            text(
-                "SELECT id, kind, summary, status, affected_subsystems, "
-                "       updated_at "
-                f"FROM cards WHERE {where} "
-                "ORDER BY updated_at DESC LIMIT :lim",
-            ),
-            params,
+        (
+            await session.execute(
+                text(
+                    "SELECT id, kind, summary, status, affected_subsystems, "
+                    "       updated_at "
+                    f"FROM cards WHERE {where} "
+                    "ORDER BY updated_at DESC LIMIT :lim",
+                ),
+                params,
+            )
         )
-    ).mappings().all()
+        .mappings()
+        .all()
+    )
     return [
         CardSummary(
             card_id=uuid.UUID(str(r["id"])),
@@ -230,16 +230,15 @@ async def open_cards_for_member_subsystems(
 async def list_active_memberships(
     session: AsyncSession,
 ) -> list[dict[str, object]]:
-    """Return rows of {id, org_id, timezone} for every org membership.
-
-    The scheduler iterates this list every minute deciding which members
-    are at 08:00 local and need a digest. Tight projection — no PII.
-    """
     rows = (
-        await session.execute(
-            text(
-                "SELECT id, org_id, timezone FROM org_memberships",
-            ),
+        (
+            await session.execute(
+                text(
+                    "SELECT id, org_id, timezone FROM org_memberships",
+                ),
+            )
         )
-    ).mappings().all()
+        .mappings()
+        .all()
+    )
     return [dict(r) for r in rows]

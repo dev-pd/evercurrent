@@ -1,16 +1,3 @@
-"""Paragraph-aware sliding-window chunker for PDF blocks.
-
-Strategy:
-- Walk blocks in reading order.
-- A short, uppercase or title-cased block becomes the "current section
-  heading" — subsequent chunks inherit it.
-- Pack block texts into a window that targets `target_chars` size; when
-  the window is full, emit it and start a new one whose first
-  `overlap_chars` are the suffix of the previous chunk.
-- The chunk knows its starting page (from the first block packed) so a
-  future viewer can scroll to it.
-"""
-
 from __future__ import annotations
 
 import re
@@ -25,8 +12,6 @@ HEADING_MAX_CHARS = 80
 
 @dataclass(frozen=True)
 class Chunk:
-    """One emitted chunk. `ordinal` increases monotonically from 0."""
-
     ordinal: int
     text: str
     section: str | None
@@ -55,11 +40,6 @@ def chunk_blocks(  # noqa: C901
     target_chars: int = DEFAULT_TARGET_CHARS,
     overlap_chars: int = DEFAULT_OVERLAP_CHARS,
 ) -> list[Chunk]:
-    """Chunk PDF blocks into Voyage-friendly windows.
-
-    A heading-shaped block becomes the section name carried into following
-    chunks. Headings are NOT included in the body text — they're metadata.
-    """
     if target_chars <= 0:
         raise ValueError("target_chars must be > 0")
     if overlap_chars < 0:
@@ -94,8 +74,6 @@ def chunk_blocks(  # noqa: C901
             continue
 
         if _looks_like_heading(text):
-            # Flush pending buffer under the *old* section before
-            # switching, so a heading boundary always closes a chunk.
             if buffer_text:
                 emit(buffer_text, buffer_page)
                 buffer_text = ""
@@ -110,7 +88,6 @@ def chunk_blocks(  # noqa: C901
                 buffer_page = block.page
             continue
 
-        # Emit what we have, then start a new buffer with overlap suffix.
         emit(buffer_text, buffer_page)
         tail = buffer_text[-overlap_chars:] if overlap_chars else ""
         buffer_text = (tail + "\n\n" + text) if tail else text

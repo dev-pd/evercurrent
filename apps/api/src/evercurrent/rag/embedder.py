@@ -1,5 +1,3 @@
-"""Voyage AI embedder, behind an EmbeddingProvider interface."""
-
 from __future__ import annotations
 
 import asyncio
@@ -23,8 +21,6 @@ class EmbeddingProvider(Protocol):
 
 
 class VoyageEmbedder:
-    """Wraps voyageai.AsyncClient. Default model: voyage-3-lite, 512 dim."""
-
     def __init__(self, *, model: str | None = None) -> None:
         settings = get_settings()
         if not settings.voyage_api_key:

@@ -1,13 +1,3 @@
-"""Unit tests for `digest.agent.generate_digest`.
-
-The agent mixes I/O (DB reads via the repository) and one Sonnet call.
-We stub everything except the agent body so we can assert:
-
-- the persisted row carries the citations the model emitted
-- hallucinated UUIDs are dropped from the persisted row
-- the top-N scored items query is the one the digest reads from
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -94,7 +84,7 @@ async def _patch_agent_context(
         limit: int,
     ) -> list[ScoredItem]:
         assert project_member_id == member_id
-        assert limit == 20  # locks the contract
+        assert limit == 20
         return scored
 
     async def fake_open_cards(*_args: Any, **_kwargs: Any) -> list[CardSummary]:
@@ -108,7 +98,9 @@ async def _patch_agent_context(
 
     monkeypatch.setattr(agent_mod, "_load_member_profile", fake_load_profile)
     monkeypatch.setattr(
-        agent_mod, "_resolve_project_id_for_member", fake_resolve_project_id,
+        agent_mod,
+        "_resolve_project_id_for_member",
+        fake_resolve_project_id,
     )
     monkeypatch.setattr(agent_mod, "_load_project_snapshot", fake_load_project)
     monkeypatch.setattr(repo_mod, "top_scored_items_for_member", fake_top)
@@ -175,8 +167,7 @@ async def test_persisted_row_has_citations(
     llm.complete_json = AsyncMock(
         return_value={
             "content_md": (
-                "## Top priority\n"
-                f"- Thermal margin slipping [card:{card_id}] [msg:{msg_id}]"
+                f"## Top priority\n- Thermal margin slipping [card:{card_id}] [msg:{msg_id}]"
             ),
             "card_ids": [str(card_id)],
             "message_ids": [str(msg_id)],

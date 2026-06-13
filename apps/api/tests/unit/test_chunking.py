@@ -1,10 +1,3 @@
-"""Unit tests for the paragraph-aware sliding-window chunker.
-
-The chunker is a pure function over `list[Block]`. We hand-build blocks
-directly rather than going through PyMuPDF so this module stays free
-of the optional `fitz` dependency.
-"""
-
 from __future__ import annotations
 
 from evercurrent.ingestion.chunking import (
@@ -22,16 +15,13 @@ def _block(text: str, *, page: int = 1) -> Block:
 def test_chunker_respects_target_chars() -> None:
     target = 400
     overlap = 50
-    # Each block is small enough to fit the target individually; the
-    # chunker packs them together but must flush at target.
-    short = "short sentence. " * 4  # ~64 chars
+    short = "short sentence. " * 4
     blocks = [_block(short) for _ in range(40)]
 
     chunks = chunk_blocks(blocks, target_chars=target, overlap_chars=overlap)
 
     assert chunks, "expected non-empty chunk list"
     assert len(chunks) >= 2, "expected multiple chunks under target"
-    # Every chunk except possibly the last respects target + overlap + 2 slack.
     max_block_len = max(len(b.text) for b in blocks)
     for chunk in chunks[:-1]:
         assert len(chunk.text) <= target + overlap + max_block_len + 4
@@ -40,7 +30,7 @@ def test_chunker_respects_target_chars() -> None:
 def test_chunker_respects_overlap() -> None:
     target = 150
     overlap = 40
-    big = "abcdefghij" * 20  # 200 chars, will force a split
+    big = "abcdefghij" * 20
     blocks = [_block(big), _block(big)]
 
     chunks = chunk_blocks(blocks, target_chars=target, overlap_chars=overlap)
@@ -71,7 +61,7 @@ def test_chunker_handles_paragraph_smaller_than_overlap() -> None:
 
     chunks = chunk_blocks(blocks, target_chars=target, overlap_chars=overlap)
 
-    assert chunks  # didn't crash
+    assert chunks
     assert any("tiny tail" in c.text for c in chunks)
 
 

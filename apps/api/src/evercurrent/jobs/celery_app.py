@@ -1,10 +1,3 @@
-"""Celery app instance + beat schedule.
-
-Celery runs the same async business logic as before; the
-`celery_tasks` module wraps each `async def` impl in a thin sync task
-via `asyncio.run`. Broker + result backend both use Redis (REDIS_URL).
-"""
-
 from __future__ import annotations
 
 import os
@@ -30,11 +23,6 @@ celery_app.conf.update(
     result_expires=3600,
     task_default_retry_delay=5,
     task_default_max_retries=2,
-    # Sub-minute schedules need `celery beat` running alongside worker.
-    # `enqueue-due-digests` runs every minute and fans out one
-    # `generate_digest_for_member` task per membership currently at
-    # 08:00 local. Idempotency on `(member, day_index)` makes the
-    # 5-minute window safe against double-fires.
     beat_schedule={
         "enqueue-due-digests": {
             "task": "evercurrent.enqueue_due_digests_now",

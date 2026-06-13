@@ -1,16 +1,3 @@
-"""Digest eval — 5 scenarios, Sonnet writer, Sonnet-as-judge.
-
-We bypass the digest agent's DB hooks and call Sonnet directly with the
-production prompts rendered over the hand-built `DigestContext`. The
-generated digest is then scored by a second Sonnet call against the
-rubric in `judge_prompts/digest_rubric.txt`.
-
-This shape avoids bootstrapping the full multi-tenancy schema (org +
-project + membership + scores) inside the eval, which is plumbing for
-a downstream concern (persistence) not the thing we're measuring (the
-writer's quality).
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -154,13 +141,11 @@ Score the digest now, returning the JSON object the rubric describes.
 
 def _format_sources(ctx: DigestContext) -> str:
     msg_lines = [
-        f"- [msg:{item.message_id}] urgency={item.urgency} topic={item.topic}: "
-        f"{item.text!r}"
+        f"- [msg:{item.message_id}] urgency={item.urgency} topic={item.topic}: {item.text!r}"
         for item in ctx.top_scored_items
     ]
     card_lines = [
-        f"- [card:{card.card_id}] {card.kind}: {card.summary!r}"
-        for card in ctx.open_cards
+        f"- [card:{card.card_id}] {card.kind}: {card.summary!r}" for card in ctx.open_cards
     ]
     lines = [*msg_lines, *card_lines]
     return "\n".join(lines) if lines else "(empty)"
@@ -201,7 +186,6 @@ def test_digest_rubric_judge(
     digest_judge_prompt: str,
     llm_provider: LLMProvider,
 ) -> None:
-    """For each scenario: generate, judge, accumulate per-axis means."""
     rows: list[tuple[str, ...]] = [
         ("id", "relevance", "citations", "voice", "length", "notes"),
     ]

@@ -1,5 +1,3 @@
-"""Message + enrichment-tag ORM models."""
-
 from __future__ import annotations
 
 import datetime as dt

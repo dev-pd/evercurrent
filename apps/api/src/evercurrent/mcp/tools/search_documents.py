@@ -1,11 +1,3 @@
-"""search_documents tool.
-
-pgvector cosine ANN over `document_chunks`, scoped to a project. The
-heavy lifting (query embedding + SQL) lives in `rag/retriever.py`; this
-tool adapts that result to `ChunkRef` and wires it through the
-caller-supplied AsyncSession so RLS context is preserved.
-"""
-
 from __future__ import annotations
 
 import time
@@ -50,7 +42,6 @@ async def search_documents(
     limit: int = 5,
     embedder: EmbeddingProvider | None = None,
 ) -> list[ChunkRef]:
-    """Return up to `limit` chunks closest to `query` (cosine), scoped to project."""
     start = time.perf_counter()
     cleaned = query.strip()
     if not cleaned:

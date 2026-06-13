@@ -1,10 +1,3 @@
-"""Unit tests for Slack HMAC signature verification.
-
-Covers the four bits that matter: valid signature accepted, tampered
-body rejected, old timestamp rejected (replay protection), wrong
-signing secret rejected.
-"""
-
 from __future__ import annotations
 
 import hashlib

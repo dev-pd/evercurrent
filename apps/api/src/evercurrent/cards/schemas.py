@@ -1,10 +1,3 @@
-"""Pydantic schemas for Card drafting + API responses.
-
-`CardDraft` is what Sonnet emits; we persist it to the `cards` row.
-`CardSourceRef` is what the read API returns inline with each Card.
-`CardListItem` and `CardResponse` are the route response shapes.
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -19,8 +12,6 @@ SourceKindT = Literal["message", "document_chunk", "pr"]
 
 
 class CardDraft(BaseModel):
-    """Sonnet's structured output when drafting a new Card."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     summary: str = Field(min_length=10, max_length=200)
@@ -31,8 +22,6 @@ class CardDraft(BaseModel):
 
 
 class CardSourceRef(BaseModel):
-    """A single source citation, returned inline with a Card detail."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     source_kind: SourceKindT
@@ -41,8 +30,6 @@ class CardSourceRef(BaseModel):
 
 
 class CardListItem(BaseModel):
-    """Compact list-row representation of a Card."""
-
     model_config = ConfigDict(strict=True)
 
     id: uuid.UUID
@@ -56,8 +43,6 @@ class CardListItem(BaseModel):
 
 
 class CardResponse(BaseModel):
-    """Full Card detail with expanded source citations."""
-
     model_config = ConfigDict(strict=True)
 
     id: uuid.UUID
@@ -74,8 +59,6 @@ class CardResponse(BaseModel):
 
 
 class CardFeedbackPayload(BaseModel):
-    """User feedback on a Card; bumps the user's topic weights."""
-
     model_config = ConfigDict(strict=True)
 
     signal: Literal[-1, 1]

@@ -1,10 +1,3 @@
-"""Unit tests for `digest.scheduler.members_due_at` and idempotency.
-
-The scheduler is pure — no DB, no LLM — so it tests cleanly with
-`freezegun` for time travel. The idempotency test exercises the agent
-short-circuit when a row already exists for (member, day_index).
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -30,7 +23,7 @@ def _make_membership(tz_name: str) -> dict[str, Any]:
     }
 
 
-@freeze_time("2026-06-07 15:00:00")  # 15:00 UTC -> 08:00 PDT (Los Angeles, DST)
+@freeze_time("2026-06-07 15:00:00")
 def test_beat_emits_one_task_per_member_at_8am_local() -> None:
     utc_member = _make_membership("UTC")
     pst_member = _make_membership("America/Los_Angeles")
@@ -78,7 +71,6 @@ def test_bad_timezone_falls_back_to_utc() -> None:
 async def test_digest_idempotent_on_same_member_day(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Second call with force=False returns the existing row, no LLM call."""
     member_id = uuid.uuid4()
     org_id = uuid.uuid4()
     existing = Digest(
@@ -127,7 +119,6 @@ async def test_digest_idempotent_on_same_member_day(
 async def test_force_regen_replaces_existing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """force=True skips the idempotency check and calls the LLM."""
     member_id = uuid.uuid4()
     org_id = uuid.uuid4()
     new_digest = Digest(
@@ -192,7 +183,9 @@ async def test_force_regen_replaces_existing(
     monkeypatch.setattr(repo_mod, "upsert_digest", fake_upsert)
     monkeypatch.setattr(agent_mod, "_load_member_profile", fake_load_profile)
     monkeypatch.setattr(
-        agent_mod, "_resolve_project_id_for_member", fake_resolve_project_id,
+        agent_mod,
+        "_resolve_project_id_for_member",
+        fake_resolve_project_id,
     )
     monkeypatch.setattr(agent_mod, "_load_project_snapshot", fake_load_project)
 

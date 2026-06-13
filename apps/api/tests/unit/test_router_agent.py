@@ -1,12 +1,3 @@
-"""Unit tests for the Router agent classifier.
-
-Mocks the `LLMProvider.complete_json` coroutine end-to-end, exercising:
-- happy-path: canned JSON parses cleanly into a `RouterDecision`
-- retry-on-validation-fail: first call returns garbage, second returns
-  valid JSON -> we recover and return the recovered decision
-- fallback: both calls fail -> uncategorised fallback is returned
-"""
-
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -19,8 +10,6 @@ from evercurrent.routing.schemas import RouterDecision
 
 
 class _FakeLLM:
-    """Minimal LLMProvider stub: scripts a series of `complete_json` results."""
-
     def __init__(self, responses: list[Any | Exception | Callable[[], Any]]) -> None:
         self._responses = list(responses)
         self.calls: list[dict[str, Any]] = []
@@ -40,7 +29,8 @@ class _FakeLLM:
         raise NotImplementedError
 
     def stream(
-        self, **_kwargs: Any,
+        self,
+        **_kwargs: Any,
     ) -> Awaitable[Any]:  # pragma: no cover - unused
         raise NotImplementedError
 

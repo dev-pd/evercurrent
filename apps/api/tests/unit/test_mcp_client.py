@@ -1,12 +1,3 @@
-"""Unit tests for the in-process MCP client.
-
-Verifies that:
-- the default dispatch table registers every Phase 4 tool
-- `call(name, session, args)` dispatches to the matching function with
-  `args` exploded as kwargs and `session` as the first positional arg
-- unknown tool names raise `UnknownToolError`
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -92,7 +83,6 @@ async def test_call_unknown_tool_raises() -> None:
 
 
 def test_call_routes_each_default_tool_by_name() -> None:
-    """Every default tool name is registered."""
     client = InProcessMCPClient()
     expected = {
         "search_messages": fn_search_messages,

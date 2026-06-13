@@ -1,5 +1,3 @@
-"""Connector + raw-event ingest ORM models (Phase 3)."""
-
 from __future__ import annotations
 
 import datetime as dt

@@ -1,8 +1,3 @@
-"""Pydantic request + response schemas for the HTTP API.
-
-These are wire-level shapes; domain models stay internal.
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -49,8 +44,6 @@ class DocumentResponse(BaseModel):
 
 
 class DigestItem(BaseModel):
-    """One source message cited by the digest, joined with its tag."""
-
     model_config = ConfigDict(strict=True)
 
     id: uuid.UUID

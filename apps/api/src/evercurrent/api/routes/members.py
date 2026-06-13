@@ -1,5 +1,3 @@
-"""GET /api/v1/members — org members for the "view as" switcher."""
-
 from __future__ import annotations
 
 import uuid
@@ -24,15 +22,19 @@ class MemberSummary(BaseModel):
 
 @router.get("", response_model=list[MemberSummary])
 async def list_members(session: SessionDep, user: CurrentUserDep) -> list[MemberSummary]:
-    _ = user  # RLS already scopes to the caller's org
+    _ = user
     rows = (
-        await session.execute(
-            text(
-                "SELECT id, display_name, eng_role, owned_subsystems "
-                "FROM org_memberships ORDER BY eng_role NULLS LAST, display_name",
-            ),
+        (
+            await session.execute(
+                text(
+                    "SELECT id, display_name, eng_role, owned_subsystems "
+                    "FROM org_memberships ORDER BY eng_role NULLS LAST, display_name",
+                ),
+            )
         )
-    ).mappings().all()
+        .mappings()
+        .all()
+    )
     return [
         MemberSummary(
             id=r["id"],

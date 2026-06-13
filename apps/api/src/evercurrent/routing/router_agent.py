@@ -1,19 +1,3 @@
-"""Router agent: classify a single message via Haiku into a RouterDecision.
-
-The agent does NOT use tool-calling here — the calling Celery task
-gathers `thread_parent_text` up front via the MCP `get_thread_context`
-tool and passes it in. This keeps the prompt one-shot and the latency
-deterministic. Tool-using variants live in Phase 8.
-
-Flow:
-1. Render system + user prompts (templates are static files).
-2. Call the Haiku tier via the shared LLM client (`complete_json`).
-3. Validate the response with the strict Pydantic `RouterDecision`.
-4. On `ValidationError`, retry once with an appended schema reminder.
-5. On second failure, return the uncategorised fallback decision and
-   log it so the audit trail captures "the agent saw this and choked".
-"""
-
 from __future__ import annotations
 
 import json
@@ -46,12 +30,6 @@ _IF_BLOCK_PATTERN = re.compile(
 
 
 def _render(template: str, context: dict[str, Any]) -> str:
-    """Minimal Jinja-compatible renderer: `{{ var }}` + `{% if var %}...{% endif %}`.
-
-    Substitutes only the subset of Jinja syntax used by router_user.txt.j2.
-    Avoids pulling Jinja2 as a dependency until prompt templating outgrows
-    this footprint.
-    """
 
     def _eval_if(match: re.Match[str]) -> str:
         name = match.group(1)
@@ -139,10 +117,6 @@ async def classify(
     thread_parent_text: str | None,
     project_phase: str,
 ) -> RouterDecision:
-    """Classify one message into a strict `RouterDecision`.
-
-    Single retry on schema drift; uncategorised fallback on second failure.
-    """
     system = _load_prompt("router_system.txt")
     user_prompt = _build_user_prompt(
         message_text=message_text,

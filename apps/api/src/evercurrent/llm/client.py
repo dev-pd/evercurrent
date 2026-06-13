@@ -1,13 +1,3 @@
-"""LLM client wrapper. Single entry point for every Anthropic call.
-
-All other code talks to the `LLMProvider` interface so:
-- We can swap the real `AnthropicProvider` for a fake one in evals / tests
-  without touching call sites.
-- Model selection (Haiku vs Sonnet) is centralised in `tiering.model_for`.
-- Retry, timeout, structured-output parsing, and telemetry happen in ONE
-  place rather than scattered across modules.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -89,7 +79,6 @@ class LLMProvider(Protocol):
 
 
 def _is_retryable(exc: BaseException) -> bool:
-    """Retry on transient Anthropic errors. Not on auth / client errors."""
     transient = (
         anthropic.APIConnectionError,
         anthropic.APITimeoutError,
@@ -104,8 +93,6 @@ def _is_retryable(exc: BaseException) -> bool:
 
 
 class AnthropicProvider:
-    """The real provider. Holds an `AsyncAnthropic` client + retry policy."""
-
     def __init__(self, *, client: AsyncAnthropic | None = None) -> None:
         settings = get_settings()
         if client is None:
@@ -218,7 +205,6 @@ class AnthropicProvider:
             temperature=temperature,
         )
         text = result.text.strip()
-        # Tolerate code-fenced JSON if the model ignores the instruction.
         if text.startswith("```"):
             text = text.strip("`").lstrip("json").strip()
         return json.loads(text)
@@ -257,7 +243,6 @@ class AnthropicProvider:
 
 
 def _serialise_stream_event(event: Any, model: str) -> dict[str, Any]:  # noqa: PLR0911
-    """Map Anthropic SDK stream events into a stable dict shape."""
     etype = event.type
     if etype == "text":
         return {"type": "text_delta", "text": event.text, "model": model}
@@ -279,7 +264,6 @@ _provider_singleton: LLMProvider | None = None
 
 
 def get_provider() -> LLMProvider:
-    """Default provider, lazily constructed."""
     global _provider_singleton  # noqa: PLW0603
     provider = _provider_singleton
     if provider is None:
@@ -289,6 +273,5 @@ def get_provider() -> LLMProvider:
 
 
 def set_provider(provider: LLMProvider) -> None:
-    """Override for tests / evals."""
     global _provider_singleton  # noqa: PLW0603
     _provider_singleton = provider

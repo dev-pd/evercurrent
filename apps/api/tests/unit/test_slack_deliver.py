@@ -1,10 +1,3 @@
-"""Slack deliver tests with the DB session + Slack client stubbed.
-
-We don't stand up Postgres for these — instead, we mock the AsyncSession
-to satisfy the specific `select()` lookups `deliver_digest_dm` issues,
-and inject a fake `SlackClient` so the test never touches the network.
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -59,11 +52,11 @@ def _fake_subscription(*, enabled: bool, value: str | None = None) -> Any:
 
 
 class _FakeSlackClient:
-    def __init__(self, *, response: dict[str, Any] | None = None,
-                 raise_error: SlackAPIError | None = None) -> None:
+    def __init__(
+        self, *, response: dict[str, Any] | None = None, raise_error: SlackAPIError | None = None
+    ) -> None:
         self.calls: list[dict[str, Any]] = []
-        self._response = response or {"ok": True, "ts": "1717800000.000100",
-                                       "channel": "D1"}
+        self._response = response or {"ok": True, "ts": "1717800000.000100", "channel": "D1"}
         self._raise = raise_error
 
     async def chat_post_message(self, **kwargs: Any) -> dict[str, Any]:
@@ -84,11 +77,6 @@ def _install_session(
     subscription: Any | None,
     bot_token: str | None = "xoxb-test",
 ) -> tuple[AsyncMock, list[Any]]:
-    """Patch the notify.slack_deliver functions that touch the DB.
-
-    Returns the session mock and a list that captures every notification
-    insert call so tests can assert on the persisted payload.
-    """
     session = AsyncMock()
     session.commit = AsyncMock(return_value=None)
     inserts: list[Any] = []
@@ -99,7 +87,10 @@ def _install_session(
         return (digest, membership)
 
     async def fake_load_subscription(
-        _session: Any, *, membership_id: uuid.UUID, kind: str,
+        _session: Any,
+        *,
+        membership_id: uuid.UUID,
+        kind: str,
     ) -> Any:
         _ = membership_id, kind
         return subscription
@@ -135,7 +126,9 @@ def _install_session(
     monkeypatch.setattr(slack_deliver, "_load_bot_token", fake_load_token)
     monkeypatch.setattr(slack_deliver, "set_org_context", fake_set_org_context)
     monkeypatch.setattr(
-        slack_deliver.repository, "insert_notification", fake_insert_notification,
+        slack_deliver.repository,
+        "insert_notification",
+        fake_insert_notification,
     )
     return session, inserts
 
@@ -156,7 +149,9 @@ async def test_digest_dm_skips_when_subscription_disabled(
     slack = _FakeSlackClient()
 
     result = await deliver_digest_dm(
-        session, digest.id, slack_client=slack,
+        session,
+        digest.id,
+        slack_client=slack,
         now=dt.datetime(2026, 6, 7, 12, 0, tzinfo=dt.UTC),
     )
 
@@ -184,7 +179,9 @@ async def test_429_raises_for_retry(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(SlackRateLimitedError):
         await deliver_digest_dm(
-            session, digest.id, slack_client=slack,
+            session,
+            digest.id,
+            slack_client=slack,
             now=dt.datetime(2026, 6, 7, 12, 0, tzinfo=dt.UTC),
         )
 
@@ -207,7 +204,9 @@ async def test_quiet_hours_returns_deferred(monkeypatch: pytest.MonkeyPatch) -> 
     slack = _FakeSlackClient()
 
     result = await deliver_digest_dm(
-        session, digest.id, slack_client=slack,
+        session,
+        digest.id,
+        slack_client=slack,
         now=dt.datetime(2026, 6, 7, 23, 0, tzinfo=dt.UTC),
     )
 
@@ -215,7 +214,6 @@ async def test_quiet_hours_returns_deferred(monkeypatch: pytest.MonkeyPatch) -> 
     assert result.deferred_eta is not None
     assert result.deferred_eta == dt.datetime(2026, 6, 8, 7, 0, tzinfo=dt.UTC)
     assert slack.calls == []
-    # No notification row written for deferral.
     assert inserts == []
 
 
@@ -239,7 +237,10 @@ async def test_force_quiet_bypasses_quiet_check(
     slack = _FakeSlackClient()
 
     result = await deliver_digest_dm(
-        session, digest.id, slack_client=slack, force_quiet=True,
+        session,
+        digest.id,
+        slack_client=slack,
+        force_quiet=True,
         now=dt.datetime(2026, 6, 7, 23, 0, tzinfo=dt.UTC),
     )
 
@@ -255,7 +256,9 @@ async def test_notifications_row_persisted_with_sent_at(
 ) -> None:
     digest = _fake_digest()
     membership = _fake_membership(
-        timezone="UTC", quiet_start=None, quiet_end=None,
+        timezone="UTC",
+        quiet_start=None,
+        quiet_end=None,
     )
     subscription = _fake_subscription(enabled=True)
     session, inserts = _install_session(
@@ -269,7 +272,9 @@ async def test_notifications_row_persisted_with_sent_at(
     )
 
     result = await deliver_digest_dm(
-        session, digest.id, slack_client=slack,
+        session,
+        digest.id,
+        slack_client=slack,
         now=dt.datetime(2026, 6, 7, 12, 0, tzinfo=dt.UTC),
     )
 
@@ -295,7 +300,9 @@ async def test_missing_slack_user_skips(monkeypatch: pytest.MonkeyPatch) -> None
     slack = _FakeSlackClient()
 
     result = await deliver_digest_dm(
-        session, digest.id, slack_client=slack,
+        session,
+        digest.id,
+        slack_client=slack,
         now=dt.datetime(2026, 6, 7, 12, 0, tzinfo=dt.UTC),
     )
 

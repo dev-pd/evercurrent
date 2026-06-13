@@ -1,11 +1,3 @@
-"""30-day Slack history backfill.
-
-Re-uses the same `raw_events` -> `messages` code path as the webhook,
-so backfill is just "the webhook handler called in a loop with
-old messages". The unique constraint on `(source, external_id)` keeps
-double-insertion impossible when a live webhook races a backfill.
-"""
-
 from __future__ import annotations
 
 import json
@@ -30,8 +22,6 @@ DEFAULT_BACKFILL_DAYS = 30
 
 @dataclass(frozen=True)
 class BackfillSummary:
-    """Outcome of a backfill run for one channel."""
-
     raw_events_inserted: int
     messages_inserted: int
 
@@ -44,7 +34,6 @@ async def backfill_channel(
     days: int = DEFAULT_BACKFILL_DAYS,
     slack_client: SlackClient | None = None,
 ) -> BackfillSummary:
-    """Pull `days` of history for one channel, normalising into messages."""
     channel_row = (
         await session.execute(
             select(models.ConnectorChannel).where(
@@ -231,5 +220,4 @@ async def _persist_one(
 
 
 def _json_dumps(obj: object) -> str:
-    """Stable JSON serialisation for the raw payload column."""
     return json.dumps(obj, default=str, sort_keys=True)

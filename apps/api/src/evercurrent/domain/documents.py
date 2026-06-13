@@ -1,5 +1,3 @@
-"""Document + chunk domain models."""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -31,8 +29,6 @@ DocumentKindField = Annotated[DocumentKind, BeforeValidator(_coerce_kind)]
 
 
 class Document(BaseModel):
-    # `from_attributes` reads `obj.metadata_` on ORM rows because SQLAlchemy
-    # reserves `obj.metadata` for the table registry; the alias bridges them.
     model_config = ConfigDict(strict=True, from_attributes=True, populate_by_name=True)
 
     id: uuid.UUID

@@ -1,10 +1,3 @@
-"""Smoke tests for the RLS helper module.
-
-Integration test that proves RLS isolates rows across orgs lives in
-`tests/integration/test_rls_isolation.py` and runs against
-testcontainers Postgres.
-"""
-
 from __future__ import annotations
 
 import uuid

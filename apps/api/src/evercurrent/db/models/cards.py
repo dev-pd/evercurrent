@@ -1,5 +1,3 @@
-"""Knowledge-card ORM models: cards + their sources (Phase 6)."""
-
 from __future__ import annotations
 
 import datetime as dt

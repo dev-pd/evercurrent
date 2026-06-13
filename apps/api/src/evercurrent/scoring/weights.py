@@ -1,9 +1,3 @@
-"""Scoring weights.
-
-Six signals, six weights, summing to 1.0. Tune here; the engine never
-hard-codes a number.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -13,13 +7,6 @@ _SUM_TOLERANCE = 1e-9
 
 @dataclass(frozen=True, slots=True)
 class Weights:
-    """Per-signal multipliers for the linear scoring model.
-
-    Validated at construction time: weights must sum to 1.0 (within float
-    tolerance) so the final score lives in `[0, 1]` after clamping. All
-    values must be non-negative.
-    """
-
     role_match: float = 0.30
     subsystem_match: float = 0.25
     urgency_boost: float = 0.20

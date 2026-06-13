@@ -1,19 +1,3 @@
-"""Async impl behind the `ingest_document` Celery task.
-
-Pipeline:
-
-1. Extract blocks from the PDF (or fetch text via `files.export` for
-   Google Docs).
-2. Chunk via the paragraph-aware sliding window.
-3. Embed in batches of 128 via Voyage.
-4. Upsert a `documents` row keyed by `(source, external_id)` —
-   idempotent. Replace chunks.
-5. Run the Haiku classifier on title + first 3 chunks.
-6. Publish `document_ingested` to Redis for SSE consumers.
-
-Entrypoint: `ingest_pdf_bytes(...)` — used by the Dropbox sync.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -50,7 +34,6 @@ async def _upsert_document(
     kind: str,
     title: str,
 ) -> tuple[uuid.UUID, bool]:
-    """Insert-or-fetch a documents row. Returns (id, created_new)."""
     existing = (
         await session.execute(
             select(models.Document).where(
@@ -85,12 +68,16 @@ async def _replace_chunks(
         msg = "chunks/embeddings length mismatch"
         raise ValueError(msg)
     existing_rows = (
-        await session.execute(
-            select(models.DocumentChunk).where(
-                models.DocumentChunk.document_id == document_id,
-            ),
+        (
+            await session.execute(
+                select(models.DocumentChunk).where(
+                    models.DocumentChunk.document_id == document_id,
+                ),
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     for row in existing_rows:
         await session.delete(row)
     await session.flush()
@@ -114,12 +101,6 @@ async def _resolve_default_project(
     session: Any,
     org_id: uuid.UUID,
 ) -> uuid.UUID | None:
-    """For take-home scope, pick *any* project in the org as the doc's owner.
-
-    Uses raw SQL because `models.Project.org_id` isn't declared on the
-    Phase 1 ORM (the column exists in the migrated schema; we don't
-    retrofit the ORM until Phase 9 finishes the data-model swap).
-    """
     result = await session.execute(
         text("SELECT id FROM projects WHERE org_id = :org_id LIMIT 1"),
         {"org_id": str(org_id)},
@@ -158,7 +139,6 @@ async def _ingest_blocks(
     kind_hint: str,
     embedder: EmbeddingProvider | None,
 ) -> dict[str, Any]:
-    """Shared core: chunk + embed + persist + classify + publish."""
     chunks = chunk_blocks(blocks)
     if not chunks:
         log.info(
@@ -242,7 +222,6 @@ async def ingest_pdf_bytes(
     kind_hint: str = "pdf",
     embedder: EmbeddingProvider | None = None,
 ) -> dict[str, Any]:
-    """Ingest a PDF given its raw bytes. Used by the Dropbox sync."""
     if len(pdf_bytes) > MAX_BYTES:
         log.warning(
             "ingest.too_large",

@@ -1,13 +1,3 @@
-"""Router eval — 50-message tag accuracy via the real Haiku classifier.
-
-For every labelled message we call `routing.router_agent.classify` with
-the real Anthropic Haiku tier and compare the structured output to the
-hand-labelled ground truth. Reports per-field accuracy + set jaccard.
-
-Skipped with a clear reason when `ANTHROPIC_API_KEY` is missing — the
-agent cannot run without it, and we'd rather see a skip than a 401.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -22,7 +12,6 @@ from tests.evals.runner import jaccard, warn_if_below_baseline
 
 
 def _topic_match(predicted: str | None, expected: str | None) -> bool:
-    """Topic strings are open-vocab. Use substring containment both ways."""
     if expected is None:
         return predicted is None
     if predicted is None:
@@ -60,7 +49,6 @@ def test_router_accuracy(
     router_labels: list[dict[str, Any]],
     llm_provider: LLMProvider,
 ) -> None:
-    """Aggregate per-field accuracy across the 50 hand-labelled messages."""
     state: dict[str, Any] = {
         "topic_hits": 0,
         "urgency_hits": 0,
@@ -77,7 +65,8 @@ def test_router_accuracy(
         for row in router_labels:
             try:
                 topic, urgency, entities, roles, scc = await _classify_one(
-                    llm_provider, row,
+                    llm_provider,
+                    row,
                 )
             except Exception as exc:  # noqa: BLE001
                 failures.append({"id": row["id"], "error": str(exc)})

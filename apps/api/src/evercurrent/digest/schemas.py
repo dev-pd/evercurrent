@@ -1,14 +1,3 @@
-"""Pydantic schemas for the digest agent.
-
-`DigestDraft` is Sonnet's structured output. The agent renders prompts,
-calls the LLM, parses the JSON response into a `DigestDraft`, and then
-the repository persists it as a `digests` row.
-
-`MemberProfile`, `ProjectSnapshot`, `ScoredItem`, `CardSummary`, and
-`PriorDigest` are the strongly-typed building blocks of the prompt
-context — they decouple the agent from raw SQL row shapes.
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -46,13 +35,12 @@ def _coerce_uuid_dict(v: object) -> dict[str, list[uuid.UUID]]:
 
 UUIDList = Annotated[list[uuid.UUID], BeforeValidator(_coerce_uuid_list)]
 UUIDDict = Annotated[
-    dict[str, list[uuid.UUID]], BeforeValidator(_coerce_uuid_dict),
+    dict[str, list[uuid.UUID]],
+    BeforeValidator(_coerce_uuid_dict),
 ]
 
 
 class MemberProfile(BaseModel):
-    """The member the digest is being written for."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     project_member_id: uuid.UUID
@@ -64,8 +52,6 @@ class MemberProfile(BaseModel):
 
 
 class ProjectSnapshot(BaseModel):
-    """Project context the digest writer needs."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     project_id: uuid.UUID
@@ -75,8 +61,6 @@ class ProjectSnapshot(BaseModel):
 
 
 class ScoredItem(BaseModel):
-    """One high-scoring message for the member."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     message_id: uuid.UUID
@@ -90,8 +74,6 @@ class ScoredItem(BaseModel):
 
 
 class CardSummary(BaseModel):
-    """One open Card affecting one of the member's subsystems."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     card_id: uuid.UUID
@@ -103,8 +85,6 @@ class CardSummary(BaseModel):
 
 
 class PriorDigest(BaseModel):
-    """A previously-written digest, included for continuity."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     day_index: int
@@ -112,8 +92,6 @@ class PriorDigest(BaseModel):
 
 
 class DigestContext(BaseModel):
-    """Everything the agent needs to draft one personalised digest."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     member: MemberProfile
@@ -128,12 +106,6 @@ SectionBucketT = Literal["top_priority", "watch_outs", "fyi"]
 
 
 class DigestDraft(BaseModel):
-    """Sonnet's structured output for one digest.
-
-    Strict on field types; UUID fields accept string forms via the
-    `_coerce_uuid` BeforeValidators because the model emits JSON strings.
-    """
-
     model_config = ConfigDict(strict=True)
 
     content_md: Annotated[str, Field(min_length=20)]

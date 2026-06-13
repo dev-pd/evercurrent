@@ -1,10 +1,3 @@
-"""Celery task wrappers around the async business logic.
-
-Each task is a thin sync function that calls `asyncio.run(...)` on the
-existing async implementation. Keep tasks small + side-effect-only;
-all real work lives in the domain modules.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -19,14 +12,6 @@ log = structlog.get_logger(__name__)
 
 
 def _run(coro: Any) -> Any:
-    """Run an async coroutine in a fresh event loop.
-
-    Celery tasks are sync; each task gets its own loop because SQLAlchemy
-    async + asyncpg bind their connection pool to whatever loop was alive
-    when the engine was built. After the coroutine finishes we dispose the
-    engine so the next task rebuilds the pool on its own loop — otherwise
-    asyncpg raises "Future attached to a different loop".
-    """
     from evercurrent.db.session import dispose_engine
 
     async def _wrapper() -> Any:

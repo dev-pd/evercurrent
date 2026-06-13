@@ -1,15 +1,3 @@
-"""Score a tagged message for every project member.
-
-Loads the message + tags + project, fans out via the pure
-`scoring.engine.score()` function, and bulk-upserts results into
-`scores`. Phase 8 will wire this into the digest pipeline; for now it
-runs whenever the router agent enqueues it after writing a tag.
-
-Best-effort: missing data (no tags, no members in the org) is a no-op
-that returns a `skipped` reason rather than raising — the message
-ingest pipeline should never crash because scoring isn't ready.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -34,17 +22,19 @@ async def score_message_for_members(
 ) -> dict[str, Any]:
     msg_uuid = uuid.UUID(message_id)
     async with session_scope() as session:
-        # Message ORM model is stale (legacy channel_id/day/ts) vs the real
-        # org-scoped table; read the columns we need via raw SQL.
         msg = (
-            await session.execute(
-                text(
-                    "SELECT org_id, project_id, author_membership_id "
-                    "FROM messages WHERE id = :id",
-                ),
-                {"id": str(msg_uuid)},
+            (
+                await session.execute(
+                    text(
+                        "SELECT org_id, project_id, author_membership_id "
+                        "FROM messages WHERE id = :id",
+                    ),
+                    {"id": str(msg_uuid)},
+                )
             )
-        ).mappings().first()
+            .mappings()
+            .first()
+        )
         if msg is None:
             log.info("scoring.skipped", reason="message_missing", message_id=message_id)
             return {"scored": 0, "reason": "message_missing"}
@@ -56,32 +46,37 @@ async def score_message_for_members(
         await set_org_context(session, org_id)
 
         tag = (
-            await session.execute(
-                text(
-                    "SELECT topic, urgency, entities, affected_roles "
-                    "FROM message_tags WHERE message_id = :id",
-                ),
-                {"id": str(msg_uuid)},
+            (
+                await session.execute(
+                    text(
+                        "SELECT topic, urgency, entities, affected_roles "
+                        "FROM message_tags WHERE message_id = :id",
+                    ),
+                    {"id": str(msg_uuid)},
+                )
             )
-        ).mappings().first()
+            .mappings()
+            .first()
+        )
         if tag is None:
             log.info("scoring.skipped", reason="no_tag", message_id=message_id)
             return {"scored": 0, "reason": "no_tag"}
 
         memberships = (
-            await session.execute(
-                select(models.OrgMembership).where(models.OrgMembership.org_id == org_id),
+            (
+                await session.execute(
+                    select(models.OrgMembership).where(models.OrgMembership.org_id == org_id),
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         if not memberships:
             return {"scored": 0, "reason": "no_members"}
 
-        # Project phase concerns for the phase-match signal. Messages may carry
-        # no project_id (backfill), so fall back to the org's single project.
         project = (
             await session.execute(
-                select(models.Project)
-                .where(models.Project.id == msg["project_id"])
+                select(models.Project).where(models.Project.id == msg["project_id"])
                 if msg["project_id"] is not None
                 else select(models.Project).limit(1),
             )
@@ -92,7 +87,6 @@ async def score_message_for_members(
                 (project.phase_concerns or {}).get(project.current_phase, []),
             )
 
-        # Resolve the author's engineering role for the cross-functional signal.
         author_role = "unknown"
         author_mid = msg["author_membership_id"]
         if author_mid is not None:

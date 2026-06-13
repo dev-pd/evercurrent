@@ -1,15 +1,3 @@
-"""The Eve agent loop.
-
-Sonnet is given a goal + a toolbox (the read-only MCP tools + an `emit_insight`
-action). It reasons, calls tools to gather context, and finishes by calling
-`emit_insight` with a structured ProactiveInsight. We dispatch tool calls
-through the in-process MCP client (injecting project_id) and feed results back
-until the agent emits — or we hit the iteration cap.
-
-The prompt lives in `prompts/system.txt`, the tool specs in `tools.py`, and the
-result serializer in `serialization.py`; this module is just the loop.
-"""
-
 from __future__ import annotations
 
 import json
@@ -46,7 +34,6 @@ async def run_eve(
     llm: LLMProvider | None = None,
     mcp: InProcessMCPClient | None = None,
 ) -> dict[str, Any] | None:
-    """Run the agent loop; return the emitted insight dict (or None)."""
     provider = llm or get_provider()
     client = mcp or InProcessMCPClient()
     tools = [*READ_TOOLS, EMIT_TOOL]
@@ -69,8 +56,6 @@ async def run_eve(
             temperature=0.3,
         )
         if not result.tool_calls:
-            # Agent ended with prose instead of emitting. Force a structured
-            # emit once before giving up.
             if nudged:
                 log.info("eve.no_tool_calls", turn=turn, stop=result.stop_reason)
                 return None
@@ -89,7 +74,6 @@ async def run_eve(
             )
             continue
 
-        # Reconstruct the assistant turn (text + tool_use blocks).
         assistant: list[dict[str, Any]] = []
         if result.text:
             assistant.append({"type": "text", "text": result.text})

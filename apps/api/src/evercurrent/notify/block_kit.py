@@ -1,14 +1,3 @@
-"""Digest markdown → Slack Block Kit blocks.
-
-Pure mapping. We parse a light markdown structure (`## Bucket name`
-headings + bullet lines) and emit a header block, a divider, one
-section block per bucket, and a citations actions row of link buttons.
-
-Slack hard limits a single text block to 3000 chars, so each bucket's
-combined body is truncated with a tail-out link to the full Card in the
-web app.
-"""
-
 from __future__ import annotations
 
 import re
@@ -26,12 +15,6 @@ def _truncate(text: str, *, limit: int = _BLOCK_TEXT_LIMIT) -> str:
 
 
 def _split_buckets(digest_md: str) -> list[tuple[str, str]]:
-    """Yield (bucket_title, body_markdown) tuples.
-
-    Lines before any heading become an implicit "Highlights" bucket so
-    we always render something even when the digest agent skips section
-    headers.
-    """
     buckets: list[tuple[str, list[str]]] = []
     current_title = "Highlights"
     current_body: list[str] = []
@@ -59,16 +42,6 @@ def digest_to_blocks(
     title: str,
     citations: list[dict[str, str]] | None = None,
 ) -> list[dict[str, Any]]:
-    """Translate a digest markdown body into Block Kit blocks.
-
-    Args:
-        digest_md: the markdown body produced by the digest agent.
-        title: header text, e.g. `"Day 14 · DVT · Jun 7"`.
-        citations: optional `[{"label": "#mech-design 14:32", "url": ...}]`
-            entries rendered as a single actions row of link buttons.
-
-    Returns a Block Kit `blocks` list ready for `chat.postMessage`.
-    """
     blocks: list[dict[str, Any]] = [
         {
             "type": "header",
@@ -123,9 +96,7 @@ def digest_to_blocks(
             "elements": [
                 {
                     "type": "mrkdwn",
-                    "text": (
-                        "Reply with feedback or thumbs up to retrain your digest."
-                    ),
+                    "text": ("Reply with feedback or thumbs up to retrain your digest."),
                 },
             ],
         },

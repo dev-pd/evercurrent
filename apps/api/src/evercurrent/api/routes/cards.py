@@ -1,14 +1,3 @@
-"""Cards API: list + detail + feedback.
-
-`GET /api/v1/cards?project_id=...` — compact list rows for the dashboard.
-`GET /api/v1/cards/{id}` — full Card with sources expanded inline.
-`POST /api/v1/cards/{id}/feedback` — thumbs up/down updates the caller's
-topic_weights for the Card's first inferred topic.
-
-RLS is set on the session by the auth dep; the routes do not pass
-`org_id` to the queries.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -117,13 +106,6 @@ async def _bump_membership_topic_weight(
     topic: str,
     delta: float,
 ) -> float:
-    """Best-effort topic-weight bump on the user's membership row.
-
-    Stores weights as a JSONB blob on `org_memberships.topic_weights`.
-    If the column does not exist yet (pre-Phase-7 schema), the bump is
-    a no-op and we return the delta verbatim — the route still 200s so
-    the UI feedback loop closes.
-    """
     try:
         result = await session.execute(
             text(

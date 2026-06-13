@@ -1,5 +1,3 @@
-"""Today routes — exposes the live day + last cron refresh timestamp."""
-
 from __future__ import annotations
 
 import uuid
@@ -38,9 +36,6 @@ async def get_today(
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="project not found")
 
-    # Post Phase-8 messages are org-scoped with a `posted_at` timestamp; the
-    # old (project_id, day) shape no longer exists. "Signals" = messages in
-    # the last 24h. RLS already constrains rows to the caller's org.
     msg_count_row = await session.execute(
         text(
             "SELECT count(*) AS c, max(posted_at) AS last_at "
@@ -52,9 +47,6 @@ async def get_today(
     )
     msg_count, last_message_at = msg_count_row.one()
 
-    # Phase 8 redefined `digests` to (project_member, day_index); there is
-    # no project-wide "last digest" timestamp anymore. The dashboard now
-    # shows per-member generated_at via /digests/today instead.
     last_digest_at = None
 
     return TodayResponse(

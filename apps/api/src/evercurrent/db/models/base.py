@@ -1,9 +1,3 @@
-"""Declarative base + shared column helpers for all ORM models.
-
-Domain models in `evercurrent.domain.*` are Pydantic and live behind the
-repository boundary — never import the ORM models above the `db/` package.
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -16,8 +10,6 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
-    """Declarative base for all EverCurrent ORM models."""
-
     type_annotation_map: ClassVar[dict[Any, Any]] = {
         dict[str, Any]: JSONB,
         list[str]: ARRAY(Text),

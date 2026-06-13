@@ -1,5 +1,3 @@
-"""Digest + feedback domain models."""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -27,8 +25,6 @@ FeedbackSignalField = Annotated[FeedbackSignal, BeforeValidator(_coerce_signal)]
 
 
 class Digest(BaseModel):
-    """Phase 8 digest domain model: per (project_member, day_index)."""
-
     model_config = ConfigDict(strict=True, from_attributes=True)
 
     id: uuid.UUID

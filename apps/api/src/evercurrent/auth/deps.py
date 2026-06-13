@@ -1,11 +1,3 @@
-"""FastAPI dependencies for auth + tenancy.
-
-Routes use these dependencies to require an authenticated user and to
-get the user's Org + OrgMembership rows. RLS is set on the DB session
-as a side effect of the auth dependency — application code does not
-need to (and must not) pass `org_id` in queries.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -30,7 +22,6 @@ bearer = HTTPBearer(auto_error=False)
 
 
 async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
-    """Per-request AsyncSession, scoped to RLS context."""
     sessionmaker = get_sessionmaker()
     async with sessionmaker() as session:
         ctx_org_id: uuid.UUID | None = getattr(request.state, "org_id", None)
@@ -56,12 +47,6 @@ VerifierDep = Annotated[Auth0Verifier, Depends(get_auth0_verifier)]
 
 
 async def _dev_user(request: Request, session: AsyncSession) -> CurrentUser:
-    """Dev-only: resolve the request to a real member without a verified token.
-
-    Picks the member named by the `X-Impersonate-User` header (the "view as"
-    switch) or the first member in the only org. Sets RLS context. Guarded by
-    `settings.dev_login`; never reached in production.
-    """
     impersonate = request.headers.get("x-impersonate-user")
     member: OrgMembership | None = None
     if impersonate:
@@ -97,7 +82,6 @@ async def require_user(
     verifier: VerifierDep,
     session: SessionDep,
 ) -> CurrentUser:
-    """Verify Bearer token, resolve Org + OrgMembership, set RLS."""
     dev = get_settings().dev_login
     if creds is None:
         if dev:
@@ -146,7 +130,6 @@ async def require_user(
         )
     ).scalar_one_or_none()
     if membership_row is None:
-        # JIT provisioning: create the membership on first sight.
         membership_row = OrgMembership(
             org_id=org_row.id,
             auth0_user_id=claims.sub,
@@ -169,8 +152,6 @@ async def require_user(
 
 
 class CurrentUser:
-    """Resolved current-user context for the request."""
-
     __slots__ = ("auth0_user_id", "display_name", "email", "membership_id", "org_id")
 
     def __init__(

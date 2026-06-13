@@ -1,14 +1,3 @@
-"""Digest routes.
-
-`GET /api/v1/digests/today` — read-through cache. Returns the latest
-cached digest for the current member; if it is older than today (the
-member's local today), kicks off a regen in the background.
-
-`POST /api/v1/digests/regenerate` — enqueue a forced regen for the
-current member + today. Returns the Celery `job_id`. The dashboard
-listens on the SSE stream for `digest_ready` to refresh.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -36,8 +25,8 @@ class DigestItemV2(BaseModel):
     model_config = ConfigDict(strict=True)
 
     id: str
-    bucket: str  # top_priority | watch_outs | fyi
-    source: str  # channel name (e.g. "#mech-design")
+    bucket: str
+    source: str
     author_display_name: str | None = None
     ts: str | None = None
     why_this_matters: str
@@ -85,8 +74,6 @@ async def get_today(
         project_member_id=user.membership_id,
     )
     if latest is None:
-        # First-ever read: fire a fresh generate for today and 404. The
-        # dashboard will reload via the SSE `digest_ready` event.
         generate_digest_for_member.delay(
             str(user.membership_id),
             today_idx,
@@ -132,18 +119,13 @@ async def _build_items(
     *,
     message_ids: list[uuid.UUID],
 ) -> list[DigestItemV2]:
-    """Hydrate digest message_ids into DigestItemV2 for the dashboard.
-
-    Splits into buckets by urgency: high → top_priority, normal → watch_outs,
-    everything else → fyi. Pulls channel + author + timestamp + message text
-    from `messages` joined to `message_tags`.
-    """
     if not message_ids:
         return []
     rows = (
-        await session.execute(
-            text(
-                """
+        (
+            await session.execute(
+                text(
+                    """
                 SELECT m.id, m.channel, m.author_display_name,
                        m.posted_at, m.text, mt.urgency
                 FROM messages m
@@ -151,19 +133,18 @@ async def _build_items(
                 WHERE m.id = ANY(:ids)
                 ORDER BY m.posted_at DESC
                 """,
-            ),
-            {"ids": [str(i) for i in message_ids]},
+                ),
+                {"ids": [str(i) for i in message_ids]},
+            )
         )
-    ).mappings().all()
+        .mappings()
+        .all()
+    )
     out: list[DigestItemV2] = []
     for r in rows:
         urgency = (r["urgency"] or "normal").lower()
         bucket = (
-            "top_priority"
-            if urgency == "high"
-            else "watch_outs"
-            if urgency == "normal"
-            else "fyi"
+            "top_priority" if urgency == "high" else "watch_outs" if urgency == "normal" else "fyi"
         )
         out.append(
             DigestItemV2(
@@ -176,7 +157,6 @@ async def _build_items(
                 card_id=None,
             ),
         )
-    # Cap fyi to 8 so the dashboard stays compact; preserve top + watch.
     top = [i for i in out if i.bucket == "top_priority"][:8]
     watch = [i for i in out if i.bucket == "watch_outs"][:8]
     fyi = [i for i in out if i.bucket == "fyi"][:6]

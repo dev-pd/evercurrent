@@ -1,19 +1,3 @@
-"""RAG eval — 30 question/expected-document pairs via pgvector ANN.
-
-Setup:
-1. Spin up Postgres with pgvector (testcontainers).
-2. Create a minimal `documents` + `document_chunks` schema scoped to
-   this eval — we deliberately do NOT bootstrap the full RLS / orgs /
-   projects stack because this eval is measuring retrieval quality,
-   not multi-tenancy.
-3. Chunk each markdown doc in `data/rag_corpus/` and embed via Voyage.
-4. For each question, embed via Voyage, run cosine ANN, compute
-   precision@5 + MRR against the expected documents.
-
-Skipped without `ANTHROPIC_API_KEY`-free `VOYAGE_API_KEY` — we still
-need Voyage to embed. The Postgres container starts regardless.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -103,13 +87,12 @@ async def _ingest_corpus(
     corpus_dir: Path,
     embedder: EmbeddingProvider,
 ) -> dict[str, str]:
-    """Chunk + embed + insert every doc in `corpus_dir`. Returns {slug: doc_id}."""
     sessionmaker = async_sessionmaker(engine, expire_on_commit=False)
     slug_to_id: dict[str, str] = {}
 
     docs = sorted(corpus_dir.glob("*.md"))  # noqa: ASYNC240  pytest+asyncio.run, not trio
     for path in docs:
-        slug = path.stem  # e.g. "01_eco_178"
+        slug = path.stem
         body = path.read_text(encoding="utf-8")
         chunks = chunk_markdown(body)
         if not chunks:
@@ -154,7 +137,6 @@ async def _query(
     question: str,
     k: int,
 ) -> list[str]:
-    """Return the slugs of the top-k chunks, in order."""
     qvec_list = await embedder.embed_query(question)
     qvec = "[" + ",".join(f"{v:.7f}" for v in qvec_list) + "]"
     result = await session.execute(
@@ -170,7 +152,6 @@ def test_rag_precision_and_mrr(
     rag_engine: AsyncEngine,
     voyage_available: bool,
 ) -> None:
-    """End-to-end retrieval quality on hand-labelled question/source pairs."""
     if not voyage_available:
         pytest.skip("VOYAGE_API_KEY not set; RAG eval skipped.")
 
@@ -187,7 +168,6 @@ def test_rag_precision_and_mrr(
         for q in rag_questions:
             async with sessionmaker() as session:
                 retrieved = await _query(session, embedder, q["question"], k=5)
-            # dedupe by slug, preserving order — multiple chunks per doc
             seen: set[str] = set()
             uniq_retrieved: list[str] = []
             for r in retrieved:

@@ -1,10 +1,3 @@
-"""Deliver a per-user digest as a Slack DM (Phase 11).
-
-This async impl is invoked by the sync Celery wrapper in
-`jobs.celery_tasks`. We open our own session here (no FastAPI request
-scope) and delegate to the notify package.
-"""
-
 from __future__ import annotations
 
 import uuid

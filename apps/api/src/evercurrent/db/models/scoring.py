@@ -1,5 +1,3 @@
-"""Per-member relevance score ORM model (Phase 7)."""
-
 from __future__ import annotations
 
 import datetime as dt

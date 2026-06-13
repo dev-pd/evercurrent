@@ -224,12 +224,20 @@ harness instead of brittle string-match unit tests.
 If you find yourself doing something not asked for, stop and ask. Scope
 creep is the most common failure mode.
 
-## 13. Documentation
+## 13. Comments and docstrings — keep it minimal
 
-- Every module has a module-level docstring explaining its role.
-- Every non-obvious public function has arg/return docs.
-- Every top-level directory has a README.md.
-- `docs/ARCHITECTURE.md` records the backend architecture and rationale.
+Code is the documentation. Names carry the meaning; prose rots.
+
+- **No inline comments.** If code needs a comment to be understood,
+  rename or refactor it instead. The rare exception is a genuinely
+  non-obvious *why* (a workaround, a spec quirk) — one short line.
+- **No docstrings** by default. Add a single terse line only when a
+  module's or function's purpose isn't obvious from its name.
+- Never strip functional directives — `# noqa`, `# type: ignore`,
+  `# ruff:`/`# pyright:`, `// eslint-disable`, `// @ts-expect-error`,
+  shebangs. They are not comments.
+- `docs/ARCHITECTURE.md` is the only prose doc; it records the backend
+  architecture and rationale.
 
 ## 14. Honest disagreement
 

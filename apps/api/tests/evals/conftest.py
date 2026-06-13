@@ -1,18 +1,3 @@
-"""Eval-suite fixtures, gating, and report-writing.
-
-Per `AGENTS.md` §11 the evals are NOT correctness gates — they emit
-metrics. The fixtures here:
-
-1. Load hand-labelled JSON datasets from `data/`.
-2. Gate on `ANTHROPIC_API_KEY` / `VOYAGE_API_KEY` env vars. If missing,
-   the LLM/embedding evals skip with a clear reason instead of failing
-   with a 401 deep in a request.
-3. Provide an `AnthropicProvider` factory bound to the real client when
-   a key is present.
-4. Persist run reports to `tests/evals/reports/<isoformat>.json` so we
-   can track baselines over time.
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -25,9 +10,6 @@ import pytest
 
 from evercurrent.llm.client import AnthropicProvider, LLMProvider
 
-# Collect `eval_*.py` files in this directory the same way pytest collects
-# `test_*.py` elsewhere. The project-wide pytest config only matches
-# `test_*.py`; this hook adds eval_ files without touching pyproject.toml.
 collect_ignore_glob: list[str] = []
 
 
@@ -36,12 +18,10 @@ def pytest_collect_file(parent: pytest.Collector, file_path: Path) -> pytest.Col
         return None
     return pytest.Module.from_parent(parent, path=file_path)
 
+
 DATA_DIR = Path(__file__).parent / "data"
 JUDGE_PROMPTS_DIR = Path(__file__).parent / "judge_prompts"
 REPORTS_DIR = Path(__file__).parent / "reports"
-
-
-# ----- gating ----------------------------------------------------------------
 
 
 def _have_anthropic_key() -> bool:
@@ -67,9 +47,6 @@ def llm_provider(anthropic_available: bool) -> LLMProvider:
     if not anthropic_available:
         pytest.skip("ANTHROPIC_API_KEY not set; LLM eval skipped.")
     return AnthropicProvider()
-
-
-# ----- data loaders ----------------------------------------------------------
 
 
 def _load_json(name: str) -> list[dict[str, Any]]:
@@ -111,15 +88,7 @@ def rag_corpus_dir() -> Path:
     return DATA_DIR / "rag_corpus"
 
 
-# ----- reporting -------------------------------------------------------------
-
-
 def write_report(name: str, report: dict[str, Any]) -> Path:
-    """Persist a single eval's results to `reports/<isoformat>_<name>.json`.
-
-    Returns the path for tests to log. We never fail the test on a write
-    failure; the metric is the deliverable, the file is convenience.
-    """
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     stamp = dt.datetime.now(dt.UTC).strftime("%Y%m%dT%H%M%SZ")
     path = REPORTS_DIR / f"{stamp}_{name}.json"
@@ -132,11 +101,7 @@ def write_report(name: str, report: dict[str, Any]) -> Path:
     return path
 
 
-# ----- terminal table reporter ----------------------------------------------
-
-
 def emit_metric_table(title: str, rows: list[tuple[str, ...]]) -> None:
-    """Pretty-print a metric table. Captured by pytest -s in `make eval`."""
     if not rows:
         print(f"\n{title}: (no data)")
         return
@@ -147,11 +112,3 @@ def emit_metric_table(title: str, rows: list[tuple[str, ...]]) -> None:
     print("  ".join("-" * w for w in widths))
     for row in rows[1:]:
         print("  ".join(str(cell).ljust(w) for cell, w in zip(row, widths, strict=False)))
-
-
-# ----- shared collection -----------------------------------------------------
-
-
-# Evals that need a DB spin up their own testcontainer (see eval_rag.py).
-# We deliberately do not share the project's top-level fixtures so a
-# developer can `pytest tests/evals` without the integration DB stack.

@@ -1,10 +1,3 @@
-"""Pydantic schemas for the scoring engine.
-
-Strict mode so callers cannot smuggle in mistyped JSON. The schemas are
-the engine's public contract: `ScoreInput` in, `ScoreResult` out, with a
-breakdown that the dashboard renders as "why this is in your top 5."
-"""
-
 from __future__ import annotations
 
 from typing import Literal
@@ -15,12 +8,6 @@ Urgency = Literal["critical", "high", "normal", "low"]
 
 
 class ScoreInput(BaseModel):
-    """Typed inputs to `engine.score`.
-
-    Combines message-side, member-side, and project-side fields. The
-    engine never touches the DB; every field a signal needs lives here.
-    """
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     member_role: str
@@ -37,8 +24,6 @@ class ScoreInput(BaseModel):
 
 
 class ScoreResult(BaseModel):
-    """Clamped total plus the per-signal breakdown for audit/UI."""
-
     model_config = ConfigDict(strict=True, frozen=True)
 
     total: float

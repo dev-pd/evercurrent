@@ -1,5 +1,3 @@
-"""Document + chunk repository."""
-
 from __future__ import annotations
 
 import uuid

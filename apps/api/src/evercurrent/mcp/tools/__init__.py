@@ -1,10 +1,3 @@
-"""MCP tools — one async function per tool, one file per tool.
-
-Each tool takes an `AsyncSession` (already RLS-bound by the caller) and
-returns a Pydantic strict model from `evercurrent.mcp.schemas`. Tools
-never raise on empty results — they return `[]` or `None`.
-"""
-
 from __future__ import annotations
 
 from evercurrent.mcp.tools.get_thread_context import get_thread_context

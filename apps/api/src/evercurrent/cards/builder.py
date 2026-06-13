@@ -1,23 +1,3 @@
-"""Sonnet-driven Card builder.
-
-Idempotent at the DB layer via the partial unique index on
-`(triggering_message_id, kind)`. The flow is:
-
-1. Idempotency check: if a Card already exists for this trigger +
-   kind, return it without calling the LLM.
-2. Load the thread context via the MCP `get_thread_context` tool so
-   Sonnet has the full conversation, not just the trigger line.
-3. Render the `draft_card.txt` prompt with kind + summary_hint +
-   thread snippet + author hint.
-4. Call Sonnet through the shared LLM client (`complete_json`).
-5. Parse the response into `CardDraft`. Retry once on schema drift.
-   Second failure raises — Celery handles the backoff. Unlike the
-   Router, we do NOT write a fallback Card; a bad summary in the UI
-   is worse than a missing Card.
-6. Insert the `cards` row + the `card_sources` rows (one per message
-   in the thread).
-"""
-
 from __future__ import annotations
 
 import json
@@ -62,15 +42,19 @@ async def _load_message_meta(
     message_id: uuid.UUID,
 ) -> dict[str, Any] | None:
     row = (
-        await session.execute(
-            text(
-                "SELECT id, org_id, project_id, channel, text, "
-                "       author_display_name, posted_at "
-                "FROM messages WHERE id = :id",
-            ),
-            {"id": str(message_id)},
+        (
+            await session.execute(
+                text(
+                    "SELECT id, org_id, project_id, channel, text, "
+                    "       author_display_name, posted_at "
+                    "FROM messages WHERE id = :id",
+                ),
+                {"id": str(message_id)},
+            )
         )
-    ).mappings().first()
+        .mappings()
+        .first()
+    )
     if row is None:
         return None
     return dict(row)
@@ -103,9 +87,7 @@ def _build_prompt(
     known_subsystems: list[str],
 ) -> tuple[str, str]:
     system = _load_prompt("draft_card.txt")
-    subsystems_block = (
-        ", ".join(known_subsystems) if known_subsystems else "(no fixed vocabulary)"
-    )
+    subsystems_block = ", ".join(known_subsystems) if known_subsystems else "(no fixed vocabulary)"
     user = (
         f"Kind: {kind}\n"
         f"Project phase: {project_phase}\n"
@@ -169,8 +151,7 @@ async def _resolve_project_context(
     row = (
         await session.execute(
             text(
-                "SELECT current_phase, phase_concerns FROM projects "
-                "WHERE id = :id",
+                "SELECT current_phase, phase_concerns FROM projects WHERE id = :id",
             ),
             {"id": str(project_id)},
         )
@@ -179,11 +160,7 @@ async def _resolve_project_context(
         return "unknown", []
     phase = str(row[0] or "unknown")
     concerns = row[1] or {}
-    subsystems = (
-        list(concerns.get("subsystems") or [])
-        if isinstance(concerns, dict)
-        else []
-    )
+    subsystems = list(concerns.get("subsystems") or []) if isinstance(concerns, dict) else []
     return phase, [str(s) for s in subsystems]
 
 
@@ -207,11 +184,6 @@ async def build_card(
     summary_hint: str,
     mcp_client: InProcessMCPClient | None = None,
 ) -> dict[str, Any]:
-    """Build (or return existing) Card for `message_id` + `kind`.
-
-    Returns a small dict with at least `card_id`, `org_id`, and a flag
-    `existing` distinguishing the idempotent hit from a fresh insert.
-    """
     existing = await cards_repo.get_existing_card(
         session,
         triggering_message_id=message_id,
@@ -232,9 +204,7 @@ async def build_card(
         raise RuntimeError(msg)
 
     org_id = uuid.UUID(str(meta["org_id"]))
-    project_id = (
-        uuid.UUID(str(meta["project_id"])) if meta["project_id"] else None
-    )
+    project_id = uuid.UUID(str(meta["project_id"])) if meta["project_id"] else None
 
     client = mcp_client or InProcessMCPClient()
     thread = await client.call(
@@ -306,11 +276,7 @@ async def build_card(
     if isinstance(thread, ThreadContext):
         if thread.root.id != message_id:
             refs.append(("message", thread.root.id))
-        refs.extend(
-            ("message", reply.id)
-            for reply in thread.replies
-            if reply.id != message_id
-        )
+        refs.extend(("message", reply.id) for reply in thread.replies if reply.id != message_id)
 
     await cards_repo.add_card_sources(
         session,

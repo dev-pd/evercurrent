@@ -1,12 +1,3 @@
-"""Webhook endpoints.
-
-Currently:
-- POST /api/v1/webhooks/auth0  — org + user provisioning events from Auth0.
-- POST /api/v1/webhooks/slack  — Slack Events API.
-
-Phase 10 adds /api/v1/webhooks/drive.
-"""
-
 from __future__ import annotations
 
 import hmac
@@ -162,7 +153,6 @@ async def slack_webhook(
     x_slack_signature: Annotated[str | None, Header()] = None,
     x_slack_request_timestamp: Annotated[str | None, Header()] = None,
 ) -> Response:
-    """Slack Events API webhook. Verify, persist raw, enqueue, ack."""
     body = await request.body()
     settings = get_settings()
     result = await handle_slack_event(
@@ -178,5 +168,3 @@ async def slack_webhook(
         status_code=result.status_code,
         media_type="application/json",
     )
-
-

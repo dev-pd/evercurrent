@@ -1,14 +1,3 @@
-"""Unit tests for MCP tool functions.
-
-Each tool is exercised against an AsyncMock session. We assert:
-- the SQL passed to `session.execute` mentions the expected table(s)
-- the params dict contains the caller's args, mapped correctly
-- the parsed return value is a Pydantic instance (strict, frozen)
-
-Real-DB integration tests (RLS isolation, full-text search behaviour) are
-out of scope per AGENTS.md §11 (testing philosophy).
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -34,7 +23,6 @@ from evercurrent.mcp.tools.search_messages import search_messages
 
 
 def _mappings_result(rows: list[dict[str, Any]]) -> MagicMock:
-    """Build a MagicMock that mimics SQLAlchemy result.mappings()."""
     result = MagicMock()
     mappings = MagicMock()
     mappings.__iter__ = lambda _self: iter(rows)
@@ -46,9 +34,6 @@ def _mappings_result(rows: list[dict[str, Any]]) -> MagicMock:
 @pytest.fixture
 def now_utc() -> dt.datetime:
     return dt.datetime(2026, 6, 7, 12, 0, tzinfo=dt.UTC)
-
-
-# ---------- search_messages ----------
 
 
 @pytest.mark.asyncio
@@ -100,8 +85,6 @@ async def test_search_messages_returns_message_refs(now_utc: dt.datetime) -> Non
     params = call.args[1]
     assert "FROM messages" in sql_text
     assert "ILIKE" in sql_text
-    # Messages are org-scoped via RLS; project_id is not a SQL filter. The
-    # query OR-matches the full phrase plus significant tokens.
     assert "%thermal%" in params["patterns"]
     assert params["limit"] == 5
 
@@ -116,9 +99,6 @@ async def test_search_messages_no_results_returns_empty() -> None:
         project_id=uuid.uuid4(),
     )
     assert out == []
-
-
-# ---------- search_documents ----------
 
 
 class _StubEmbedder:
@@ -188,9 +168,6 @@ async def test_search_documents_returns_chunk_refs() -> None:
     assert params["qvec"].endswith("]")
 
 
-# ---------- query_cards ----------
-
-
 @pytest.mark.asyncio
 async def test_query_cards_filters_status(now_utc: dt.datetime) -> None:
     project_id = uuid.uuid4()
@@ -224,7 +201,6 @@ async def test_query_cards_filters_status(now_utc: dt.datetime) -> None:
     assert call is not None
     sql_text = str(call.args[0])
     params = call.args[1]
-    # Cards are org-scoped via RLS; project_id is not a SQL filter.
     assert "FROM cards" in sql_text
     assert params["status"] == "open"
     assert params["kind"] is None
@@ -236,9 +212,6 @@ async def test_query_cards_no_results_returns_empty() -> None:
     session.execute = AsyncMock(return_value=_mappings_result([]))
     out = await query_cards(session, project_id=uuid.uuid4(), kind="risk")
     assert out == []
-
-
-# ---------- get_thread_context ----------
 
 
 @pytest.mark.asyncio
@@ -323,9 +296,6 @@ async def test_get_thread_context_walks_up_from_reply(now_utc: dt.datetime) -> N
     assert session.execute.await_count == 3
 
 
-# ---------- get_user_context ----------
-
-
 @pytest.mark.asyncio
 async def test_get_user_context_unknown_returns_none() -> None:
     session = AsyncMock()
@@ -378,9 +348,6 @@ async def test_get_user_context_handles_missing_user_row() -> None:
     assert isinstance(out, UserContext)
     assert out.owned_subsystems == []
     assert out.topic_weights == {}
-
-
-# ---------- schema strictness ----------
 
 
 def test_message_ref_is_frozen(now_utc: dt.datetime) -> None:

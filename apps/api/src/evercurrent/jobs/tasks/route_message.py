@@ -1,22 +1,3 @@
-"""Phase 5 route_message task: raw_event -> messages + message_tags.
-
-Loads a `raw_events` row, parses its Slack payload, upserts the
-`messages` row, resolves channel + author + thread context, calls the
-Router agent (Haiku) for a strict `RouterDecision`, writes a
-`message_tags` row (even on fallback for audit), publishes an
-SSE `message_tagged` event, and enqueues `build_card` +
-`score_message_for_members` for downstream phases.
-
-The task is idempotent at the DB layer:
-- `messages` has UNIQUE (source, external_id) — webhook + retries
-  cannot double-insert.
-- `message_tags` has UNIQUE (message_id) — ON CONFLICT DO UPDATE
-  keeps the latest tag without raising.
-
-The session is created here; the task is outside any FastAPI request
-so it must manage its own RLS context via `set_org_context`.
-"""
-
 from __future__ import annotations
 
 import json
@@ -43,14 +24,18 @@ async def _load_raw_event(
     raw_event_id: uuid.UUID,
 ) -> dict[str, Any] | None:
     row = (
-        await session.execute(
-            text(
-                "SELECT id, org_id, source, external_id, payload "
-                "FROM raw_events WHERE id = :id",
-            ),
-            {"id": str(raw_event_id)},
+        (
+            await session.execute(
+                text(
+                    "SELECT id, org_id, source, external_id, payload "
+                    "FROM raw_events WHERE id = :id",
+                ),
+                {"id": str(raw_event_id)},
+            )
         )
-    ).mappings().first()
+        .mappings()
+        .first()
+    )
     if row is None:
         return None
     return dict(row)
@@ -81,7 +66,6 @@ async def _upsert_message(
     posted_at_epoch: float,
     thread_ts: str | None,
 ) -> tuple[uuid.UUID, uuid.UUID | None]:
-    """Insert the message if new, return (message_id, project_id)."""
     inserted = await session.execute(
         text(
             "INSERT INTO messages "
@@ -108,8 +92,7 @@ async def _upsert_message(
     else:
         existing = await session.execute(
             text(
-                "SELECT id, project_id FROM messages "
-                "WHERE source = 'slack' AND external_id = :ext",
+                "SELECT id, project_id FROM messages WHERE source = 'slack' AND external_id = :ext",
             ),
             {"ext": external_id},
         )
@@ -119,9 +102,7 @@ async def _upsert_message(
             raise RuntimeError(msg)
         message_id = uuid.UUID(str(existing_row["id"]))
         project_id = (
-            uuid.UUID(str(existing_row["project_id"]))
-            if existing_row["project_id"]
-            else None
+            uuid.UUID(str(existing_row["project_id"])) if existing_row["project_id"] else None
         )
 
     if thread_ts and thread_ts != external_id:
@@ -151,8 +132,7 @@ async def _resolve_thread_parent_text(
     row = (
         await session.execute(
             text(
-                "SELECT text FROM messages "
-                "WHERE source = 'slack' AND external_id = :ext",
+                "SELECT text FROM messages WHERE source = 'slack' AND external_id = :ext",
             ),
             {"ext": thread_ts},
         )
@@ -243,11 +223,6 @@ def _enqueue_followups(
     message_id: uuid.UUID,
     decision: RouterDecision,
 ) -> None:
-    """Enqueue Card-build + scoring tasks via Celery `send_task`.
-
-    We use `send_task` so the task code lives in this module (and Phase 7
-    can land independently) without an import cycle on celery_tasks.
-    """
     from evercurrent.jobs.celery_app import celery_app
 
     if decision.should_create_card and decision.card_kind is not None:
@@ -311,11 +286,7 @@ async def _route(
         text_body = str(event.get("text") or "")
         slack_user_id = event.get("user")
         slack_user_str = str(slack_user_id) if slack_user_id else None
-        author_display = (
-            slack_user_str
-            or str(event.get("bot_id") or "")
-            or "unknown"
-        )
+        author_display = slack_user_str or str(event.get("bot_id") or "") or "unknown"
         try:
             posted_at_epoch = float(external_id)
         except ValueError:
@@ -426,6 +397,5 @@ async def route_message(
     *,
     llm: LLMProvider | None = None,
 ) -> dict[str, Any]:
-    """Async entrypoint used by the Celery sync wrapper."""
     parsed = uuid.UUID(raw_event_id)
     return await _route(parsed, llm=llm)
