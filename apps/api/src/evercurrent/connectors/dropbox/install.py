@@ -167,6 +167,7 @@ async def exchange_and_persist(
         return existing.id
 
     row = models.Connector(
+        id=uuid.uuid4(),
         org_id=state.org_id,
         kind="dropbox",
         status="active",

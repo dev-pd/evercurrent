@@ -2,7 +2,6 @@
 name = "evercurrent"
 version = "0.1.0"
 description = "EverCurrent backend: agentic AI layer for hardware engineering teams."
-readme = "README.md"
 requires-python = ">=3.13"
 authors = [
     { name = "EverCurrent contributors" },
@@ -129,4 +128,5 @@ cache_dir = "/tmp/.pytest_cache"
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
+    "ignore::starlette.exceptions.StarletteDeprecationWarning",
 ]
