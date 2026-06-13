@@ -1,12 +1,23 @@
 export const dynamic = "force-dynamic";
 
 import { auth0 } from "@/lib/auth0";
+import { apiServer } from "@/lib/api";
 import { PageContainer, PageHeader } from "@/components/layout/page-header";
 
 export default async function SettingsPage() {
   const session = await auth0.getSession();
   const user = session?.user;
-  const displayName = user?.name ?? user?.email ?? "Account";
+  let orgName = "";
+  let me: { display_name: string; email: string } | null = null;
+  try {
+    const fetched = await (await apiServer()).getMe();
+    orgName = fetched.org_name;
+    me = { display_name: fetched.display_name, email: fetched.email };
+  } catch {
+    me = null;
+  }
+  const displayName = me?.display_name ?? user?.name ?? user?.email ?? "Account";
+  const email = me?.email ?? user?.email ?? null;
   return (
     <PageContainer>
         <PageHeader
@@ -25,9 +36,7 @@ export default async function SettingsPage() {
                 <span className="text-sm font-medium text-[var(--text-primary)]">
                   {displayName}
                 </span>
-                {user?.email && (
-                  <span className="text-xs text-[var(--text-muted)]">{user.email}</span>
-                )}
+                {email && <span className="text-xs text-[var(--text-muted)]">{email}</span>}
               </div>
             </div>
             <a
@@ -45,11 +54,9 @@ export default async function SettingsPage() {
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-[var(--text-primary)]">
-                  Atlas Hardware
+                  {orgName || "Workspace"}
                 </span>
-                <span className="text-xs text-[var(--text-muted)]">
-                  Single-workspace mode
-                </span>
+                <span className="text-xs text-[var(--text-muted)]">Single-workspace mode</span>
               </div>
               <span className="rounded-full bg-[var(--surface-muted)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
                 active

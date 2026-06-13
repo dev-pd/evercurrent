@@ -20,12 +20,15 @@ const NAV: NavItem[] = [
 
 interface AppShellProps {
   children: ReactNode;
-  orgName?: string;
+  orgName: string;
+  phase?: string;
+  day?: number;
   eveRail?: boolean;
 }
 
-export function AppShell({ children, orgName, eveRail = true }: AppShellProps) {
-  const workspace = orgName ?? "Atlas Hardware";
+export function AppShell({ children, orgName, phase, day, eveRail = true }: AppShellProps) {
+  const workspace = orgName || "Workspace";
+  const phaseLabel = phase ? `${phase.toUpperCase()}${day != null ? ` · Day ${day}` : ""}` : null;
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--surface-bg)]">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-[var(--border-default)] bg-white sm:flex">
@@ -64,9 +67,11 @@ export function AppShell({ children, orgName, eveRail = true }: AppShellProps) {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--border-default)] bg-white px-4 sm:px-6">
           <span className="text-sm font-semibold text-[var(--text-primary)]">{workspace}</span>
-          <span className="rounded bg-[var(--surface-muted)] px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-[var(--text-muted)] uppercase">
-            DVT · Day 42
-          </span>
+          {phaseLabel && (
+            <span className="rounded bg-[var(--surface-muted)] px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-[var(--text-muted)] uppercase">
+              {phaseLabel}
+            </span>
+          )}
           <div className="ml-auto">
             <ViewAsSwitcher />
           </div>

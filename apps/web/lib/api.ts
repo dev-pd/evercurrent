@@ -4,6 +4,7 @@ import {
   cardResponseSchema,
   digestV2Schema,
   focusTopicSchema,
+  meSchema,
   memberSummarySchema,
   projectSchema,
   regenerateResponseSchema,
@@ -15,6 +16,7 @@ import {
   type CardResponse,
   type DigestV2,
   type FocusTopic,
+  type Me,
   type MemberSummary,
   type Project,
   type ProactiveInsight,
@@ -100,6 +102,7 @@ async function apiFetch<T>(
 }
 
 export interface ApiClient {
+  getMe(): Promise<Me>;
   listMembers(): Promise<MemberSummary[]>;
   getFocus(): Promise<FocusTopic[]>;
   focusSignal(topic: string, delta: number): Promise<FocusTopic[]>;
@@ -138,6 +141,9 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
   const memberListSchema = z.array(memberSummarySchema);
   const focusListSchema = z.array(focusTopicSchema);
   return {
+    async getMe() {
+      return apiFetch("/api/v1/me", meSchema, await getCtx());
+    },
     async listMembers() {
       return apiFetch("/api/v1/members", memberListSchema, await getCtx());
     },

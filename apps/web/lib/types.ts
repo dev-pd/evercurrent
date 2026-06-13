@@ -10,6 +10,16 @@ export const projectSchema = z.object({
 });
 export type Project = z.infer<typeof projectSchema>;
 
+export const meSchema = z.object({
+  membership_id: z.string().uuid(),
+  org_id: z.string().uuid(),
+  org_name: z.string(),
+  auth0_user_id: z.string(),
+  email: z.string(),
+  display_name: z.string(),
+});
+export type Me = z.infer<typeof meSchema>;
+
 export const todayV2Schema = z.object({
   project_id: z.string().uuid(),
   live_day: z.number().int(),
