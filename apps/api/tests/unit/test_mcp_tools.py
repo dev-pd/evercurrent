@@ -100,8 +100,9 @@ async def test_search_messages_returns_message_refs(now_utc: dt.datetime) -> Non
     params = call.args[1]
     assert "FROM messages" in sql_text
     assert "ILIKE" in sql_text
-    assert params["project_id"] == project_id
-    assert params["pattern"] == "%thermal%"
+    # Messages are org-scoped via RLS; project_id is not a SQL filter. The
+    # query OR-matches the full phrase plus significant tokens.
+    assert "%thermal%" in params["patterns"]
     assert params["limit"] == 5
 
 
@@ -199,7 +200,8 @@ async def test_query_cards_filters_status(now_utc: dt.datetime) -> None:
             "id": card_id,
             "kind": "decision",
             "summary": "Switch to AlumWest",
-            "status": "decided",
+            "status": "open",
+            "affected_subsystems": ["materials"],
             "decided_at": now_utc,
         },
     ]
@@ -209,19 +211,22 @@ async def test_query_cards_filters_status(now_utc: dt.datetime) -> None:
     out = await query_cards(
         session,
         project_id=project_id,
-        status="decided",
+        status="open",
     )
 
     assert len(out) == 1
     assert isinstance(out[0], CardRef)
     assert out[0].id == card_id
-    assert out[0].status == "decided"
+    assert out[0].status == "open"
+    assert out[0].affected_subsystems == ["materials"]
 
     call = session.execute.await_args
     assert call is not None
+    sql_text = str(call.args[0])
     params = call.args[1]
-    assert params["project_id"] == project_id
-    assert params["status"] == "decided"
+    # Cards are org-scoped via RLS; project_id is not a SQL filter.
+    assert "FROM cards" in sql_text
+    assert params["status"] == "open"
     assert params["kind"] is None
 
 
