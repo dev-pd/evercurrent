@@ -25,6 +25,7 @@ interface AppShellProps {
   day?: number;
   accent?: string;
   monogram?: string;
+  isAdmin?: boolean;
   eveRail?: boolean;
 }
 
@@ -35,6 +36,7 @@ export function AppShell({
   day,
   accent,
   monogram,
+  isAdmin = false,
   eveRail = true,
 }: AppShellProps) {
   const workspace = orgName || "Workspace";
@@ -89,9 +91,7 @@ export function AppShell({
               {phaseLabel}
             </span>
           )}
-          <div className="ml-auto">
-            <ViewAsSwitcher />
-          </div>
+          <div className="ml-auto">{isAdmin && <ViewAsSwitcher />}</div>
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">{children}</main>
       </div>

@@ -151,6 +151,19 @@ export const memberSummarySchema = z.object({
 });
 export type MemberSummary = z.infer<typeof memberSummarySchema>;
 
+export const connectorSummarySchema = z.object({
+  id: z.string().uuid(),
+  kind: z.string(),
+  status: z.string(),
+  external_team_id: z.string().nullable(),
+  channels_count: z.number().int(),
+  message_count: z.number().int(),
+});
+export type ConnectorSummary = z.infer<typeof connectorSummarySchema>;
+
+export const installResponseSchema = z.object({ redirect_url: z.string() });
+export type InstallResponse = z.infer<typeof installResponseSchema>;
+
 export const specSnapshotSchema = z.object({
   label: z.string(),
   value: z.string(),

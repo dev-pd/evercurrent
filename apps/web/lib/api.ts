@@ -6,6 +6,8 @@ import {
   focusTopicSchema,
   meSchema,
   memberSummarySchema,
+  connectorSummarySchema,
+  installResponseSchema,
   projectSchema,
   regenerateResponseSchema,
   cardFeedbackResponseSchema,
@@ -18,6 +20,8 @@ import {
   type FocusTopic,
   type Me,
   type MemberSummary,
+  type ConnectorSummary,
+  type InstallResponse,
   type Project,
   type ProactiveInsight,
   type RegenerateResponse,
@@ -104,6 +108,12 @@ async function apiFetch<T>(
 export interface ApiClient {
   getMe(): Promise<Me>;
   listMembers(): Promise<MemberSummary[]>;
+  updateMember(
+    id: string,
+    body: { eng_role?: string | null; owned_subsystems?: string[] },
+  ): Promise<MemberSummary>;
+  listConnectors(): Promise<ConnectorSummary[]>;
+  startInstall(kind: "slack" | "dropbox"): Promise<InstallResponse>;
   getFocus(): Promise<FocusTopic[]>;
   focusSignal(topic: string, delta: number): Promise<FocusTopic[]>;
   listProjects(): Promise<Project[]>;
@@ -146,6 +156,20 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
     },
     async listMembers() {
       return apiFetch("/api/v1/members", memberListSchema, await getCtx());
+    },
+    async updateMember(id, body) {
+      return apiFetch(`/api/v1/members/${id}`, memberSummarySchema, await getCtx(), {
+        method: "PATCH",
+        body,
+      });
+    },
+    async listConnectors() {
+      return apiFetch("/api/v1/connectors", z.array(connectorSummarySchema), await getCtx());
+    },
+    async startInstall(kind) {
+      return apiFetch(`/api/v1/connectors/${kind}/install`, installResponseSchema, await getCtx(), {
+        method: "POST",
+      });
     },
     async getFocus() {
       return apiFetch("/api/v1/focus", focusListSchema, await getCtx());

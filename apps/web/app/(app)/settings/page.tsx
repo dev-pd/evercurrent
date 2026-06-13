@@ -3,26 +3,45 @@ export const dynamic = "force-dynamic";
 import { auth0 } from "@/lib/auth0";
 import { apiServer } from "@/lib/api";
 import { PageContainer, PageHeader } from "@/components/layout/page-header";
+import { SourcesCard } from "@/components/settings/sources-card";
+import { TeamCard } from "@/components/settings/team-card";
+import type { ConnectorSummary, Me, MemberSummary } from "@/lib/types";
+
+async function safe<T>(fn: () => Promise<T>): Promise<T | null> {
+  try {
+    return await fn();
+  } catch {
+    return null;
+  }
+}
 
 export default async function SettingsPage() {
   const session = await auth0.getSession();
   const user = session?.user;
-  let orgName = "";
-  let me: { display_name: string; email: string } | null = null;
-  try {
-    const fetched = await (await apiServer()).getMe();
-    orgName = fetched.org_name;
-    me = { display_name: fetched.display_name, email: fetched.email };
-  } catch {
-    me = null;
-  }
+  const client = await apiServer();
+
+  const me = await safe<Me>(() => client.getMe());
+  const isAdmin = me?.role === "admin";
+
+  const [members, connectors] = isAdmin
+    ? await Promise.all([
+        safe<MemberSummary[]>(() => client.listMembers()),
+        safe<ConnectorSummary[]>(() => client.listConnectors()),
+      ])
+    : [null, null];
+
   const displayName = me?.display_name ?? user?.name ?? user?.email ?? "Account";
   const email = me?.email ?? user?.email ?? null;
+
   return (
     <PageContainer>
       <PageHeader
         title="Settings"
-        subtitle="Account, workspace, sources, and notification preferences."
+        subtitle={
+          isAdmin
+            ? "Account, sources, and team — the admin control panel."
+            : "Your account and preferences."
+        }
       />
 
       <section className="flex flex-col gap-3">
@@ -34,7 +53,11 @@ export default async function SettingsPage() {
             </span>
             <div className="flex flex-col">
               <span className="text-sm font-medium text-[var(--text-primary)]">{displayName}</span>
-              {email && <span className="text-xs text-[var(--text-muted)]">{email}</span>}
+              <span className="text-xs text-[var(--text-muted)]">
+                {me?.org_name || "Workspace"}
+                {email ? ` · ${email}` : ""}
+                {isAdmin ? " · Admin" : ""}
+              </span>
             </div>
           </div>
           <a
@@ -46,29 +69,19 @@ export default async function SettingsPage() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-[var(--text-primary)]">Workspace</h2>
-        <div className="rounded-lg border border-[var(--border-default)] bg-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-[var(--text-primary)]">
-                {orgName || "Workspace"}
-              </span>
-              <span className="text-xs text-[var(--text-muted)]">Single-workspace mode</span>
-            </div>
-            <span className="rounded-full bg-[var(--surface-muted)] px-2 py-0.5 text-[10px] font-medium tracking-wide text-[var(--text-muted)] uppercase">
-              active
-            </span>
+      {isAdmin ? (
+        <>
+          <SourcesCard connectors={connectors ?? []} />
+          <TeamCard members={members ?? []} />
+        </>
+      ) : (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">Workspace</h2>
+          <div className="rounded-lg border border-[var(--border-default)] bg-white p-4 text-sm text-[var(--text-muted)]">
+            Sources and team setup are managed by your workspace admin.
           </div>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-[var(--text-primary)]">Notifications</h2>
-        <div className="rounded-lg border border-[var(--border-default)] bg-white p-4 text-sm text-[var(--text-muted)]">
-          Daily digest delivery (email + Slack DM) is on the roadmap.
-        </div>
-      </section>
+        </section>
+      )}
     </PageContainer>
   );
 }
