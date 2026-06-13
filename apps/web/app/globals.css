@@ -38,12 +38,12 @@
   --text-muted: #71717a;
 
   /* Liquid-glass material tokens */
-  --glass-bg: rgba(255, 255, 255, 0.62);
-  --glass-bg-strong: rgba(255, 255, 255, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.7);
-  --glass-blur: 18px;
-  --glass-shadow: 0 10px 30px -12px rgba(30, 27, 75, 0.25), 0 2px 8px -3px rgba(30, 27, 75, 0.12);
-  --glass-sheen: inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
+  --glass-bg: rgba(255, 255, 255, 0.74);
+  --glass-bg-strong: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.92);
+  --glass-blur: 20px;
+  --glass-shadow: 0 12px 36px -10px rgba(30, 27, 75, 0.3), 0 2px 10px -3px rgba(30, 27, 75, 0.16);
+  --glass-sheen: inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
 }
 
 html,
@@ -64,9 +64,9 @@ body {
 /* Aurora backdrop — gives the glass something to refract. Fixed, behind all. */
 body {
   background:
-    radial-gradient(60rem 60rem at 8% -10%, oklch(0.9 0.08 268 / 0.55), transparent 60%),
-    radial-gradient(50rem 50rem at 105% 0%, oklch(0.9 0.07 200 / 0.5), transparent 55%),
-    radial-gradient(45rem 45rem at 50% 115%, oklch(0.9 0.07 300 / 0.45), transparent 60%),
+    radial-gradient(55rem 55rem at 6% -12%, oklch(0.82 0.13 268 / 0.55), transparent 58%),
+    radial-gradient(48rem 48rem at 108% -4%, oklch(0.84 0.12 200 / 0.5), transparent 54%),
+    radial-gradient(44rem 44rem at 52% 118%, oklch(0.83 0.13 300 / 0.45), transparent 58%),
     var(--surface-bg);
   background-attachment: fixed;
 }
