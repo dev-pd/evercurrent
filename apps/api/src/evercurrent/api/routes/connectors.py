@@ -13,14 +13,19 @@ from evercurrent.auth.deps import AdminUserDep, SessionDep
 from evercurrent.config import get_settings
 from evercurrent.connectors.dropbox import install as dropbox_install
 from evercurrent.connectors.dropbox.client import DropboxAPIError, DropboxClient
-from evercurrent.connectors.dropbox.install import decode_token_blob
-from evercurrent.connectors.dropbox.sync import sync_folder as dropbox_sync_folder
+from evercurrent.connectors.dropbox.sync import (
+    ensure_fresh_dropbox_token,
+)
+from evercurrent.connectors.dropbox.sync import (
+    sync_folder as dropbox_sync_folder,
+)
 from evercurrent.connectors.slack import install as slack_install
 from evercurrent.connectors.slack.backfill import backfill_channel
 from evercurrent.connectors.slack.client import SlackClient
 from evercurrent.connectors.slack.crypto import TokenVault
 from evercurrent.db import models
 from evercurrent.db.session import admin_session_scope
+from evercurrent.ingestion.personas import BY_NAME
 
 log = structlog.get_logger(__name__)
 
@@ -123,15 +128,16 @@ class SlackSyncResult(BaseModel):
 
 async def _provision_authors(session: SessionDep, client: SlackClient, org_id: uuid.UUID) -> int:
     """Create a member for each Slack author seen in messages, with their real name."""
+    bot_name = get_settings().slack_app_bot_name
     authors = (
         (
             await session.execute(
                 text(
                     "SELECT DISTINCT author_display_name FROM messages "
                     "WHERE org_id = :o AND author_membership_id IS NULL "
-                    "AND author_display_name <> 'unknown'",
+                    "AND author_display_name NOT IN ('unknown', :bot)",
                 ),
-                {"o": str(org_id)},
+                {"o": str(org_id), "bot": bot_name},
             )
         )
         .scalars()
@@ -152,6 +158,9 @@ async def _provision_authors(session: SessionDep, client: SlackClient, org_id: u
         else:
             name = slack_uid
 
+        persona = BY_NAME.get(name)
+        eng_role = persona.eng_role if persona else None
+        subsystems = persona.owned_subsystems if persona else []
         member_id = (
             await session.execute(
                 text("SELECT id FROM org_memberships WHERE org_id = :o AND slack_user_id = :s"),
@@ -163,10 +172,19 @@ async def _provision_authors(session: SessionDep, client: SlackClient, org_id: u
                 await session.execute(
                     text(
                         "INSERT INTO org_memberships "
-                        "(org_id, auth0_user_id, slack_user_id, display_name, email, role) "
-                        "VALUES (:o, :sub, :s, :n, '', 'member') RETURNING id",
+                        "(org_id, auth0_user_id, slack_user_id, display_name, email, "
+                        " role, eng_role, owned_subsystems) "
+                        "VALUES (:o, :sub, :s, :n, '', 'member', :er, "
+                        "        CAST(:sub_arr AS text[])) RETURNING id",
                     ),
-                    {"o": str(org_id), "sub": f"slack:{slack_uid}", "s": slack_uid, "n": name},
+                    {
+                        "o": str(org_id),
+                        "sub": f"slack:{slack_uid}",
+                        "s": slack_uid,
+                        "n": name,
+                        "er": eng_role,
+                        "sub_arr": "{" + ",".join(subsystems) + "}",
+                    },
                 )
             ).scalar_one()
             provisioned += 1
@@ -348,8 +366,14 @@ async def list_dropbox_folders(
     if connector is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
 
-    blob = decode_token_blob(_vault().decrypt(connector.credentials_secret))
-    client = DropboxClient(access_token=str(blob["access_token"]))
+    access_token = await ensure_fresh_dropbox_token(
+        session=session,
+        settings=get_settings(),
+        vault=_vault(),
+        connector=connector,
+    )
+    await session.commit()
+    client = DropboxClient(access_token=access_token)
     try:
         entries = await client.list_root_folders()
     except DropboxAPIError as exc:
@@ -418,3 +442,31 @@ async def toggle_channel_ingest(
         membership_id=str(current_user.membership_id),
     )
     return {"ingest": row.ingest}
+
+
+@router.delete("/{connector_id}")
+async def disconnect_connector(
+    connector_id: uuid.UUID,
+    session: SessionDep,
+    current_user: AdminUserDep,
+) -> dict[str, str]:
+    connector = (
+        await session.execute(
+            select(models.Connector).where(
+                models.Connector.id == connector_id,
+                models.Connector.org_id == current_user.org_id,
+            ),
+        )
+    ).scalar_one_or_none()
+    if connector is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
+    kind = connector.kind
+    await session.delete(connector)
+    await session.commit()
+    log.info(
+        "connector.disconnect",
+        connector_id=str(connector_id),
+        kind=kind,
+        membership_id=str(current_user.membership_id),
+    )
+    return {"status": "disconnected", "kind": kind}

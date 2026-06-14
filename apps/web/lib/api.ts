@@ -126,9 +126,16 @@ export interface ApiClient {
   syncSlack(
     connectorId: string,
   ): Promise<{ channels: number; raw_events: number; members: number }>;
+  disconnect(connectorId: string): Promise<{ status: string; kind: string }>;
   getFocus(): Promise<FocusTopic[]>;
   focusSignal(topic: string, delta: number): Promise<FocusTopic[]>;
   listProjects(): Promise<Project[]>;
+  createProject(body: {
+    name: string;
+    current_phase: string;
+    start_date: string;
+    phase_concerns?: Record<string, string[]>;
+  }): Promise<Project>;
   getToday(projectId: string): Promise<TodayV2>;
   getDigestToday(): Promise<DigestV2>;
   regenerateDigest(): Promise<RegenerateResponse>;
@@ -197,6 +204,14 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
         { method: "POST" },
       );
     },
+    async disconnect(connectorId) {
+      return apiFetch(
+        `/api/v1/connectors/${connectorId}`,
+        z.object({ status: z.string(), kind: z.string() }),
+        await getCtx(),
+        { method: "DELETE" },
+      );
+    },
     async getFocus() {
       return apiFetch("/api/v1/focus", focusListSchema, await getCtx());
     },
@@ -208,6 +223,12 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
     },
     async listProjects() {
       return apiFetch("/api/v1/projects", projectListSchema, await getCtx());
+    },
+    async createProject(body) {
+      return apiFetch("/api/v1/projects", projectSchema, await getCtx(), {
+        method: "POST",
+        body,
+      });
     },
     async getToday(projectId) {
       return apiFetch(

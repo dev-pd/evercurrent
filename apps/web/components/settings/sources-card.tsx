@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Cloud, Loader2, MessageSquare, RefreshCw } from "lucide-react";
+import { Check, Cloud, Loader2, MessageSquare, RefreshCw, Unplug } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
 import { messages } from "@/lib/messages";
 import type { ConnectorSummary } from "@/lib/types";
@@ -66,6 +66,7 @@ export function SourcesCard({ connectors }: { connectors: ConnectorSummary[] }) 
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
                     <Check className="h-3 w-3" /> Connected
                   </span>
+                  <DisconnectButton connectorId={connector.id} label={s.label} />
                 </div>
               ) : (
                 <button
@@ -118,6 +119,37 @@ function SyncButton({ connectorId }: { connectorId: string }) {
         <RefreshCw className="h-3.5 w-3.5" />
       )}
       {state === "syncing" ? "Syncing…" : label}
+    </button>
+  );
+}
+
+function DisconnectButton({ connectorId, label }: { connectorId: string; label: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  async function disconnect() {
+    if (!window.confirm(`Disconnect ${label}? Ingested data is kept; re-connect anytime.`)) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await apiBrowser().disconnect(connectorId);
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={disconnect}
+      disabled={busy}
+      aria-label={`Disconnect ${label}`}
+      className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-white px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+    >
+      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Unplug className="h-3.5 w-3.5" />}
+      Disconnect
     </button>
   );
 }

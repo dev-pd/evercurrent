@@ -169,6 +169,7 @@ class SlackClient:
         icon_emoji: str | None = None,
         icon_url: str | None = None,
         blocks: list[dict[str, Any]] | None = None,
+        thread_ts: str | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {"channel": channel, "text": text}
         if username is not None:
@@ -179,4 +180,12 @@ class SlackClient:
             payload["icon_url"] = icon_url
         if blocks is not None:
             payload["blocks"] = json.dumps(blocks)
+        if thread_ts is not None:
+            payload["thread_ts"] = thread_ts
         return await self._post("chat.postMessage", payload)
+
+    async def chat_delete(self, *, channel: str, ts: str) -> dict[str, Any]:
+        return await self._post("chat.delete", {"channel": channel, "ts": ts})
+
+    async def conversations_join(self, *, channel: str) -> dict[str, Any]:
+        return await self._post("conversations.join", {"channel": channel})

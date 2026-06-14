@@ -25,7 +25,7 @@ log = structlog.get_logger(__name__)
 _TOKEN_REFRESH_SKEW_SECONDS = 60
 
 
-async def _ensure_fresh_token(
+async def ensure_fresh_dropbox_token(
     *,
     session: AsyncSession,
     settings: Settings,
@@ -93,7 +93,7 @@ async def sync_folder(
     if connector is None:
         raise ValueError(f"connector {connector_id} not found")
 
-    access_token = await _ensure_fresh_token(
+    access_token = await ensure_fresh_dropbox_token(
         session=session,
         settings=settings,
         vault=vault,

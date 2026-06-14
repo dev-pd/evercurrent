@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import text
 
 from evercurrent.auth.deps import AdminUserDep, CurrentUserDep, SessionDep
+from evercurrent.config import get_settings
 
 router = APIRouter(prefix="/api/v1/members", tags=["members"])
 
@@ -67,8 +68,11 @@ async def list_members(session: SessionDep, user: CurrentUserDep) -> list[Member
             await session.execute(
                 text(
                     "SELECT id, display_name, eng_role, owned_subsystems "
-                    "FROM org_memberships ORDER BY eng_role NULLS LAST, display_name",
+                    "FROM org_memberships "
+                    "WHERE role <> 'admin' AND display_name <> :bot "
+                    "ORDER BY eng_role NULLS LAST, display_name",
                 ),
+                {"bot": get_settings().slack_app_bot_name},
             )
         )
         .mappings()

@@ -88,6 +88,7 @@ def build_install_url(*, org_id: uuid.UUID, settings: Settings) -> str:
             "redirect_uri": _redirect_uri(settings),
             "response_type": "code",
             "token_access_type": "offline",
+            "scope": "account_info.read files.metadata.read files.content.read",
             "state": state,
         },
     )
