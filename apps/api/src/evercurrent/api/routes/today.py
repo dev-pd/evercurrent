@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import text
 
-from evercurrent.api.deps import SessionDep
+from evercurrent.auth.deps import CurrentUserDep, SessionDep
 from evercurrent.db.repositories import ProjectRepository
 
 router = APIRouter(prefix="/api/v1/today", tags=["today"])
@@ -30,8 +30,10 @@ class TodayResponse(BaseModel):
 @router.get("", response_model=TodayResponse)
 async def get_today(
     session: SessionDep,
+    user: CurrentUserDep,
     project_id: Annotated[uuid.UUID, Query()],
 ) -> TodayResponse:
+    _ = user
     project = await ProjectRepository(session).get_by_id(project_id)
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="project not found")

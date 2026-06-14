@@ -60,6 +60,30 @@ class ProjectRepository:
         row = result.scalar_one()
         return Project.model_validate(row)
 
+    async def create(
+        self,
+        *,
+        org_id: uuid.UUID,
+        name: str,
+        current_phase: str,
+        start_date: dt.date,
+        current_day: int = 1,
+        phase_concerns: dict[str, list[str]] | None = None,
+    ) -> Project:
+        row = ProjectModel(
+            org_id=org_id,
+            name=name,
+            current_phase=current_phase,
+            current_day=current_day,
+            start_date=start_date,
+            phase_concerns=phase_concerns or {},
+            milestones=[],
+        )
+        self._s.add(row)
+        await self._s.flush()
+        await self._s.refresh(row)
+        return Project.model_validate(row)
+
     async def set_phase(self, project_id: uuid.UUID, phase: str) -> Project | None:
         row = await self._s.get(ProjectModel, project_id)
         if row is None:

@@ -3,10 +3,11 @@ export const dynamic = "force-dynamic";
 import { auth0 } from "@/lib/auth0";
 import { apiServer } from "@/lib/api";
 import { PageContainer, PageHeader } from "@/components/layout/page-header";
+import { ProjectsCard } from "@/components/settings/projects-card";
 import { SourcesCard } from "@/components/settings/sources-card";
 import { TeamCard } from "@/components/settings/team-card";
 import { messages } from "@/lib/messages";
-import type { ConnectorSummary, Me, MemberSummary } from "@/lib/types";
+import type { ConnectorSummary, Me, MemberSummary, Project } from "@/lib/types";
 
 const t = messages.settings;
 
@@ -26,12 +27,13 @@ export default async function SettingsPage() {
   const me = await safe<Me>(() => client.getMe());
   const isAdmin = me?.role === "admin";
 
-  const [members, connectors] = isAdmin
+  const [members, connectors, projects] = isAdmin
     ? await Promise.all([
         safe<MemberSummary[]>(() => client.listMembers()),
         safe<ConnectorSummary[]>(() => client.listConnectors()),
+        safe<Project[]>(() => client.listProjects()),
       ])
-    : [null, null];
+    : [null, null, null];
 
   const displayName = me?.display_name ?? user?.name ?? user?.email ?? "Account";
   const email = me?.email ?? user?.email ?? null;
@@ -67,6 +69,7 @@ export default async function SettingsPage() {
 
       {isAdmin ? (
         <>
+          <ProjectsCard projects={projects ?? []} />
           <SourcesCard connectors={connectors ?? []} />
           <TeamCard members={members ?? []} />
         </>
