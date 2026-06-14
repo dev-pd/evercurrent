@@ -79,6 +79,13 @@ def enqueue_due_digests_now() -> list[dict[str, Any]]:
     return _run(impl())
 
 
+@celery_app.task(name="evercurrent.emit_demo_chatter")
+def emit_demo_chatter() -> dict[str, Any]:
+    from evercurrent.jobs.tasks.demo_chatter import emit_chatter as impl
+
+    return _run(impl({}))
+
+
 def _new_task_id() -> str:
     return str(_uuid.uuid4())
 

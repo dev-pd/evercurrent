@@ -1,0 +1,15 @@
+Channel: #{{ channel }}
+Channel focus: {{ channel_topic }}
+
+Project phase: {{ phase_label }}
+Phase context: {{ phase_summary }}
+Active concerns this phase: {{ concerns }}
+
+Authors active in this channel (use only these names, write in their voice):
+{{ roster }}
+
+Generate {{ count }} Slack messages for this channel during the {{ phase_label }}
+phase. Spread them across the listed authors. Include {{ threads }} short
+threaded conversations (root + replies sharing a thread_key) plus standalone
+messages. Make the content specific to #{{ channel }} and the {{ phase_label }}
+phase. Vary urgency — most are routine, a few are blockers or decisions.
