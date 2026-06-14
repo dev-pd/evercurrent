@@ -8,10 +8,10 @@ import structlog
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from evercurrent.auth.auth0 import Auth0Verifier, InvalidTokenError
-from evercurrent.config import get_settings
+from evercurrent.auth.auth0 import Auth0Claims, Auth0Verifier, InvalidTokenError
 from evercurrent.db.models import Org, OrgMembership
 from evercurrent.db.session import admin_session_scope, get_sessionmaker
 from evercurrent.tenancy.rls import set_org_context
@@ -46,72 +46,91 @@ def get_auth0_verifier(request: Request) -> Auth0Verifier:
 VerifierDep = Annotated[Auth0Verifier, Depends(get_auth0_verifier)]
 
 
-async def _resolve_dev_base(admin: AsyncSession, request: Request) -> OrgMembership | None:
-    """Resolve the real dev caller: the logged-in Auth0 user (by sub), creating
-    their membership in the org on first sight; falls back to the first member."""
-    sub = request.headers.get("x-auth-sub")
-    if sub:
-        existing = (
-            await admin.execute(select(OrgMembership).where(OrgMembership.auth0_user_id == sub))
-        ).scalar_one_or_none()
-        if existing is not None:
-            return existing
-        org = (
-            await admin.execute(select(Org).order_by(Org.created_at).limit(1))
-        ).scalar_one_or_none()
-        if org is not None:
-            has_admin = (
+def _role_from_claims(claims: Auth0Claims) -> str:
+    return "admin" if "admin" in claims.roles else "member"
+
+
+async def _get_or_create_org(admin: AsyncSession, claims: Auth0Claims) -> Org:
+    org = (
+        await admin.execute(select(Org).where(Org.auth0_org_id == claims.org_id))
+    ).scalar_one_or_none()
+    if org is not None:
+        if claims.org_name and org.name != claims.org_name:
+            org.name = claims.org_name
+            await admin.commit()
+            await admin.refresh(org)
+        return org
+    org = Org(auth0_org_id=str(claims.org_id), name=claims.org_name or str(claims.org_id))
+    admin.add(org)
+    try:
+        await admin.commit()
+    except IntegrityError:
+        await admin.rollback()
+        return (
+            await admin.execute(select(Org).where(Org.auth0_org_id == claims.org_id))
+        ).scalar_one()
+    await admin.refresh(org)
+    log.info("auth.org.provisioned", org_id=str(org.id), auth0_org_id=org.auth0_org_id)
+    return org
+
+
+async def _provision_membership(
+    admin: AsyncSession,
+    org: Org,
+    claims: Auth0Claims,
+    role: str,
+) -> OrgMembership:
+    """JIT provision the (org, user) membership from the verified token; sync role
+    on every login so Auth0 role changes propagate."""
+    membership = (
+        await admin.execute(
+            select(OrgMembership).where(
+                OrgMembership.org_id == org.id,
+                OrgMembership.auth0_user_id == claims.sub,
+            ),
+        )
+    ).scalar_one_or_none()
+    email = claims.email or ""
+    name = claims.name or claims.email or claims.sub
+    if membership is None:
+        membership = OrgMembership(
+            org_id=org.id,
+            auth0_user_id=claims.sub,
+            email=email,
+            display_name=name,
+            role=role,
+        )
+        admin.add(membership)
+        try:
+            await admin.commit()
+        except IntegrityError:
+            await admin.rollback()
+            return (
                 await admin.execute(
-                    select(OrgMembership.id).where(
+                    select(OrgMembership).where(
                         OrgMembership.org_id == org.id,
-                        OrgMembership.role == "admin",
+                        OrgMembership.auth0_user_id == claims.sub,
                     ),
                 )
-            ).first() is not None
-            email = request.headers.get("x-auth-email") or ""
-            name = request.headers.get("x-auth-name") or email or sub
-            created = OrgMembership(
-                org_id=org.id,
-                auth0_user_id=sub,
-                email=email,
-                display_name=name,
-                role="member" if has_admin else "admin",
-            )
-            admin.add(created)
-            await admin.commit()
-            return created
-    return (
-        await admin.execute(select(OrgMembership).order_by(OrgMembership.created_at).limit(1))
-    ).scalar_one_or_none()
+            ).scalar_one()
+        await admin.refresh(membership)
+        log.info("auth.membership.provisioned", membership_id=str(membership.id), role=role)
+        return membership
 
-
-async def _dev_user(request: Request, session: AsyncSession) -> CurrentUser:
-    impersonate = request.headers.get("x-impersonate-user")
-    async with admin_session_scope() as admin:
-        base = await _resolve_dev_base(admin, request)
-        if base is None:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="no members provisioned",
-            )
-        member = base
-        if impersonate and base.role == "admin":
-            try:
-                target = await admin.get(OrgMembership, uuid.UUID(impersonate))
-            except ValueError:
-                target = None
-            if target is not None and target.org_id == base.org_id:
-                member = target
-    request.state.org_id = member.org_id
-    await set_org_context(session, member.org_id)
-    return CurrentUser(
-        org_id=member.org_id,
-        membership_id=member.id,
-        auth0_user_id=member.auth0_user_id,
-        email=member.email,
-        display_name=member.display_name,
-        role=base.role,
-    )
+    changed = False
+    if membership.role != role:
+        membership.role = role
+        changed = True
+    if email and membership.email != email:
+        membership.email = email
+        changed = True
+    if membership.display_name != name:
+        membership.display_name = name
+        changed = True
+    if changed:
+        await admin.commit()
+        await admin.refresh(membership)
+    return membership
 
 
 async def require_user(
@@ -120,10 +139,7 @@ async def require_user(
     verifier: VerifierDep,
     session: SessionDep,
 ) -> CurrentUser:
-    dev = get_settings().dev_login
     if creds is None:
-        if dev:
-            return await _dev_user(request, session)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="missing bearer token",
@@ -131,63 +147,46 @@ async def require_user(
     try:
         claims = await verifier.verify(creds.credentials)
     except InvalidTokenError as exc:
-        if dev:
-            return await _dev_user(request, session)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(exc),
         ) from exc
 
     if claims.org_id is None:
-        if dev:
-            return await _dev_user(request, session)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="token has no org_id claim",
+            detail="token has no org_id claim — log in to an organization",
         )
 
+    role = _role_from_claims(claims)
+    impersonate = request.headers.get("x-impersonate-user")
     async with admin_session_scope() as admin:
-        org_row = (
-            await admin.execute(select(Org).where(Org.auth0_org_id == claims.org_id))
-        ).scalar_one_or_none()
-        if org_row is None:
-            if dev:
-                return await _dev_user(request, session)
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="org not provisioned",
-            )
-        membership_row = (
-            await admin.execute(
-                select(OrgMembership).where(
-                    OrgMembership.org_id == org_row.id,
-                    OrgMembership.auth0_user_id == claims.sub,
-                ),
-            )
-        ).scalar_one_or_none()
-        if membership_row is None:
-            membership_row = OrgMembership(
-                org_id=org_row.id,
-                auth0_user_id=claims.sub,
-                email=claims.email or "",
-                display_name=claims.name or claims.email or claims.sub,
-            )
-            admin.add(membership_row)
-            await admin.commit()
-        org_id = org_row.id
-        membership_id = membership_row.id
-        member_role = membership_row.role
+        org = await _get_or_create_org(admin, claims)
+        membership = await _provision_membership(admin, org, claims, role)
+        scoped_id = membership.id
+        scoped_name = membership.display_name
+        scoped_email = membership.email
+        if impersonate and role == "admin":
+            try:
+                target = await admin.get(OrgMembership, uuid.UUID(impersonate))
+            except ValueError:
+                target = None
+            if target is not None and target.org_id == org.id:
+                scoped_id = target.id
+                scoped_name = target.display_name
+                scoped_email = target.email
+        org_id = org.id
 
     request.state.org_id = org_id
     await set_org_context(session, org_id)
 
     return CurrentUser(
         org_id=org_id,
-        membership_id=membership_id,
+        membership_id=scoped_id,
         auth0_user_id=claims.sub,
-        email=claims.email or "",
-        display_name=claims.name or claims.email or claims.sub,
-        role=member_role,
+        email=scoped_email,
+        display_name=scoped_name,
+        role=role,
     )
 
 

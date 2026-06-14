@@ -24,6 +24,7 @@ function buildClient(): Auth0Client {
     authorizationParameters: {
       scope: "openid profile email",
       audience: process.env.AUTH0_AUDIENCE || undefined,
+      organization: process.env.AUTH0_ORG_ID || undefined,
     },
   });
 }

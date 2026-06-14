@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     slack_client_id: str | None = None
     slack_client_secret: str | None = None
     slack_signing_secret: str | None = None
+    slack_app_bot_name: str = "EverCurrent"
+    slack_demo_bot_token: str | None = None
+
+    demo_chatter_enabled: bool = False
+    demo_chatter_batch: int = 2
+    demo_chatter_phase: str = "fcs"
 
     dropbox_client_id: str | None = None
     dropbox_client_secret: str | None = None
@@ -49,8 +55,6 @@ class Settings(BaseSettings):
     webhook_public_url: str | None = None
 
     connector_secret_key: str | None = None
-
-    dev_login: bool = False
 
 
 @lru_cache(maxsize=1)

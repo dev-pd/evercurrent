@@ -16,6 +16,13 @@ _JWKS_TTL_SECONDS = 3600
 _REQUEST_TIMEOUT_SECONDS = 5
 
 
+_CLAIM_NS = "https://evercurrent/"
+ROLES_CLAIM = f"{_CLAIM_NS}roles"
+EMAIL_CLAIM = f"{_CLAIM_NS}email"
+NAME_CLAIM = f"{_CLAIM_NS}name"
+ORG_NAME_CLAIM = f"{_CLAIM_NS}org_name"
+
+
 class Auth0Claims(BaseModel):
     model_config = ConfigDict(strict=True, extra="allow")
 
@@ -26,8 +33,10 @@ class Auth0Claims(BaseModel):
     iat: int
     azp: str | None = None
     org_id: str | None = None
+    org_name: str | None = None
     email: str | None = None
     name: str | None = None
+    roles: list[str] = []
 
 
 @dataclass
@@ -80,6 +89,14 @@ class Auth0Verifier:
         except JWTError as exc:
             raise InvalidTokenError(str(exc)) from exc
 
+        raw_roles = payload.get(ROLES_CLAIM) or payload.get("roles") or []
+        payload["roles"] = [str(r) for r in raw_roles] if isinstance(raw_roles, list) else []
+        if payload.get(EMAIL_CLAIM):
+            payload["email"] = payload[EMAIL_CLAIM]
+        if payload.get(NAME_CLAIM):
+            payload["name"] = payload[NAME_CLAIM]
+        if payload.get(ORG_NAME_CLAIM):
+            payload["org_name"] = payload[ORG_NAME_CLAIM]
         return Auth0Claims.model_validate(payload)
 
     async def _find_key(self, kid: str | None) -> dict[str, Any] | None:
