@@ -252,15 +252,41 @@ Sonnet agent with read tools (`search_messages`, `search_documents`,
 high-impact change or a **spec-vs-chatter conflict** and emits a
 structured insight with grounded sources.
 
-Two layers of duplicate suppression (because an agent left alone will
-re-report the same issue):
+### Acceptance gate (`_gate` in `eve_insight.py`, thresholds in config)
+
+An autonomous agent will confidently emit fabricated or low-value
+insights, so nothing it emits is trusted blindly. Before persistence a
+deterministic gate runs, cheapest/strongest check first:
+
+- **Trajectory:** `run_eve` returns an `EveRun(insight, evidence,
+  tool_calls)`. If Eve emitted without ever calling a search tool, reject
+  — it can't be grounded.
+- **Grounding** (`eve/grounding.py`): keep only cited `sources` whose
+  tokens overlap evidence Eve *actually retrieved* (token-overlap, since
+  the model paraphrases). A snippet matching nothing it saw is a
+  fabrication and is dropped; reject if too few grounded sources remain.
+- **Confidence:** `emit_insight` requires a self-rated `confidence`
+  (0-1); reject below `eve_min_confidence`.
+- **Daily cap:** skip once `eve_max_insights_per_day` exist for the org.
+
+### Duplicate suppression (two layers)
 
 - **Prompt-level:** the last 8 insights are injected into the goal with
   "do NOT repeat these."
 - **Embedding gate:** the new insight's title+summary is embedded
   (Voyage) and compared by cosine to recent ones; if
-  `max_sim ≥ 0.82` it's rejected as a near-duplicate
-  (`eve_insight.py:27,125`).
+  `max_sim ≥ eve_dedup_threshold` (0.82) it's rejected as a near-dup.
+
+### Eval (`tests/evals/eval_eve.py`)
+
+Offline harness: runs the real agent against hand-labelled scenarios via
+a fake MCP client (fixed corpus, no DB), applies the production gate, and
+measures **recall** (planted conflicts surfaced + accepted), **precision**
+(clean corpora correctly abstained — over-trigger caught by the gate),
+and **faithfulness/relevance/specificity** via a temp-0 Sonnet judge.
+First run: recall 1.0, precision 1.0, judge 5.0 — both clean scenarios
+emitted an insight the gate rejected, which is exactly what gives
+precision.
 
 > **RLS subtlety here:** `run_eve` only reads, but its transaction is
 > rolled back before the insert. `SET LOCAL app.current_org_id` is
