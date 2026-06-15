@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { getStreamUrl } from "@/lib/api";
+import { useRegen } from "@/stores/regen";
 
 export type StreamEventType =
   | "message_tagged"
@@ -24,6 +26,8 @@ interface UseEventsOptions {
 
 export function useEvents({ projectId, onEvent, enabled = true }: UseEventsOptions) {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const regenDone = useRegen((s) => s.done);
   const sourceRef = useRef<EventSource | null>(null);
   const [connected, setConnected] = useState(false);
   const onEventRef = useRef(onEvent);
@@ -61,7 +65,11 @@ export function useEvents({ projectId, onEvent, enabled = true }: UseEventsOptio
           queryClient.invalidateQueries({ queryKey: ["cards", projectId] });
           break;
         case "digest_ready":
+          // The digest is server-rendered (page.tsx props), so query
+          // invalidation is a no-op — refresh the server tree to re-fetch it.
+          regenDone();
           queryClient.invalidateQueries({ queryKey: ["digest"] });
+          router.refresh();
           break;
       }
       onEventRef.current?.(parsed);
@@ -72,7 +80,7 @@ export function useEvents({ projectId, onEvent, enabled = true }: UseEventsOptio
       sourceRef.current = null;
       setConnected(false);
     };
-  }, [projectId, enabled, queryClient]);
+  }, [projectId, enabled, queryClient, router, regenDone]);
 
   return { connected };
 }
