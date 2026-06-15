@@ -60,7 +60,8 @@ async def backfill_channel(
 
     raw_inserted = 0
     msg_inserted = 0
-    oldest_ts = str(time.time() - days * 86400)
+    # Slack's `oldest` rejects 7-decimal float strings; use an integer ts.
+    oldest_ts = f"{int(time.time()) - days * 86400}"
 
     try:
         cursor: str | None = None

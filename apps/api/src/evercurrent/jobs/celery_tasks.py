@@ -86,6 +86,27 @@ def emit_demo_chatter() -> dict[str, Any]:
     return _run(impl({}))
 
 
+@celery_app.task(name="evercurrent.sync_slack_connector")
+def sync_slack_connector(connector_id: str) -> dict[str, Any]:
+    from evercurrent.jobs.tasks.sync_slack import sync_slack_connector as impl
+
+    return _run(impl({}, connector_id))
+
+
+@celery_app.task(name="evercurrent.generate_eve_insight")
+def generate_eve_insight(project_id: str, org_id: str) -> dict[str, Any]:
+    from evercurrent.jobs.tasks.eve_insight import generate_eve_insight as impl
+
+    return _run(impl({}, project_id, org_id))
+
+
+@celery_app.task(name="evercurrent.sync_dropbox_connector")
+def sync_dropbox_connector(connector_id: str) -> dict[str, Any]:
+    from evercurrent.jobs.tasks.sync_dropbox import sync_dropbox_connector as impl
+
+    return _run(impl({}, connector_id))
+
+
 def _new_task_id() -> str:
     return str(_uuid.uuid4())
 

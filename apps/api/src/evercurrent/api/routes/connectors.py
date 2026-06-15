@@ -20,7 +20,6 @@ from evercurrent.connectors.dropbox.sync import (
     sync_folder as dropbox_sync_folder,
 )
 from evercurrent.connectors.slack import install as slack_install
-from evercurrent.connectors.slack.backfill import backfill_channel
 from evercurrent.connectors.slack.client import SlackClient
 from evercurrent.connectors.slack.crypto import TokenVault
 from evercurrent.db import models
@@ -126,6 +125,12 @@ class SlackSyncResult(BaseModel):
     members: int
 
 
+class SyncStartedResult(BaseModel):
+    model_config = ConfigDict(strict=True)
+    status: str
+    connector_id: uuid.UUID
+
+
 async def _provision_authors(session: SessionDep, client: SlackClient, org_id: uuid.UUID) -> int:
     """Create a member for each Slack author seen in messages, with their real name."""
     bot_name = get_settings().slack_app_bot_name
@@ -183,7 +188,7 @@ async def _provision_authors(session: SessionDep, client: SlackClient, org_id: u
                         "s": slack_uid,
                         "n": name,
                         "er": eng_role,
-                        "sub_arr": "{" + ",".join(subsystems) + "}",
+                        "sub_arr": list(subsystems),
                     },
                 )
             ).scalar_one()
@@ -199,8 +204,12 @@ async def _provision_authors(session: SessionDep, client: SlackClient, org_id: u
     return provisioned
 
 
-@router.post("/{connector_id}/slack/sync", response_model=SlackSyncResult)
-async def slack_sync(connector_id: uuid.UUID, current_user: AdminUserDep) -> SlackSyncResult:
+@router.post(
+    "/{connector_id}/slack/sync",
+    response_model=SyncStartedResult,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def slack_sync(connector_id: uuid.UUID, current_user: AdminUserDep) -> SyncStartedResult:
     _ = current_user
     async with admin_session_scope() as session:
         connector = (
@@ -214,50 +223,13 @@ async def slack_sync(connector_id: uuid.UUID, current_user: AdminUserDep) -> Sla
         if connector is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
 
-        token = _vault().decrypt(connector.credentials_secret)
-        client = SlackClient(bot_token=token)
-        channels_done = 0
-        raw_total = 0
-        members = 0
-        try:
-            channels = await client.list_all_channels()
-            for ch in channels:
-                if ch.is_archived:
-                    continue
-                cc_id = (
-                    await session.execute(
-                        text(
-                            "INSERT INTO connector_channels "
-                            "(org_id, connector_id, external_id, name, ingest) "
-                            "VALUES (:o, :c, :e, :n, true) "
-                            "ON CONFLICT (connector_id, external_id) "
-                            "DO UPDATE SET name = EXCLUDED.name RETURNING id",
-                        ),
-                        {
-                            "o": str(connector.org_id),
-                            "c": str(connector.id),
-                            "e": ch.id,
-                            "n": ch.name,
-                        },
-                    )
-                ).scalar_one()
-                await session.commit()
-                try:
-                    summary = await backfill_channel(
-                        session=session,
-                        vault=_vault(),
-                        connector_channel_id=cc_id,
-                        days=30,
-                        slack_client=client,
-                    )
-                    raw_total += summary.raw_events_inserted
-                    channels_done += 1
-                except Exception as exc:  # noqa: BLE001
-                    log.warning("slack.sync.channel_failed", channel=ch.id, error=str(exc))
-            members = await _provision_authors(session, client, connector.org_id)
-        finally:
-            await client.aclose()
-    return SlackSyncResult(channels=channels_done, raw_events=raw_total, members=members)
+    from evercurrent.jobs.celery_app import celery_app
+
+    celery_app.send_task(
+        "evercurrent.sync_slack_connector",
+        kwargs={"connector_id": str(connector_id)},
+    )
+    return SyncStartedResult(status="started", connector_id=connector_id)
 
 
 @router.get("/slack/oauth/callback")
@@ -283,7 +255,10 @@ async def slack_oauth_callback(
             ) from exc
         await session.commit()
     log.info("slack.install.callback_complete", connector_id=str(connector_id))
-    return RedirectResponse(url="/settings", status_code=status.HTTP_302_FOUND)
+    return RedirectResponse(
+        url=f"{get_settings().app_base_url}/settings",
+        status_code=status.HTTP_302_FOUND,
+    )
 
 
 class DropboxFolderSummary(BaseModel):
@@ -345,7 +320,10 @@ async def dropbox_oauth_callback(
             ) from exc
         await session.commit()
     log.info("dropbox.install.callback_complete", connector_id=str(connector_id))
-    return RedirectResponse(url="/settings", status_code=status.HTTP_302_FOUND)
+    return RedirectResponse(
+        url=f"{get_settings().app_base_url}/settings",
+        status_code=status.HTTP_302_FOUND,
+    )
 
 
 @router.get("/{connector_id}/dropbox/folders")

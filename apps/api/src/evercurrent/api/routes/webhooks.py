@@ -6,7 +6,8 @@ from hashlib import sha256
 from typing import Annotated, Any, Literal
 
 import structlog
-from fastapi import APIRouter, Header, HTTPException, Request, Response, status
+from fastapi import APIRouter, Header, HTTPException, Query, Request, Response, status
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from evercurrent.config import get_settings
 from evercurrent.connectors.slack.events import handle_event as handle_slack_event
 from evercurrent.connectors.slack.tasks import enqueue_route_message
-from evercurrent.db.models import Org, OrgMembership
+from evercurrent.db.models import Connector, Org, OrgMembership
 from evercurrent.db.session import admin_session_scope
 
 log = structlog.get_logger(__name__)
@@ -169,3 +170,59 @@ async def slack_webhook(
         status_code=result.status_code,
         media_type="application/json",
     )
+
+
+def _verify_dropbox_signature(body: bytes, signature: str | None) -> None:
+    secret = get_settings().dropbox_client_secret
+    if secret is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="dropbox secret not configured",
+        )
+    if signature is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="missing signature")
+    expected = hmac.new(secret.encode(), body, sha256).hexdigest()
+    if not hmac.compare_digest(expected, signature):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="bad signature")
+
+
+@router.get("/dropbox", response_class=PlainTextResponse)
+async def dropbox_webhook_verify(challenge: Annotated[str, Query()]) -> str:
+    # Dropbox verifies the endpoint by echoing this challenge.
+    return challenge
+
+
+@router.post("/dropbox")
+async def dropbox_webhook(
+    request: Request,
+    x_dropbox_signature: Annotated[str | None, Header()] = None,
+) -> Response:
+    body = await request.body()
+    _verify_dropbox_signature(body, x_dropbox_signature)
+
+    try:
+        accounts = json.loads(body).get("list_folder", {}).get("accounts", [])
+    except (json.JSONDecodeError, AttributeError):
+        accounts = []
+
+    from evercurrent.jobs.celery_app import celery_app
+
+    enqueued = 0
+    async with admin_session_scope() as session:
+        for account in accounts:
+            connectors = (
+                await session.execute(
+                    select(Connector).where(
+                        Connector.kind == "dropbox",
+                        Connector.external_team_id == account,
+                    ),
+                )
+            ).scalars().all()
+            for connector in connectors:
+                celery_app.send_task(
+                    "evercurrent.sync_dropbox_connector",
+                    kwargs={"connector_id": str(connector.id)},
+                )
+                enqueued += 1
+    log.info("dropbox.webhook.received", accounts=len(accounts), enqueued=enqueued)
+    return Response(status_code=status.HTTP_200_OK)

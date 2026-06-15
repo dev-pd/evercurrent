@@ -53,9 +53,11 @@ export function SourcesCard({ connectors }: { connectors: ConnectorSummary[] }) 
                   <span className="text-sm font-medium text-[var(--text-primary)]">{s.label}</span>
                   <span className="text-xs text-[var(--text-muted)]">
                     {connected
-                      ? `Connected · ${connector.channels_count} channel${
-                          connector.channels_count === 1 ? "" : "s"
-                        }`
+                      ? s.kind === "slack"
+                        ? `Connected · ${connector.channels_count} channel${
+                            connector.channels_count === 1 ? "" : "s"
+                          }`
+                        : "Connected"
                       : s.desc}
                   </span>
                 </div>
@@ -96,10 +98,18 @@ function SyncButton({ connectorId }: { connectorId: string }) {
   async function sync() {
     setState("syncing");
     try {
-      const r = await apiBrowser().syncSlack(connectorId);
-      setLabel(`${r.raw_events} msgs · ${r.members} people`);
+      await apiBrowser().syncSlack(connectorId);
+      setLabel("Syncing in background…");
       setState("done");
-      router.refresh();
+      let ticks = 0;
+      const poll = setInterval(() => {
+        router.refresh();
+        if (++ticks >= 18) {
+          clearInterval(poll);
+          setState("idle");
+          setLabel("Sync");
+        }
+      }, 10000);
     } catch {
       setLabel("Failed");
       setState("idle");
