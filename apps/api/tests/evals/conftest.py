@@ -84,6 +84,17 @@ def digest_judge_prompt() -> str:
 
 
 @pytest.fixture(scope="session")
+def eve_scenarios() -> list[dict[str, Any]]:
+    return _load_json("eve_scenarios.json")
+
+
+@pytest.fixture(scope="session")
+def eve_judge_prompt() -> str:
+    path = JUDGE_PROMPTS_DIR / "eve_rubric.txt"
+    return path.read_text(encoding="utf-8")
+
+
+@pytest.fixture(scope="session")
 def rag_corpus_dir() -> Path:
     return DATA_DIR / "rag_corpus"
 

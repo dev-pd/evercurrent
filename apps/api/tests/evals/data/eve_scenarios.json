@@ -1,0 +1,148 @@
+[
+  {
+    "id": "planted_gripper_torque",
+    "planted": true,
+    "should_emit": true,
+    "expected_subsystems": ["gripper"],
+    "expected_keywords": ["torque", "REQ-245", "22", "15"],
+    "corpus": {
+      "search_documents": [
+        {
+          "channel": "spec",
+          "author": "PRD",
+          "snippet": "REQ-245: Maximum gripper actuation torque shall not exceed 15 Nm to protect the harmonic drive.",
+          "ts": "2026-05-02T10:00:00Z"
+        },
+        {
+          "channel": "spec",
+          "author": "BOM",
+          "snippet": "Harmonic drive HD-17 rated continuous torque 16 Nm, peak 18 Nm.",
+          "ts": "2026-05-02T10:05:00Z"
+        }
+      ],
+      "search_messages": [
+        {
+          "channel": "#gripper",
+          "author": "maya",
+          "snippet": "We bumped the gripper torque limit to 22 Nm in firmware to fix the slip on the heavy fixtures.",
+          "ts": "2026-06-10T14:30:00Z"
+        },
+        {
+          "channel": "#gripper",
+          "author": "ravi",
+          "snippet": "22 Nm holds the part now, ship it for the DVT build.",
+          "ts": "2026-06-10T14:45:00Z"
+        }
+      ],
+      "query_cards": [
+        {
+          "kind": "decision",
+          "summary": "Raise gripper firmware torque ceiling to 22 Nm to stop fixture slip.",
+          "status": "open"
+        }
+      ]
+    }
+  },
+  {
+    "id": "planted_supplier_swap",
+    "planted": true,
+    "should_emit": true,
+    "expected_subsystems": ["chassis"],
+    "expected_keywords": ["AlumWest", "supplier", "flatness", "FAI"],
+    "corpus": {
+      "search_documents": [
+        {
+          "channel": "spec",
+          "author": "BOM",
+          "snippet": "Chassis baseplate supplier of record: AlumWest, part CB-204, flatness 0.05mm.",
+          "ts": "2026-04-20T09:00:00Z"
+        }
+      ],
+      "search_messages": [
+        {
+          "channel": "#supply-chain",
+          "author": "dana",
+          "snippet": "AlumWest FAI failed flatness twice, 0.12mm vs 0.05mm spec. Moving CB-204 to MetricForm for PVT.",
+          "ts": "2026-06-11T11:00:00Z"
+        },
+        {
+          "channel": "#supply-chain",
+          "author": "dana",
+          "snippet": "MetricForm adds 3 weeks lead time and ~8% unit cost, but they hit flatness.",
+          "ts": "2026-06-11T11:10:00Z"
+        }
+      ],
+      "query_cards": [
+        {
+          "kind": "risk",
+          "summary": "Baseplate flatness failures at AlumWest threaten PVT schedule.",
+          "status": "open"
+        }
+      ]
+    }
+  },
+  {
+    "id": "clean_routine_standup",
+    "planted": false,
+    "should_emit": false,
+    "expected_subsystems": [],
+    "expected_keywords": [],
+    "corpus": {
+      "search_documents": [
+        {
+          "channel": "spec",
+          "author": "PRD",
+          "snippet": "REQ-118: Power-on self-test completes within 3 seconds.",
+          "ts": "2026-05-01T08:00:00Z"
+        }
+      ],
+      "search_messages": [
+        {
+          "channel": "#general",
+          "author": "sam",
+          "snippet": "Standup: finished the cable routing rework, no blockers, picking up test fixtures next.",
+          "ts": "2026-06-12T09:00:00Z"
+        },
+        {
+          "channel": "#general",
+          "author": "lee",
+          "snippet": "Lunch order going out at noon, reply with picks.",
+          "ts": "2026-06-12T09:05:00Z"
+        }
+      ],
+      "query_cards": []
+    }
+  },
+  {
+    "id": "clean_resolved_decision",
+    "planted": false,
+    "should_emit": false,
+    "expected_subsystems": [],
+    "expected_keywords": [],
+    "corpus": {
+      "search_documents": [
+        {
+          "channel": "spec",
+          "author": "PRD",
+          "snippet": "REQ-090: Battery pack nominal voltage 48V.",
+          "ts": "2026-05-01T08:00:00Z"
+        }
+      ],
+      "search_messages": [
+        {
+          "channel": "#power",
+          "author": "kim",
+          "snippet": "Confirmed 48V pack matches spec, closing the voltage question, all good.",
+          "ts": "2026-06-12T13:00:00Z"
+        }
+      ],
+      "query_cards": [
+        {
+          "kind": "decision",
+          "summary": "Battery pack stays at 48V nominal per REQ-090, no change.",
+          "status": "closed"
+        }
+      ]
+    }
+  }
+]

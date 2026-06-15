@@ -1,0 +1,56 @@
+{
+  "name": "eve",
+  "generated_at": "2026-06-15T05:57:29.296343+00:00",
+  "n_scenarios": 4,
+  "metrics": {
+    "recall": 1.0,
+    "precision": 1.0,
+    "faithfulness": 5.0,
+    "relevance": 5.0,
+    "specificity": 5.0
+  },
+  "per_scenario": [
+    {
+      "id": "planted_gripper_torque",
+      "planted": true,
+      "emitted": true,
+      "accepted": true,
+      "searched": true,
+      "scores": {
+        "faithfulness": 5,
+        "relevance": 5,
+        "specificity": 5,
+        "notes": "All claims are directly supported by corpus snippets; no weak axis detected."
+      }
+    },
+    {
+      "id": "planted_supplier_swap",
+      "planted": true,
+      "emitted": true,
+      "accepted": true,
+      "searched": true,
+      "scores": {
+        "faithfulness": 5,
+        "relevance": 5,
+        "specificity": 5,
+        "notes": "All claims are directly supported by corpus snippets; no weak axis detected."
+      }
+    },
+    {
+      "id": "clean_routine_standup",
+      "planted": false,
+      "emitted": true,
+      "accepted": false,
+      "searched": true,
+      "scores": {}
+    },
+    {
+      "id": "clean_resolved_decision",
+      "planted": false,
+      "emitted": true,
+      "accepted": false,
+      "searched": true,
+      "scores": {}
+    }
+  ]
+}

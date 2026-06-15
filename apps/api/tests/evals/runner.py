@@ -51,6 +51,14 @@ BASELINES: dict[str, Baseline] = {
         "metric": "mean",
         "target": 4.0,
     },
+    "eve_recall": {"name": "eve_recall", "metric": "recall", "target": 0.80},
+    "eve_precision": {"name": "eve_precision", "metric": "precision", "target": 0.80},
+    "eve_faithfulness": {
+        "name": "eve_faithfulness",
+        "metric": "mean",
+        "target": 4.0,
+    },
+    "eve_relevance": {"name": "eve_relevance", "metric": "mean", "target": 4.0},
 }
 
 
