@@ -43,7 +43,7 @@ async def _stream(project_id: uuid.UUID) -> AsyncIterator[bytes]:
                 data = data.decode("utf-8", errors="replace")
             elif not isinstance(data, str):
                 data = str(data)
-            yield f"event: update\ndata: {data}\n\n".encode()
+            yield f"data: {data}\n\n".encode()
     finally:
         await pubsub.unsubscribe(channel)
         await pubsub.aclose()
