@@ -8,6 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 from redis.asyncio import Redis
+from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from evercurrent.config import get_settings
 
@@ -32,7 +33,7 @@ async def _stream(project_id: uuid.UUID) -> AsyncIterator[bytes]:
                     pubsub.get_message(ignore_subscribe_messages=True, timeout=None),
                     timeout=_KEEPALIVE_SECONDS,
                 )
-            except TimeoutError:
+            except (TimeoutError, RedisTimeoutError):
                 yield b": keepalive\n\n"
                 continue
             if message is None:
