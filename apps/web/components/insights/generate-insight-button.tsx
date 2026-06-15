@@ -1,25 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Sparkles } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
+import { useEvents } from "@/hooks/use-events";
 
-export function GenerateInsightButton() {
+export function GenerateInsightButton({ projectId }: { projectId: string | null }) {
   const router = useRouter();
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function stop() {
+    if (timer.current) clearTimeout(timer.current);
+    setRunning(false);
+  }
+
+  // Eve runs on the worker (~10s) and pushes the result over SSE.
+  useEvents({
+    projectId,
+    enabled: running,
+    onEvent: (e) => {
+      if (e.type === "insight_created") {
+        stop();
+        router.refresh();
+      } else if (e.type === "insight_failed") {
+        stop();
+        setError("Eve found nothing worth flagging right now. Try again.");
+      }
+    },
+  });
+
+  useEffect(() => () => stop(), []);
 
   async function run() {
-    setRunning(true);
     setError(null);
+    setRunning(true);
+    timer.current = setTimeout(() => {
+      stop();
+      setError("Eve is taking a while — refresh in a moment to see the result.");
+    }, 45_000);
     try {
       await apiBrowser().generateInsight();
-      router.refresh();
     } catch {
-      setError("Eve could not produce an insight. Try again.");
-    } finally {
-      setRunning(false);
+      stop();
+      setError("Could not start Eve. Try again.");
     }
   }
 

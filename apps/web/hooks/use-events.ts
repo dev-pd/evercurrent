@@ -4,7 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getStreamUrl } from "@/lib/api";
 
-export type StreamEventType = "message_tagged" | "card_created" | "digest_ready";
+export type StreamEventType =
+  | "message_tagged"
+  | "card_created"
+  | "digest_ready"
+  | "insight_created"
+  | "insight_failed";
 
 export interface StreamEvent {
   type: StreamEventType;

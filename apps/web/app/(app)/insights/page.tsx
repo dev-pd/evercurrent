@@ -5,7 +5,7 @@ import { PageContainer, PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InsightCard } from "@/components/insights/insight-card";
 import { GenerateInsightButton } from "@/components/insights/generate-insight-button";
-import type { ProactiveInsight } from "@/lib/types";
+import type { ProactiveInsight, Project } from "@/lib/types";
 
 async function safeFetch<T>(fn: () => Promise<T>): Promise<T | null> {
   try {
@@ -20,24 +20,31 @@ async function safeFetch<T>(fn: () => Promise<T>): Promise<T | null> {
 
 export default async function InsightsPage() {
   const client = await apiServer();
-  const insights = (await safeFetch<ProactiveInsight[]>(() => client.getInsights(10))) ?? [];
+  const [insights, projects] = await Promise.all([
+    safeFetch<ProactiveInsight[]>(() => client.getInsights(10)),
+    safeFetch<Project[]>(() => client.listProjects()),
+  ]);
+  const insightList = insights ?? [];
+  const projectId = projects?.[0]?.id ?? null;
 
   return (
-    <PageContainer>
-      <PageHeader
-        title="Insights"
-        subtitle="Proactive changes Eve detected across requirements, specs, and downstream impact."
-        action={<GenerateInsightButton />}
-      />
-
-      {insights.length === 0 ? (
+    <PageContainer
+      header={
+        <PageHeader
+          title="Insights"
+          subtitle="Proactive changes Eve detected across requirements, specs, and downstream impact."
+          action={<GenerateInsightButton projectId={projectId} />}
+        />
+      }
+    >
+      {insightList.length === 0 ? (
         <EmptyState
           title="No insights yet."
           hint="Eve surfaces requirement changes and cross-subsystem conflicts here as they appear."
         />
       ) : (
         <div className="flex flex-col gap-6">
-          {insights.map((insight) => (
+          {insightList.map((insight) => (
             <InsightCard key={insight.id} insight={insight} />
           ))}
         </div>

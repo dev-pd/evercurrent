@@ -26,6 +26,41 @@ def _system_prompt() -> str:
     return resources.files(_PROMPT_PKG).joinpath("system.txt").read_text(encoding="utf-8")
 
 
+def _as_evidence(tool_name: str, out: Any) -> list[dict[str, Any]]:
+    """Normalize a search tool's output into insight sources, so Eve always has
+    grounding even if the model omits `sources` in emit_insight."""
+    if isinstance(out, list):
+        items = out
+    elif isinstance(out, dict):
+        items = out.get("results") or out.get("messages") or out.get("cards") or []
+    else:
+        items = []
+    kind = "doc" if tool_name == "search_documents" else "slack"
+    evidence: list[dict[str, Any]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        snippet = (
+            item.get("snippet")
+            or item.get("text")
+            or item.get("summary")
+            or item.get("body")
+            or ""
+        )
+        if not snippet:
+            continue
+        evidence.append(
+            {
+                "kind": kind,
+                "channel": item.get("channel"),
+                "author": item.get("author") or item.get("author_display_name"),
+                "snippet": str(snippet)[:300],
+                "ts": item.get("ts") or item.get("external_id") or item.get("posted_at"),
+            },
+        )
+    return evidence
+
+
 async def run_eve(
     session: AsyncSession,
     *,
@@ -45,6 +80,7 @@ async def run_eve(
     )
     messages: list[dict[str, Any]] = [{"role": "user", "content": goal}]
     nudged = False
+    evidence: list[dict[str, Any]] = []
 
     for turn in range(_MAX_TURNS):
         result = await provider.complete(
@@ -86,11 +122,16 @@ async def run_eve(
         tool_results: list[dict[str, Any]] = []
         for tc in result.tool_calls:
             if tc.name == "emit_insight":
-                log.info("eve.emitted", turn=turn, title=tc.input.get("title"))
-                return tc.input
+                emitted = dict(tc.input)
+                if not emitted.get("sources") and evidence:
+                    emitted["sources"] = evidence[:3]
+                log.info("eve.emitted", turn=turn, title=emitted.get("title"))
+                return emitted
             try:
                 out = await client.call(tc.name, session, {**tc.input, "project_id": project_id})
-                content = json.dumps(to_jsonable(out))[:_TOOL_RESULT_CHAR_CAP]
+                jsonable = to_jsonable(out)
+                evidence.extend(_as_evidence(tc.name, jsonable))
+                content = json.dumps(jsonable)[:_TOOL_RESULT_CHAR_CAP]
             except Exception as exc:  # noqa: BLE001
                 log.warning("eve.tool_error", tool=tc.name, error=str(exc))
                 content = json.dumps({"error": str(exc)})
