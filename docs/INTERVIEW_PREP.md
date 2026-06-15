@@ -3,7 +3,9 @@
 A self-test deck for defending this codebase. Grouped by theme. Most
 entries are questions only — answer them out loud, then check against the
 code. The hardest ones have a short pointer. Pair this with
-`docs/SYSTEM_DESIGN.md` (the flows) and `docs/ARCHITECTURE.md`.
+`docs/SYSTEM_DESIGN.md` (the flows), `docs/ARCHITECTURE.md` (layering),
+and `docs/SCALING.md` (gaps, bad decisions, the scaling table — your
+answers for §10 below live there).
 
 How to use: cover the pointer, answer cold, then open the file named and
 verify. If you can't answer in 2-3 sentences, you don't own it yet.
