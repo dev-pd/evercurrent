@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { auth0 } from "@/lib/auth0";
-import { apiServer } from "@/lib/api";
+import { apiServerAdmin } from "@/lib/api";
 import { PageContainer, PageHeader } from "@/components/layout/page-header";
 import { ProjectsCard } from "@/components/settings/projects-card";
 import { SourcesCard } from "@/components/settings/sources-card";
@@ -22,7 +22,7 @@ async function safe<T>(fn: () => Promise<T>): Promise<T | null> {
 export default async function SettingsPage() {
   const session = await auth0.getSession();
   const user = session?.user;
-  const client = await apiServer();
+  const client = await apiServerAdmin();
 
   const me = await safe<Me>(() => client.getMe());
   const isAdmin = me?.role === "admin";
@@ -39,8 +39,9 @@ export default async function SettingsPage() {
   const email = me?.email ?? user?.email ?? null;
 
   return (
-    <PageContainer>
-      <PageHeader title={t.title} subtitle={isAdmin ? t.adminSubtitle : t.memberSubtitle} />
+    <PageContainer
+      header={<PageHeader title={t.title} subtitle={isAdmin ? t.adminSubtitle : t.memberSubtitle} />}
+    >
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t.account}</h2>

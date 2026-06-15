@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { auth0 } from "@/lib/auth0";
-import { apiServer } from "@/lib/api";
+import { apiServerAdmin } from "@/lib/api";
 import { AppShell } from "@/components/layout/app-shell";
 
 async function safe<T>(fn: () => Promise<T>): Promise<T | null> {
@@ -18,7 +18,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     redirect("/api/auth/login");
   }
 
-  const client = await apiServer();
+  const client = await apiServerAdmin();
   const [me, projects] = await Promise.all([
     safe(() => client.getMe()),
     safe(() => client.listProjects()),

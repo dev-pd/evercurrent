@@ -83,13 +83,22 @@ async function apiFetch<T>(
 
   const rewritten = ctx.pathPrefix ? path.replace(/^\/api\/v1/, ctx.pathPrefix) : path;
 
-  const response = await fetch(`${ctx.baseUrl}${rewritten}`, {
-    method: options.method ?? "GET",
-    headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-    signal: options.signal,
-    cache: "no-store",
-  });
+  // Default timeout so a hanging upstream never blocks a server render forever.
+  const timeoutCtrl = options.signal ? null : new AbortController();
+  const timeoutId = timeoutCtrl ? setTimeout(() => timeoutCtrl.abort(), 12_000) : null;
+
+  let response: Response;
+  try {
+    response = await fetch(`${ctx.baseUrl}${rewritten}`, {
+      method: options.method ?? "GET",
+      headers,
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      signal: options.signal ?? timeoutCtrl?.signal,
+      cache: "no-store",
+    });
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     let body: unknown;
@@ -123,9 +132,7 @@ export interface ApiClient {
   ): Promise<MemberSummary>;
   listConnectors(): Promise<ConnectorSummary[]>;
   startInstall(kind: "slack" | "dropbox"): Promise<InstallResponse>;
-  syncSlack(
-    connectorId: string,
-  ): Promise<{ channels: number; raw_events: number; members: number }>;
+  syncSlack(connectorId: string): Promise<{ status: string; connector_id: string }>;
   disconnect(connectorId: string): Promise<{ status: string; kind: string }>;
   getFocus(): Promise<FocusTopic[]>;
   focusSignal(topic: string, delta: number): Promise<FocusTopic[]>;
@@ -143,7 +150,7 @@ export interface ApiClient {
   getCard(id: string): Promise<CardResponse>;
   feedbackCard(id: string, useful: boolean): Promise<CardFeedbackResponse>;
   getInsights(limit?: number): Promise<ProactiveInsight[]>;
-  generateInsight(): Promise<ProactiveInsight>;
+  generateInsight(): Promise<{ status: string; project_id: string }>;
   getTimeline(projectId: string): Promise<Timeline>;
 }
 
@@ -151,6 +158,7 @@ export interface CardFilters {
   projectId?: string;
   kind?: string;
   status?: string;
+  limit?: number;
 }
 
 function buildCardQuery(filters?: CardFilters): string {
@@ -159,6 +167,7 @@ function buildCardQuery(filters?: CardFilters): string {
   if (filters.projectId) params.set("project_id", filters.projectId);
   if (filters.kind) params.set("kind", filters.kind);
   if (filters.status) params.set("status", filters.status);
+  if (filters.limit) params.set("limit", String(filters.limit));
   const query = params.toString();
   return query ? `?${query}` : "";
 }
@@ -199,7 +208,7 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
     async syncSlack(connectorId) {
       return apiFetch(
         `/api/v1/connectors/${connectorId}/slack/sync`,
-        z.object({ channels: z.number(), raw_events: z.number(), members: z.number() }),
+        z.object({ status: z.string(), connector_id: z.string() }),
         await getCtx(),
         { method: "POST" },
       );
@@ -262,9 +271,12 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
       return apiFetch(`/api/v1/insights?limit=${limit}`, insightListSchema, await getCtx());
     },
     async generateInsight() {
-      return apiFetch(`/api/v1/insights/generate`, proactiveInsightSchema, await getCtx(), {
-        method: "POST",
-      });
+      return apiFetch(
+        `/api/v1/insights/generate`,
+        z.object({ status: z.string(), project_id: z.string() }),
+        await getCtx(),
+        { method: "POST" },
+      );
     },
     async getTimeline(projectId) {
       return apiFetch(
@@ -276,35 +288,64 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
   };
 }
 
-export async function apiServer(impersonate?: string | null): Promise<ApiClient> {
-  return createClient(async () => {
-    let token: string | null = null;
-    let authHeaders: Record<string, string> | undefined;
-    try {
-      const { auth0 } = await import("@/lib/auth0");
-      const result = await auth0.getAccessToken();
-      token = result?.token ?? null;
-      const session = await auth0.getSession();
-      const user = session?.user;
-      if (user?.sub) {
-        authHeaders = {
-          "X-Auth-Sub": String(user.sub),
-          "X-Auth-Email": String(user.email ?? ""),
-          "X-Auth-Name": String(user.name ?? user.email ?? ""),
-        };
-      }
-    } catch {
-      token = null;
+export const VIEW_AS_COOKIE = "view_as";
+
+export async function apiServer(impersonateOverride?: string | null | false): Promise<ApiClient> {
+  // Resolve auth + impersonation ONCE per render, not per fetch — otherwise a
+  // page firing N fetches makes N Auth0 getAccessToken round-trips (slow).
+  let token: string | null = null;
+  let authHeaders: Record<string, string> | undefined;
+  try {
+    const { auth0 } = await import("@/lib/auth0");
+    const result = await auth0.getAccessToken();
+    token = result?.token ?? null;
+    const session = await auth0.getSession();
+    const user = session?.user;
+    if (user?.sub) {
+      authHeaders = {
+        "X-Auth-Sub": String(user.sub),
+        "X-Auth-Email": String(user.email ?? ""),
+        "X-Auth-Name": String(user.name ?? user.email ?? ""),
+      };
     }
-    return { baseUrl: INTERNAL_API_URL, token, pathPrefix: "", impersonate, authHeaders };
-  });
+  } catch {
+    token = null;
+  }
+
+  let impersonate: string | null = null;
+  if (impersonateOverride === false) {
+    impersonate = null;
+  } else if (typeof impersonateOverride === "string") {
+    impersonate = impersonateOverride;
+  } else {
+    const { cookies } = await import("next/headers");
+    impersonate = (await cookies()).get(VIEW_AS_COOKIE)?.value ?? null;
+  }
+
+  const ctx: FetchContext = {
+    baseUrl: INTERNAL_API_URL,
+    token,
+    pathPrefix: "",
+    impersonate,
+    authHeaders,
+  };
+  return createClient(async () => ctx);
+}
+
+// Admin context — never impersonates the viewed member (Settings uses this).
+export function apiServerAdmin(): Promise<ApiClient> {
+  return apiServer(false);
+}
+
+function readViewAsCookie(): string | null {
+  if (typeof document === "undefined") return null;
+  const hit = document.cookie.split("; ").find((c) => c.startsWith(`${VIEW_AS_COOKIE}=`));
+  return hit ? decodeURIComponent(hit.split("=")[1]) : null;
 }
 
 export function apiBrowser(): ApiClient {
   return createClient(async () => {
-    const impersonate =
-      typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("as") : null;
-    return { baseUrl: "", token: null, pathPrefix: "/api/proxy", impersonate };
+    return { baseUrl: "", token: null, pathPrefix: "/api/proxy", impersonate: readViewAsCookie() };
   });
 }
 

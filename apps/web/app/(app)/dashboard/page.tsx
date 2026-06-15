@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { apiServer } from "@/lib/api";
+import { cookies } from "next/headers";
+import { apiServer, VIEW_AS_COOKIE } from "@/lib/api";
 import { ContextBar } from "@/components/dashboard/context-bar";
 import { FocusPanel } from "@/components/dashboard/focus-panel";
 import { DigestColumns } from "@/components/dashboard/digest-columns";
@@ -20,20 +21,15 @@ async function safeFetch<T>(fn: () => Promise<T>): Promise<T | null> {
   }
 }
 
-interface DashboardPageProps {
-  searchParams: Promise<{ as?: string }>;
-}
-
 function buildSummary(topCount: number, name: string): string {
   if (topCount === 0) return `You're caught up, ${name.split(" ")[0]}. Nothing needs you today.`;
   const noun = topCount === 1 ? "thing needs" : "things need";
   return `${topCount} ${noun} you today.`;
 }
 
-export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  const params = await searchParams;
-  const asMember = params.as ?? null;
-  const client = await apiServer(asMember);
+export default async function DashboardPage() {
+  const asMember = (await cookies()).get(VIEW_AS_COOKIE)?.value ?? null;
+  const client = await apiServer();
 
   const [members, projects, digest] = await Promise.all([
     safeFetch<MemberSummary[]>(() => client.listMembers()),
@@ -54,8 +50,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const buckets = parseDigest(digest?.content_md);
 
-  const phase = digest?.phase ?? "—";
-  const dayIndex = digest?.day_index ?? 0;
+  const phase = today?.phase ?? digest?.phase ?? "—";
+  const dayIndex = today?.live_day ?? digest?.day_index ?? 0;
   const summary = buildSummary(buckets.top_priority.length, currentMember?.display_name ?? "there");
 
   const openDecisions = (cards ?? []).filter((c) => c.status === "open").length;
@@ -69,29 +65,36 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   ];
 
   return (
-    <div className="mx-auto flex h-full max-w-6xl flex-col gap-4">
-      <ContextBar
-        currentMember={currentMember}
-        phase={phase}
-        dayIndex={dayIndex}
-        summary={summary}
-        projectId={projectId}
-        generatedAt={digest?.generated_at ?? null}
-        kpis={kpis}
-      />
+    <div className="flex h-full flex-col">
+      <div className="shrink-0 border-b border-[var(--border-default)] px-4 py-4 sm:px-6">
+        <div className="mx-auto w-full max-w-6xl">
+          <ContextBar
+            currentMember={currentMember}
+            phase={phase}
+            dayIndex={dayIndex}
+            summary={summary}
+            projectId={projectId}
+            generatedAt={digest?.generated_at ?? null}
+            kpis={kpis}
+          />
+        </div>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+          <FocusPanel focus={focus ?? []} />
 
-      <FocusPanel focus={focus ?? []} />
+          <AnomalyBanner anomalies={digest?.anomalies ?? []} />
 
-      <AnomalyBanner anomalies={digest?.anomalies ?? []} />
-
-      {digest === null ? (
-        <EmptyState
-          title="No digest yet."
-          hint="Connect Slack and regenerate to draft the first briefing."
-        />
-      ) : (
-        <DigestColumns buckets={buckets} />
-      )}
+          {digest === null ? (
+            <EmptyState
+              title="No digest yet."
+              hint="Connect Slack and regenerate to draft the first briefing."
+            />
+          ) : (
+            <DigestColumns buckets={buckets} />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
