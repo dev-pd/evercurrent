@@ -1,6 +1,8 @@
-import Link from "next/link";
+"use client";
+
 import { AlertTriangle } from "lucide-react";
 import type { CardListItem } from "@/lib/types";
+import { useDecisionModal } from "@/stores/decision-modal";
 
 function ago(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -12,6 +14,7 @@ function ago(iso: string | null | undefined): string {
 }
 
 export function BlockerBoard({ cards, limit = 8 }: { cards: CardListItem[]; limit?: number }) {
+  const open = useDecisionModal((s) => s.open);
   const blockers = cards
     .filter((c) => c.kind === "risk" && c.status === "open")
     .sort((a, b) => (b.occurred_at ?? "").localeCompare(a.occurred_at ?? ""))
@@ -34,9 +37,10 @@ export function BlockerBoard({ cards, limit = 8 }: { cards: CardListItem[]; limi
         <ul className="flex flex-col gap-2">
           {blockers.map((b) => (
             <li key={b.id}>
-              <Link
-                href={`/decisions/${b.id}`}
-                className="group flex items-start gap-3 rounded-md border border-[var(--border-default)] p-3 hover:bg-[var(--surface-muted)]"
+              <button
+                type="button"
+                onClick={() => open(b.id)}
+                className="group flex w-full items-start gap-3 rounded-md border border-[var(--border-default)] p-3 text-left hover:bg-[var(--surface-muted)]"
               >
                 <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-500" />
                 <div className="min-w-0 flex-1">
@@ -55,7 +59,7 @@ export function BlockerBoard({ cards, limit = 8 }: { cards: CardListItem[]; limi
                     <span className="ml-auto tabular-nums">{ago(b.occurred_at)}</span>
                   </div>
                 </div>
-              </Link>
+              </button>
             </li>
           ))}
         </ul>

@@ -44,11 +44,12 @@ export function CardSourceList({ sources }: CardSourceListProps) {
               {source.url && (
                 <a
                   href={source.url}
-                  target="_blank"
-                  rel="noreferrer"
+                  {...(source.url.startsWith("slack:")
+                    ? {}
+                    : { target: "_blank", rel: "noreferrer" })}
                   className="ml-auto text-xs font-medium text-zinc-700 hover:text-zinc-900"
                 >
-                  Open
+                  Open in Slack
                 </a>
               )}
             </div>

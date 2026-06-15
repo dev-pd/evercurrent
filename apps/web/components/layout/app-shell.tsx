@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { CircuitBoard, FileText, GanttChartSquare, Home, Settings, Sparkles } from "lucide-react";
 import { UserBadge } from "@/components/auth/user-badge";
 import { ViewAsSwitcher } from "@/components/layout/view-as-switcher";
+import { DecisionModal } from "@/components/decisions/decision-modal";
 
 interface NavItem {
   href: string;
@@ -95,6 +96,7 @@ export function AppShell({
         </header>
         <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
       </div>
+      <DecisionModal />
     </div>
   );
 }

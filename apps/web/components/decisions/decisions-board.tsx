@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { ArrowUpRight, GitBranch, MessageSquare } from "lucide-react";
 import type { CardListItem } from "@/lib/types";
+import { useDecisionModal } from "@/stores/decision-modal";
 
 const KIND_STYLES: Record<string, string> = {
   decision: "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -62,6 +62,7 @@ export function DecisionsBoard({
   const filters = buildFilters(hasSubs);
   const [filter, setFilter] = useState<Filter>(hasSubs ? { key: "mine" } : { key: "open" });
   const filtered = cards.filter((c) => matches(c, filter, mySubsystems));
+  const open = useDecisionModal((s) => s.open);
 
   return (
     <div className="flex flex-col gap-4">
@@ -97,38 +98,39 @@ export function DecisionsBoard({
           {filtered.map((card, idx) => (
             <li
               key={card.id}
-              className={`group flex items-start gap-4 p-4 hover:bg-[var(--surface-muted)] ${
-                idx > 0 ? "border-t border-[var(--border-default)]" : ""
-              }`}
+              className={idx > 0 ? "border-t border-[var(--border-default)]" : ""}
             >
-              <span
-                className={`mt-0.5 w-[72px] shrink-0 rounded-md border py-0.5 text-center text-[10px] font-semibold tracking-wider uppercase ${kindStyle(card.kind)}`}
+              <button
+                type="button"
+                onClick={() => open(card.id)}
+                className="group flex w-full items-start gap-4 p-4 text-left hover:bg-[var(--surface-muted)]"
               >
-                {card.kind}
-              </span>
-              <div className="min-w-0 flex-1">
-                <Link
-                  href={`/decisions/${card.id}`}
-                  className="block text-sm font-medium text-[var(--text-primary)] hover:text-[var(--color-accent-700)]"
+                <span
+                  className={`mt-0.5 w-[72px] shrink-0 rounded-md border py-0.5 text-center text-[10px] font-semibold tracking-wider uppercase ${kindStyle(card.kind)}`}
                 >
-                  {card.summary}
-                </Link>
-                <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-[var(--text-muted)]">
-                  <span className="font-mono tracking-wider uppercase">{card.status}</span>
-                  <span className="inline-flex items-center gap-1">
-                    <MessageSquare className="h-3 w-3" aria-hidden="true" />
-                    {card.sources_count}
+                  {card.kind}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--color-accent-700)]">
+                    {card.summary}
                   </span>
-                  <span className="inline-flex items-center gap-1">
-                    <GitBranch className="h-3 w-3" aria-hidden="true" />
-                    {card.edges_count}
-                  </span>
+                  <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-[var(--text-muted)]">
+                    <span className="font-mono tracking-wider uppercase">{card.status}</span>
+                    <span className="inline-flex items-center gap-1">
+                      <MessageSquare className="h-3 w-3" aria-hidden="true" />
+                      {card.sources_count}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <GitBranch className="h-3 w-3" aria-hidden="true" />
+                      {card.edges_count}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <ArrowUpRight
-                className="h-4 w-4 text-[var(--text-muted)] opacity-0 transition-opacity group-hover:opacity-100"
-                aria-hidden="true"
-              />
+                <ArrowUpRight
+                  className="h-4 w-4 text-[var(--text-muted)] opacity-0 transition-opacity group-hover:opacity-100"
+                  aria-hidden="true"
+                />
+              </button>
             </li>
           ))}
         </ul>

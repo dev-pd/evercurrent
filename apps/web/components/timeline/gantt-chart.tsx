@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Flag } from "lucide-react";
 import type { CardListItem } from "@/lib/types";
+import { useDecisionModal } from "@/stores/decision-modal";
 
 const PHASES = [
   { key: "EVT", band: "bg-sky-100", label: "text-sky-700" },
@@ -34,7 +34,7 @@ function fmt(d: Date): string {
 }
 
 export function GanttChart({ startDate, fcsLabel, cards }: GanttProps) {
-  const router = useRouter();
+  const open = useDecisionModal((s) => s.open);
   const [hover, setHover] = useState<Marker | null>(null);
 
   const start = new Date(startDate).getTime();
@@ -88,7 +88,7 @@ export function GanttChart({ startDate, fcsLabel, cards }: GanttProps) {
           <button
             key={m.card.id + i}
             type="button"
-            onClick={() => router.push(`/decisions/${m.card.id}`)}
+            onClick={() => open(m.card.id)}
             onMouseEnter={() => setHover(m)}
             onMouseLeave={() => setHover(null)}
             aria-label={m.card.summary}
