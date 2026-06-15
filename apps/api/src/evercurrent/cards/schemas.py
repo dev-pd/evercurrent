@@ -38,8 +38,23 @@ class CardListItem(BaseModel):
     status: CardStatusT
     confidence: float
     decided_at: dt.datetime | None = None
+    occurred_at: dt.datetime | None = None
     sources_count: int
+    affected_subsystems: list[str] = []
     updated_at: dt.datetime
+
+
+class CardSourceDetail(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    id: uuid.UUID
+    kind: SourceKindT
+    channel: str | None = None
+    author_display_name: str | None = None
+    author_username: str | None = None
+    ts: str | None = None
+    text: str
+    url: str | None = None
 
 
 class CardResponse(BaseModel):
@@ -53,7 +68,7 @@ class CardResponse(BaseModel):
     confidence: float
     decided_at: dt.datetime | None = None
     affected_subsystems: list[str]
-    sources: list[CardSourceRef]
+    sources: list[CardSourceDetail]
     created_at: dt.datetime
     updated_at: dt.datetime
 

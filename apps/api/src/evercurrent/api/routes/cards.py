@@ -27,7 +27,7 @@ async def list_cards(
     project_id: Annotated[uuid.UUID | None, Query()] = None,
     kind: Annotated[str | None, Query()] = None,
     status_filter: Annotated[str | None, Query(alias="status")] = None,
-    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    limit: Annotated[int, Query(ge=1, le=2000)] = 50,
 ) -> list[CardListItem]:
     return await cards_repo.list_cards(
         session,

@@ -10,7 +10,7 @@ from evercurrent.cards.schemas import (
     CardKindT,
     CardListItem,
     CardResponse,
-    CardSourceRef,
+    CardSourceDetail,
     CardStatusT,
     SourceKindT,
 )
@@ -132,7 +132,9 @@ async def list_cards(
     result = await session.execute(
         text(
             f"SELECT c.id, c.kind, c.summary, c.status, c.confidence, "
-            f"       c.decided_at, c.updated_at, "
+            f"       c.decided_at, c.updated_at, c.affected_subsystems, "
+            f"       (SELECT m.posted_at FROM messages m "
+            f"        WHERE m.id = c.triggering_message_id) AS occurred_at, "
             f"       (SELECT COUNT(*) FROM card_sources cs "
             f"        WHERE cs.card_id = c.id) AS sources_count "
             f"FROM cards c WHERE {where} "
@@ -149,7 +151,9 @@ async def list_cards(
             status=_cast_status(str(r["status"])),
             confidence=float(r["confidence"]),
             decided_at=r["decided_at"],
+            occurred_at=r["occurred_at"],
             sources_count=int(r["sources_count"] or 0),
+            affected_subsystems=list(r["affected_subsystems"] or []),
             updated_at=r["updated_at"],
         )
         for r in rows
@@ -162,7 +166,7 @@ async def get_card(
 ) -> CardResponse | None:
     result = await session.execute(
         text(
-            "SELECT id, kind, summary, body, status, confidence, "
+            "SELECT id, org_id, kind, summary, body, status, confidence, "
             "       decided_at, affected_subsystems, created_at, updated_at "
             "FROM cards WHERE id = :id",
         ),
@@ -172,6 +176,16 @@ async def get_card(
     if row is None:
         return None
 
+    team_id = (
+        await session.execute(
+            text(
+                "SELECT external_team_id FROM connectors "
+                "WHERE org_id = :o AND kind = 'slack' LIMIT 1",
+            ),
+            {"o": str(row["org_id"])},
+        )
+    ).scalar_one_or_none()
+
     src_result = await session.execute(
         text(
             "SELECT source_kind, source_id FROM card_sources "
@@ -179,18 +193,11 @@ async def get_card(
         ),
         {"id": str(card_id)},
     )
-    sources: list[CardSourceRef] = []
+    sources: list[CardSourceDetail] = []
     for s in src_result.mappings().all():
         kind = str(s["source_kind"])
         sid = uuid.UUID(str(s["source_id"]))
-        snippet = await _resolve_source_snippet(session, kind, sid)
-        sources.append(
-            CardSourceRef(
-                source_kind=_cast_source_kind(kind),
-                source_id=sid,
-                snippet=snippet,
-            ),
-        )
+        sources.append(await _resolve_source_detail(session, kind, sid, team_id))
 
     return CardResponse(
         id=uuid.UUID(str(row["id"])),
@@ -205,6 +212,61 @@ async def get_card(
         created_at=row["created_at"],
         updated_at=row["updated_at"],
     )
+
+
+async def _resolve_source_detail(
+    session: AsyncSession,
+    source_kind: str,
+    source_id: uuid.UUID,
+    team_id: str | None,
+) -> CardSourceDetail:
+    if source_kind == "message":
+        r = (
+            await session.execute(
+                text(
+                    "SELECT channel, text, author_display_name, external_id "
+                    "FROM messages WHERE id = :id",
+                ),
+                {"id": str(source_id)},
+            )
+        ).mappings().first()
+        if r is not None:
+            channel = r["channel"]
+            ts = str(r["external_id"]) if r["external_id"] else None
+            url = _slack_permalink(team_id, channel, ts)
+            return CardSourceDetail(
+                id=source_id,
+                kind="message",
+                channel=channel,
+                author_display_name=r["author_display_name"],
+                ts=ts,
+                text=str(r["text"] or ""),
+                url=url,
+            )
+    snippet = await _resolve_source_snippet(session, source_kind, source_id)
+    return CardSourceDetail(
+        id=source_id,
+        kind=_cast_source_kind(source_kind),
+        text=snippet or "",
+    )
+
+
+def _slack_permalink(team_id: str | None, channel: str | None, ts: str | None) -> str | None:
+    """Deep-link straight to the message in the Slack desktop app when we have
+    team + channel + ts; fall back to the web archive permalink (universal), then
+    a channel-level link. None if we can't even open the channel."""
+    if not channel:
+        return None
+    if team_id and ts:
+        return f"slack://channel?team={team_id}&id={channel}&message={ts}"
+    from evercurrent.config import get_settings  # noqa: PLC0415
+
+    domain = get_settings().slack_workspace_domain
+    if domain and ts:
+        return f"https://{domain}.slack.com/archives/{channel}/p{ts.replace('.', '')}"
+    if team_id:
+        return f"https://app.slack.com/client/{team_id}/{channel}"
+    return None
 
 
 async def _resolve_source_snippet(

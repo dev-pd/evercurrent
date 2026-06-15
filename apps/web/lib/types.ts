@@ -73,6 +73,8 @@ export const cardListItemSchema = z.object({
   edges_count: z.number().int().default(0),
   confidence: z.number().nullable().optional(),
   decided_at: z.string().nullable().optional(),
+  occurred_at: z.string().nullable().optional(),
+  affected_subsystems: z.array(z.string()).default([]),
   updated_at: z.string(),
 });
 export type CardListItem = z.infer<typeof cardListItemSchema>;
