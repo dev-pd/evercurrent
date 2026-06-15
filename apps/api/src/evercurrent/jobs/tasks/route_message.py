@@ -368,16 +368,17 @@ async def _route(
                 error=str(exc),
             )
 
-    publish_event(
-        org_id,
-        "message_tagged",
-        {
-            "message_id": str(message_id),
-            "topic": decision.topic,
-            "urgency": decision.urgency,
-            "should_create_card": decision.should_create_card,
-        },
-    )
+    if project_id is not None:
+        publish_event(
+            project_id,
+            "message_tagged",
+            {
+                "message_id": str(message_id),
+                "topic": decision.topic,
+                "urgency": decision.urgency,
+                "should_create_card": decision.should_create_card,
+            },
+        )
 
     _enqueue_followups(
         message_id=message_id,

@@ -49,6 +49,14 @@ async def generate_digest_for_member(
         org_id = uuid.UUID(str(org_row[0]))
         await set_org_context(session, org_id)
 
+        project_row = (
+            await session.execute(
+                sql_text("SELECT id FROM projects WHERE org_id = :org LIMIT 1"),
+                {"org": str(org_id)},
+            )
+        ).first()
+        project_id = uuid.UUID(str(project_row[0])) if project_row else None
+
         digest = await generate_digest(
             session,
             provider,
@@ -59,15 +67,16 @@ async def generate_digest_for_member(
         )
         await session.commit()
 
-    publish_event(
-        org_id,
-        "digest_ready",
-        {
-            "digest_id": str(digest.id),
-            "project_member_id": project_member_id,
-            "day_index": digest.day_index,
-        },
-    )
+    if project_id is not None:
+        publish_event(
+            project_id,
+            "digest_ready",
+            {
+                "digest_id": str(digest.id),
+                "project_member_id": project_member_id,
+                "day_index": digest.day_index,
+            },
+        )
 
     return {
         "digest_id": str(digest.id),

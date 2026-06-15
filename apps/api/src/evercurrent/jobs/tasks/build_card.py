@@ -60,17 +60,18 @@ async def build_card(
         )
         await session.commit()
 
-    publish_event(
-        org_id,
-        "card_created",
-        {
-            "card_id": str(result["card_id"]),
-            "kind": result.get("kind", kind),
-            "summary": result.get("summary", summary_hint),
-            "project_id": (str(result["project_id"]) if result.get("project_id") else None),
-            "existing": bool(result.get("existing", False)),
-        },
-    )
+    if result.get("project_id"):
+        publish_event(
+            result["project_id"],
+            "card_created",
+            {
+                "card_id": str(result["card_id"]),
+                "kind": result.get("kind", kind),
+                "summary": result.get("summary", summary_hint),
+                "project_id": str(result["project_id"]),
+                "existing": bool(result.get("existing", False)),
+            },
+        )
 
     return {
         "message_id": message_id,
