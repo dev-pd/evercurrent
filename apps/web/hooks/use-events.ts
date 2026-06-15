@@ -29,6 +29,7 @@ export function useEvents({ projectId, onEvent, enabled = true }: UseEventsOptio
   const router = useRouter();
   const regenDone = useRegen((s) => s.done);
   const sourceRef = useRef<EventSource | null>(null);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [connected, setConnected] = useState(false);
   const onEventRef = useRef(onEvent);
 
@@ -62,7 +63,11 @@ export function useEvents({ projectId, onEvent, enabled = true }: UseEventsOptio
           queryClient.invalidateQueries({ queryKey: ["today", projectId] });
           break;
         case "card_created":
+          // Cards are server-rendered too; debounce a refresh so a burst
+          // of new messages collapses into one re-render (~1.5s of quiet).
           queryClient.invalidateQueries({ queryKey: ["cards", projectId] });
+          if (refreshTimer.current) clearTimeout(refreshTimer.current);
+          refreshTimer.current = setTimeout(() => router.refresh(), 1500);
           break;
         case "digest_ready":
           // The digest is server-rendered (page.tsx props), so query
@@ -78,6 +83,7 @@ export function useEvents({ projectId, onEvent, enabled = true }: UseEventsOptio
     return () => {
       source.close();
       sourceRef.current = null;
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
       setConnected(false);
     };
   }, [projectId, enabled, queryClient, router, regenDone]);
