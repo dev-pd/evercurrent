@@ -79,49 +79,53 @@ export function ProjectsCard({ projects }: { projects: Project[] }) {
           ))
         )}
         {projects.length === 0 && (
-        <div className="flex flex-wrap items-end gap-2 border-t border-[var(--border-default)] bg-[var(--surface-muted)] p-4">
-          <label className="flex flex-col gap-1 text-xs text-[var(--text-muted)]">
-            Name
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Atlas v2"
-              className="w-44 rounded-md border border-[var(--border-default)] bg-white px-2 py-1 text-sm text-[var(--text-primary)]"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-[var(--text-muted)]">
-            Phase
-            <select
-              value={phase}
-              onChange={(e) => setPhase(e.target.value)}
-              className="rounded-md border border-[var(--border-default)] bg-white px-2 py-1 text-sm text-[var(--text-primary)]"
+          <div className="flex flex-wrap items-end gap-2 border-t border-[var(--border-default)] bg-[var(--surface-muted)] p-4">
+            <label className="flex flex-col gap-1 text-xs text-[var(--text-muted)]">
+              Name
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Atlas v2"
+                className="w-44 rounded-md border border-[var(--border-default)] bg-white px-2 py-1 text-sm text-[var(--text-primary)]"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[var(--text-muted)]">
+              Phase
+              <select
+                value={phase}
+                onChange={(e) => setPhase(e.target.value)}
+                className="rounded-md border border-[var(--border-default)] bg-white px-2 py-1 text-sm text-[var(--text-primary)]"
+              >
+                {PHASES.map((ph) => (
+                  <option key={ph.value} value={ph.value}>
+                    {ph.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[var(--text-muted)]">
+              Start date
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="rounded-md border border-[var(--border-default)] bg-white px-2 py-1 text-sm text-[var(--text-primary)]"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={create}
+              disabled={busy}
+              className="inline-flex items-center gap-2 rounded-md bg-[var(--color-accent-600)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[var(--color-accent-700)] disabled:opacity-60"
             >
-              {PHASES.map((ph) => (
-                <option key={ph.value} value={ph.value}>
-                  {ph.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-[var(--text-muted)]">
-            Start date
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="rounded-md border border-[var(--border-default)] bg-white px-2 py-1 text-sm text-[var(--text-primary)]"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={create}
-            disabled={busy}
-            className="inline-flex items-center gap-2 rounded-md bg-[var(--color-accent-600)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[var(--color-accent-700)] disabled:opacity-60"
-          >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}
-            Create
-          </button>
-        </div>
+              {busy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FolderPlus className="h-4 w-4" />
+              )}
+              Create
+            </button>
+          </div>
         )}
       </div>
       {error && <p className="text-xs text-red-700">{error}</p>}

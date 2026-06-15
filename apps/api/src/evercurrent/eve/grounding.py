@@ -34,6 +34,4 @@ def ground_sources(
     evidence: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     evidence_tokens = [_tokens(str(e.get("snippet") or "")) for e in evidence]
-    return [
-        s for s in sources if _is_grounded(str(s.get("snippet") or ""), evidence_tokens)
-    ]
+    return [s for s in sources if _is_grounded(str(s.get("snippet") or ""), evidence_tokens)]

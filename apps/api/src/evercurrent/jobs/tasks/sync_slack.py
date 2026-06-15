@@ -25,6 +25,9 @@ log = structlog.get_logger(__name__)
 
 async def sync_slack_connector(_ctx: dict[str, Any], connector_id: str) -> dict[str, Any]:
     settings = get_settings()
+    if settings.connector_secret_key is None:
+        msg = "CONNECTOR_SECRET_KEY is not configured"
+        raise RuntimeError(msg)
     vault = TokenVault(settings.connector_secret_key)
     cid = uuid.UUID(connector_id)
     async with admin_session_scope() as session:
@@ -58,15 +61,22 @@ async def sync_slack_connector(_ctx: dict[str, Any], connector_id: str) -> dict[
                             "ON CONFLICT (connector_id, external_id) "
                             "DO UPDATE SET name = EXCLUDED.name RETURNING id",
                         ),
-                        {"o": str(connector.org_id), "c": str(connector.id),
-                         "e": ch.id, "n": ch.name},
+                        {
+                            "o": str(connector.org_id),
+                            "c": str(connector.id),
+                            "e": ch.id,
+                            "n": ch.name,
+                        },
                     )
                 ).scalar_one()
                 await session.commit()
                 try:
                     summary = await backfill_channel(
-                        session=session, vault=vault, connector_channel_id=cc_id,
-                        days=30, slack_client=client,
+                        session=session,
+                        vault=vault,
+                        connector_channel_id=cc_id,
+                        days=30,
+                        slack_client=client,
                     )
                     raw_total += summary.raw_events_inserted
                     channels_done += 1

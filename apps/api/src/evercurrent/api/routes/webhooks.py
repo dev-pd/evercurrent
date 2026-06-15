@@ -211,13 +211,17 @@ async def dropbox_webhook(
     async with admin_session_scope() as session:
         for account in accounts:
             connectors = (
-                await session.execute(
-                    select(Connector).where(
-                        Connector.kind == "dropbox",
-                        Connector.external_team_id == account,
-                    ),
+                (
+                    await session.execute(
+                        select(Connector).where(
+                            Connector.kind == "dropbox",
+                            Connector.external_team_id == account,
+                        ),
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             for connector in connectors:
                 celery_app.send_task(
                     "evercurrent.sync_dropbox_connector",

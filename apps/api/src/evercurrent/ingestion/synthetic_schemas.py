@@ -31,25 +31,29 @@ class Phase:
 
 PHASES: list[Phase] = [
     Phase(
-        "evt", "EVT",
+        "evt",
+        "EVT",
         ["bring-up", "schematic", "first-light", "DFM"],
         "Engineering validation: first boards alive, schematic bugs, early "
         "mechanical fit, design-for-manufacture feedback.",
     ),
     Phase(
-        "dvt", "DVT",
+        "dvt",
+        "DVT",
         ["reliability", "test", "thermal", "margin"],
         "Design validation: reliability + thermal testing, margin analysis, "
         "ECOs landing, supplier qualification starting.",
     ),
     Phase(
-        "pvt", "PVT",
+        "pvt",
+        "PVT",
         ["yield", "process", "build-readiness", "tooling"],
         "Production validation: pilot build, yield + process control, tooling "
         "sign-off, line setup, last blocking issues.",
     ),
     Phase(
-        "fcs", "FCS",
+        "fcs",
+        "FCS",
         ["ramp", "field", "RMA", "sustaining"],
         "First customer ship + ramp: field incidents, RMA triage, sustaining "
         "fixes, supply allocation for volume.",

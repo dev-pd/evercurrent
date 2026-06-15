@@ -31,6 +31,8 @@ class EveRun:
     def searched(self) -> bool:
         read_names = {t.name for t in READ_TOOLS}
         return any(name in read_names for name in self.tool_calls)
+
+
 _TOOL_RESULT_CHAR_CAP = 6000
 _PROMPT_PKG = "evercurrent.eve.prompts"
 
@@ -54,11 +56,7 @@ def _as_evidence(tool_name: str, out: Any) -> list[dict[str, Any]]:
         if not isinstance(item, dict):
             continue
         snippet = (
-            item.get("snippet")
-            or item.get("text")
-            or item.get("summary")
-            or item.get("body")
-            or ""
+            item.get("snippet") or item.get("text") or item.get("summary") or item.get("body") or ""
         )
         if not snippet:
             continue

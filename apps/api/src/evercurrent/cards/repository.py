@@ -222,14 +222,18 @@ async def _resolve_source_detail(
 ) -> CardSourceDetail:
     if source_kind == "message":
         r = (
-            await session.execute(
-                text(
-                    "SELECT channel, text, author_display_name, external_id "
-                    "FROM messages WHERE id = :id",
-                ),
-                {"id": str(source_id)},
+            (
+                await session.execute(
+                    text(
+                        "SELECT channel, text, author_display_name, external_id "
+                        "FROM messages WHERE id = :id",
+                    ),
+                    {"id": str(source_id)},
+                )
             )
-        ).mappings().first()
+            .mappings()
+            .first()
+        )
         if r is not None:
             channel = r["channel"]
             ts = str(r["external_id"]) if r["external_id"] else None

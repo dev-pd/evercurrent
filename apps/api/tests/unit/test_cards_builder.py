@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 import uuid
-from collections.abc import Awaitable
+from collections.abc import AsyncIterator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -29,7 +29,7 @@ class _FakeLLM:
     async def complete(self, **_kwargs: Any) -> Any:  # pragma: no cover
         raise NotImplementedError
 
-    def stream(self, **_kwargs: Any) -> Awaitable[Any]:  # pragma: no cover
+    def stream(self, **_kwargs: Any) -> AsyncIterator[dict[str, Any]]:  # pragma: no cover
         raise NotImplementedError
 
 

@@ -40,9 +40,10 @@ export default async function SettingsPage() {
 
   return (
     <PageContainer
-      header={<PageHeader title={t.title} subtitle={isAdmin ? t.adminSubtitle : t.memberSubtitle} />}
+      header={
+        <PageHeader title={t.title} subtitle={isAdmin ? t.adminSubtitle : t.memberSubtitle} />
+      }
     >
-
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t.account}</h2>
         <div className="flex items-center justify-between rounded-lg border border-[var(--border-default)] bg-white p-4">

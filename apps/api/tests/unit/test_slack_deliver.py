@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import datetime as dt
 import uuid
-from typing import Any
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from evercurrent.connectors.slack.client import SlackAPIError
+from evercurrent.connectors.slack.client import SlackAPIError, SlackClient
 from evercurrent.notify import slack_deliver
 from evercurrent.notify.slack_deliver import (
     SlackRateLimitedError,
@@ -151,7 +151,7 @@ async def test_digest_dm_skips_when_subscription_disabled(
     result = await deliver_digest_dm(
         session,
         digest.id,
-        slack_client=slack,
+        slack_client=cast("SlackClient", slack),
         now=dt.datetime(2026, 6, 7, 12, 0, tzinfo=dt.UTC),
     )
 
@@ -181,7 +181,7 @@ async def test_429_raises_for_retry(monkeypatch: pytest.MonkeyPatch) -> None:
         await deliver_digest_dm(
             session,
             digest.id,
-            slack_client=slack,
+            slack_client=cast("SlackClient", slack),
             now=dt.datetime(2026, 6, 7, 12, 0, tzinfo=dt.UTC),
         )
 
@@ -206,7 +206,7 @@ async def test_quiet_hours_returns_deferred(monkeypatch: pytest.MonkeyPatch) -> 
     result = await deliver_digest_dm(
         session,
         digest.id,
-        slack_client=slack,
+        slack_client=cast("SlackClient", slack),
         now=dt.datetime(2026, 6, 7, 23, 0, tzinfo=dt.UTC),
     )
 
@@ -239,7 +239,7 @@ async def test_force_quiet_bypasses_quiet_check(
     result = await deliver_digest_dm(
         session,
         digest.id,
-        slack_client=slack,
+        slack_client=cast("SlackClient", slack),
         force_quiet=True,
         now=dt.datetime(2026, 6, 7, 23, 0, tzinfo=dt.UTC),
     )
@@ -274,7 +274,7 @@ async def test_notifications_row_persisted_with_sent_at(
     result = await deliver_digest_dm(
         session,
         digest.id,
-        slack_client=slack,
+        slack_client=cast("SlackClient", slack),
         now=dt.datetime(2026, 6, 7, 12, 0, tzinfo=dt.UTC),
     )
 
@@ -302,7 +302,7 @@ async def test_missing_slack_user_skips(monkeypatch: pytest.MonkeyPatch) -> None
     result = await deliver_digest_dm(
         session,
         digest.id,
-        slack_client=slack,
+        slack_client=cast("SlackClient", slack),
         now=dt.datetime(2026, 6, 7, 12, 0, tzinfo=dt.UTC),
     )
 

@@ -24,13 +24,7 @@ export function PageHeader({ title, subtitle, action, toolbar }: PageHeaderProps
   );
 }
 
-export function PageContainer({
-  header,
-  children,
-}: {
-  header?: ReactNode;
-  children: ReactNode;
-}) {
+export function PageContainer({ header, children }: { header?: ReactNode; children: ReactNode }) {
   return (
     <div className="flex h-full flex-col">
       {header && (

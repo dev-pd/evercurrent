@@ -38,6 +38,7 @@ export function GanttChart({ startDate, fcsLabel, cards }: GanttProps) {
   const [hover, setHover] = useState<Marker | null>(null);
 
   const start = new Date(startDate).getTime();
+  // eslint-disable-next-line react-hooks/purity -- "today" marker intentionally reads wall-clock
   const now = Date.now();
   const span = Math.max(now - start, 1);
   const pct = (t: number) => Math.min(100, Math.max(0, ((t - start) / span) * 100));
@@ -78,7 +79,10 @@ export function GanttChart({ startDate, fcsLabel, cards }: GanttProps) {
             <span className={`text-[11px] font-semibold tracking-wider ${p.label}`}>{p.key}</span>
           </div>
         ))}
-        <div className="absolute top-0 h-full w-0.5 bg-[var(--text-primary)]" style={{ left: "100%" }} />
+        <div
+          className="absolute top-0 h-full w-0.5 bg-[var(--text-primary)]"
+          style={{ left: "100%" }}
+        />
       </div>
 
       {/* Decision / risk markers track */}

@@ -54,9 +54,7 @@ export function LiveUpdatesBadge({ projectId, generatedAt }: LiveUpdatesBadgePro
       <Bell className="h-3 w-3" aria-hidden="true" />
       <span>{visibleCount === 0 ? "Live" : `${visibleCount} new`}</span>
       {updatedAt && (
-        <span className="border-l border-current/20 pl-2 opacity-70">
-          updated {updatedAt}
-        </span>
+        <span className="border-l border-current/20 pl-2 opacity-70">updated {updatedAt}</span>
       )}
     </div>
   );

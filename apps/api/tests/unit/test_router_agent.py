@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Callable
 from typing import Any
 
 import pytest
@@ -31,7 +31,7 @@ class _FakeLLM:
     def stream(
         self,
         **_kwargs: Any,
-    ) -> Awaitable[Any]:  # pragma: no cover - unused
+    ) -> AsyncIterator[dict[str, Any]]:  # pragma: no cover - unused
         raise NotImplementedError
 
 

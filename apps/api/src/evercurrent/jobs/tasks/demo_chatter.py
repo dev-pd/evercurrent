@@ -49,14 +49,19 @@ async def emit_chatter(_ctx: dict[str, Any]) -> dict[str, Any]:
         if cid is None:
             return {"status": "channel_missing", "channel": channel}
         msgs = await generate_batch(
-            channel=channel, phase=phase, count=settings.demo_chatter_batch,
-            threads=1, tier=ModelTier.DIGEST,
+            channel=channel,
+            phase=phase,
+            count=settings.demo_chatter_batch,
+            threads=1,
+            tier=ModelTier.DIGEST,
         )
         for m in msgs:
             persona = BY_NAME.get(m.author)
             try:
                 await client.chat_post_message(
-                    channel=cid, text=m.text, username=m.author,
+                    channel=cid,
+                    text=m.text,
+                    username=m.author,
                     icon_emoji=persona.emoji if persona else None,
                 )
                 posted += 1

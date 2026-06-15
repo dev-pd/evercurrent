@@ -21,6 +21,9 @@ log = structlog.get_logger(__name__)
 
 async def sync_dropbox_connector(_ctx: dict[str, Any], connector_id: str) -> dict[str, Any]:
     settings = get_settings()
+    if settings.connector_secret_key is None:
+        msg = "CONNECTOR_SECRET_KEY is not configured"
+        raise RuntimeError(msg)
     vault = TokenVault(settings.connector_secret_key)
     cid = uuid.UUID(connector_id)
     async with admin_session_scope() as session:

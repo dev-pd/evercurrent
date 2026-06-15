@@ -91,15 +91,14 @@ export function DecisionsBoard({
 
       {filtered.length === 0 ? (
         <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-white p-8 text-center">
-          <p className="text-sm font-medium text-[var(--text-primary)]">No cards match this filter.</p>
+          <p className="text-sm font-medium text-[var(--text-primary)]">
+            No cards match this filter.
+          </p>
         </div>
       ) : (
         <ul className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-white">
           {filtered.map((card, idx) => (
-            <li
-              key={card.id}
-              className={idx > 0 ? "border-t border-[var(--border-default)]" : ""}
-            >
+            <li key={card.id} className={idx > 0 ? "border-t border-[var(--border-default)]" : ""}>
               <button
                 type="button"
                 onClick={() => open(card.id)}
