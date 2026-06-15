@@ -12,6 +12,7 @@ import structlog
 from anthropic import AsyncAnthropic
 
 from evercurrent.config import get_settings
+from evercurrent.llm.metrics import record_llm_usage
 from evercurrent.llm.tiering import ModelTier, model_for
 
 log = structlog.get_logger(__name__)
@@ -183,6 +184,7 @@ class AnthropicProvider:
             latency_ms=int((time.perf_counter() - started) * 1000),
             stop_reason=result.stop_reason,
         )
+        record_llm_usage(model, tier.value, result.input_tokens, result.output_tokens)
         return result
 
     async def complete_json(

@@ -35,7 +35,7 @@
       "title": "Error rate (5xx)",
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{service=\"api\",status_code=~\"5..\"}[5m])) / sum(rate(http_requests_total{service=\"api\"}[5m]))",
+          "expr": "sum(rate(http_requests_total{service=\"api\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{service=\"api\"}[5m]))",
           "datasource": {"type": "prometheus", "uid": "Prometheus"}
         }
       ],
@@ -44,10 +44,10 @@
     },
     {
       "type": "stat",
-      "title": "LLM cost today ($)",
+      "title": "LLM cost ($, since worker start)",
       "targets": [
         {
-          "expr": "sum(increase(llm_cost_usd_total[24h]))",
+          "expr": "sum(llm_cost_usd_total)",
           "datasource": {"type": "prometheus", "uid": "Prometheus"}
         }
       ],

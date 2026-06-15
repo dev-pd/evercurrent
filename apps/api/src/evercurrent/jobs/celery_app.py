@@ -5,6 +5,8 @@ import os
 from celery import Celery
 from celery.schedules import schedule
 
+from evercurrent.jobs import metrics_server as _metrics_server  # noqa: F401  registers worker_init
+
 _broker = os.environ.get("REDIS_URL", "redis://redis:6379/0")
 
 celery_app = Celery(

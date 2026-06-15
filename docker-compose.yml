@@ -111,6 +111,7 @@ services:
       CONNECTOR_SECRET_KEY: ${CONNECTOR_SECRET_KEY:-}
       WEBHOOK_PUBLIC_URL: ${WEBHOOK_PUBLIC_URL:-}
       FERNET_KEY: ${FERNET_KEY:-}
+      PROMETHEUS_MULTIPROC_DIR: /tmp/prom_mp
     depends_on:
       postgres:
         condition: service_healthy
