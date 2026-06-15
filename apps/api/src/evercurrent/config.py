@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     otel_exporter_otlp_endpoint: str | None = None
 
     next_public_api_url: str = "/api"
+    app_base_url: str = "http://localhost:8080"
 
     auth0_domain: str | None = None
     auth0_audience: str = "https://api.evercurrent.local"
@@ -43,6 +44,7 @@ class Settings(BaseSettings):
     slack_signing_secret: str | None = None
     slack_app_bot_name: str = "EverCurrent"
     slack_demo_bot_token: str | None = None
+    slack_workspace_domain: str | None = None
 
     demo_chatter_enabled: bool = False
     demo_chatter_batch: int = 2
