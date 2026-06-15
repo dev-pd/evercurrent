@@ -12,31 +12,21 @@ every screen, so two short visits a day replace the open-tab firehose.
 > on the digest, see three priority buckets with citation pills that
 > resolve back to the source Slack message and the Dropbox PDF.
 
-## What's built vs what's roadmap
+## Status
 
-| Phase | Scope                                                       | Status |
-|-------|-------------------------------------------------------------|--------|
-| 0     | Codebase reset for v2 architecture                          | done   |
-| 1     | Infra: docker-compose, plugins, Makefile, dev setup         | done   |
-| 2     | Auth0 + Postgres RLS + multi-tenancy                        | done   |
-| 3     | Slack OAuth + Events API + backfill                         | done   |
-| 4     | MCP tool layer (search_messages, search_documents, etc.)    | done   |
-| 5     | Router agent (Haiku) + per-message enrichment               | done   |
-| 6     | Knowledge Cards (Sonnet draft, deterministic build rules)   | done   |
-| 7     | Scoring engine (pure Python, six signals)                   | done   |
-| 8     | Digest agent (Sonnet, per-user, idempotent)                 | done   |
-| 9     | Dashboard FE — cards-first, SSE live updates                | done   |
-| 10    | Dropbox connector + PDF ingest + pgvector RAG               | done   |
-| 11    | Slack DM delivery + Subscriptions + quiet hours             | done   |
-| 12    | Eval harness + demo script + this README                    | done   |
-| —     | Linker agent (cross-source edges)                           | roadmap |
-| —     | Chat agent on the dashboard                                 | roadmap |
-| —     | Timeline / Gantt + critical-path what-if                    | roadmap |
-| —     | AWS deploy (ECS + RDS + ElastiCache)                        | roadmap |
-| —     | GitHub + Jira + Email connectors                            | roadmap |
-| —     | Phase agent + Personalizer                                  | roadmap |
+The core product is built and runnable: Slack + Dropbox ingestion, Haiku
+router tagging, Sonnet Knowledge Cards, the pure-Python scoring engine,
+per-user Sonnet digests, the dashboard with SSE live updates, pgvector
+RAG, Slack DM delivery, the proactive Eve agent, the timeline/Gantt +
+blocker board, and an offline eval harness.
 
-See `docs/ARCHITECTURE.md` for how the pieces fit together.
+Roadmap: linker agent (cross-source edges), a dashboard chat agent,
+critical-path what-if on the timeline, more connectors (GitHub / Jira /
+Email), and AWS deploy (ECS + RDS + ElastiCache).
+
+Docs: `docs/ARCHITECTURE.md` (design rationale),
+`docs/SYSTEM_DESIGN.md` (runtime flows), `docs/SCALING.md` (gaps +
+hardening), `docs/INTERVIEW_PREP.md` (question bank).
 
 ## Quick start
 
@@ -45,7 +35,7 @@ cp .env.example .env          # fill ANTHROPIC_API_KEY, VOYAGE_API_KEY, Auth0, S
 make up-monitor               # stack + Prometheus + Loki + Grafana
 make migrate                  # apply schema
 open http://localhost:3000    # dashboard
-open http://localhost:3001    # grafana (default admin / admin)
+open http://localhost:3030    # grafana (default admin / admin)
 ```
 
 The dashboard opens to an empty state. Use the Slack tutorial below to
@@ -112,13 +102,12 @@ This works on a real Slack workspace in about two minutes.
 
 ```bash
 make lint            # ruff + ty (api), eslint + prettier + tsc (web)
-make test            # /health + /ready unit tests
-make eval            # router + scoring + rag + digest evals
+make test            # unit tests — deterministic layers
+make eval            # router + scoring + rag + digest + eve evals
 ```
 
-`make eval` runs all four evals; skips the LLM and Voyage ones if API
-keys are not set.
-Evals are not in CI by design — cost and nondeterminism. See ADR-013.
+`make eval` runs all evals; it skips the LLM and Voyage ones if API keys
+are not set. Evals are not in CI by design — cost and nondeterminism.
 
 ## Stack
 

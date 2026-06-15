@@ -93,10 +93,15 @@ webhook slows → Slack retries → more load.
   (`__init__.py` only), despite the testing strategy specifying
   route→service→DB tests via testcontainers. The security-critical paths
   (RLS, auth) have **no integration coverage** — only unit tests.
-- **Observability is aspirational.** OTel is a config field
-  (`otel_exporter_otlp_endpoint`) but **nothing is wired**: no tracer
-  provider, no exporter, no spans, no metrics, no SLOs, no alerting. Only
-  `request_id` structlog exists.
+- **Observability is partial.** The infra *is* wired: HTTP metrics via
+  `prometheus_fastapi_instrumentator` at `/metrics`, scraped by Prometheus;
+  container logs aggregated by Loki/promtail; Grafana dashboards
+  provisioned; an `llm_cost_usd_total` business metric on every LLM call.
+  What's **missing**: OTel **distributed tracing** (`otel_exporter_otlp_endpoint`
+  is a config field with no tracer/exporter wired — so no spans across the
+  webhook → worker → DB path), plus **SLOs and alerting**. So you can see
+  request rate, latency, error rate, and LLM spend, but you can't trace a
+  single slow request end-to-end, and nothing pages you.
 - **No dead-letter queue.** Retries are solid (`acks_late=True`,
   `autoretry_for`, `retry_backoff`, `max_retries=5` — all present), but a
   task that exhausts retries vanishes into logs. No DLQ, no failure
@@ -164,8 +169,9 @@ levers, not bigger servers.
 Ordered by value:
 
 1. **Scoring fan-out** → read-time scoring (kills the write storm).
-2. **Observability** → wire OTel spans + a metrics dashboard + alerts on
-   queue depth, LLM latency/cost, eval scores.
+2. **Observability** → metrics + Grafana already exist; add OTel tracing
+   spans (webhook → worker → DB) and alerting on queue depth, LLM
+   latency/cost, error rate, eval scores.
 3. **Separate Celery queues** + autoscaling (decouple slow Sonnet work).
 4. **DLQ + alerting** on exhausted retries.
 5. **Integration tests** for RLS + auth (the security spine).
