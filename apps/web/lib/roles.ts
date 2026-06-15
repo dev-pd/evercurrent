@@ -3,6 +3,7 @@ export const ENG_ROLES = [
   { value: "ee", label: "Electrical" },
   { value: "fw", label: "Firmware" },
   { value: "sw", label: "Software" },
+  { value: "design", label: "Industrial Design" },
   { value: "qa", label: "QA" },
   { value: "supply", label: "Supply chain" },
   { value: "em", label: "Eng manager" },

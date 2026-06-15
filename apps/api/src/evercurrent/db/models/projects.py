@@ -20,6 +20,10 @@ class Project(Base):
     __tablename__ = "projects"
 
     id: Mapped[uuid.UUID] = _uuid_pk()
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("orgs.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     current_phase: Mapped[str] = mapped_column(String(32), nullable=False)
     current_day: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")

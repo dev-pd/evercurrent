@@ -33,6 +33,12 @@ async def create_project(
     session: SessionDep,
     user: AdminUserDep,
 ) -> ProjectResponse:
+    existing = await ProjectRepository(session).list_all()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="one project per organization (multi-project routing is the next step)",
+        )
     current_day = max(1, (dt.datetime.now(dt.UTC).date() - payload.start_date).days)
     project = await ProjectRepository(session).create(
         org_id=user.org_id,

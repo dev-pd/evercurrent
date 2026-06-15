@@ -78,6 +78,7 @@ export function ProjectsCard({ projects }: { projects: Project[] }) {
             </div>
           ))
         )}
+        {projects.length === 0 && (
         <div className="flex flex-wrap items-end gap-2 border-t border-[var(--border-default)] bg-[var(--surface-muted)] p-4">
           <label className="flex flex-col gap-1 text-xs text-[var(--text-muted)]">
             Name
@@ -121,6 +122,7 @@ export function ProjectsCard({ projects }: { projects: Project[] }) {
             Create
           </button>
         </div>
+        )}
       </div>
       {error && <p className="text-xs text-red-700">{error}</p>}
     </section>

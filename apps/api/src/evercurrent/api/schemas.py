@@ -88,7 +88,7 @@ class CreateProjectRequest(BaseModel):
 
     name: Annotated[str, Field(min_length=1, max_length=255)]
     current_phase: Annotated[str, Field(min_length=1, max_length=32)]
-    start_date: dt.date
+    start_date: Annotated[dt.date, Field(strict=False)]
     phase_concerns: dict[str, list[str]] = Field(default_factory=dict)
 
 

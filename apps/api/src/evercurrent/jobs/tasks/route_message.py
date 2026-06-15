@@ -72,9 +72,12 @@ async def _upsert_message(
     inserted = await session.execute(
         text(
             "INSERT INTO messages "
-            "(org_id, source, external_id, channel, text, "
+            "(org_id, project_id, source, external_id, channel, text, "
             " author_display_name, posted_at) "
-            "VALUES (:org_id, 'slack', :external_id, :channel, :text, "
+            "VALUES (:org_id, "
+            "        (SELECT id FROM projects WHERE org_id = :org_id "
+            "         ORDER BY created_at LIMIT 1), "
+            "        'slack', :external_id, :channel, :text, "
             "        :author, to_timestamp(:posted_at)) "
             "ON CONFLICT (source, external_id) DO NOTHING "
             "RETURNING id, project_id",

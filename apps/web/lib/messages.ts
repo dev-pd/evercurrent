@@ -22,13 +22,7 @@ export const messages = {
   },
   team: {
     heading: "Team",
-    hint: "Assign each member their engineering role and the subsystems they own — this is what personalizes their digest.",
-    empty: "No members yet. They appear here after their first login.",
-    rolePlaceholder: "— role —",
-    subsystemsPlaceholder: "subsystems, comma-separated",
-    save: "Save",
-    saved: "Saved",
-    namePlaceholder: "Add a member by name…",
-    add: "Add",
+    hint: "Roles and owned subsystems are assigned automatically when members sync from Slack — this is what personalizes each digest.",
+    empty: "No members yet. They appear here after Slack sync.",
   },
 } as const;

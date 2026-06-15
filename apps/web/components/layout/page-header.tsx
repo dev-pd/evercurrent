@@ -24,6 +24,23 @@ export function PageHeader({ title, subtitle, action, toolbar }: PageHeaderProps
   );
 }
 
-export function PageContainer({ children }: { children: ReactNode }) {
-  return <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">{children}</div>;
+export function PageContainer({
+  header,
+  children,
+}: {
+  header?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex h-full flex-col">
+      {header && (
+        <div className="shrink-0 border-b border-[var(--border-default)] px-4 py-4 sm:px-6">
+          <div className="mx-auto w-full max-w-5xl">{header}</div>
+        </div>
+      )}
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">{children}</div>
+      </div>
+    </div>
+  );
 }
