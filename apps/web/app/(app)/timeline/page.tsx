@@ -3,8 +3,9 @@ export const dynamic = "force-dynamic";
 import { apiServer } from "@/lib/api";
 import { PageContainer, PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { TimelineBoard } from "@/components/timeline/timeline-board";
-import type { Timeline } from "@/lib/types";
+import { GanttChart } from "@/components/timeline/gantt-chart";
+import { BlockerBoard } from "@/components/timeline/blocker-board";
+import type { CardListItem, Timeline } from "@/lib/types";
 
 async function safeFetch<T>(fn: () => Promise<T>): Promise<T | null> {
   try {
@@ -31,19 +32,32 @@ export default async function TimelinePage({ searchParams }: TimelinePageProps) 
     projectId = projects?.[0]?.id ?? null;
   }
 
-  const timeline = projectId
-    ? await safeFetch<Timeline>(() => client.getTimeline(projectId))
-    : null;
+  const [timeline, cards] = projectId
+    ? await Promise.all([
+        safeFetch<Timeline>(() => client.getTimeline(projectId)),
+        safeFetch<CardListItem[]>(() => client.listCards({ limit: 1000 })),
+      ])
+    : [null, null];
+  const cardList = cards ?? [];
 
   return (
-    <PageContainer>
-      <PageHeader
-        title="Timeline"
-        subtitle="Program phases and subsystem progress across the NPI schedule."
-      />
-
+    <PageContainer
+      header={
+        <PageHeader
+          title="Timeline"
+          subtitle="Program phases, decisions, and active blockers across the NPI schedule."
+        />
+      }
+    >
       {timeline ? (
-        <TimelineBoard timeline={timeline} />
+        <>
+          <GanttChart
+            startDate={timeline.start_date}
+            fcsLabel={timeline.fcs_label}
+            cards={cardList}
+          />
+          <BlockerBoard cards={cardList} />
+        </>
       ) : (
         <EmptyState
           title="No timeline yet."
