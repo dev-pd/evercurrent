@@ -43,6 +43,16 @@ EMIT_TOOL = ToolSpec(
             "req_id": {"type": "string", "description": "e.g. REQ-245 or a short id"},
             "title": {"type": "string"},
             "summary": {"type": "string"},
+            "confidence": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "description": (
+                    "Your honest confidence (0-1) that this is a real, "
+                    "evidence-backed conflict. Be conservative: below 0.5 if you "
+                    "are inferring or the evidence is thin."
+                ),
+            },
             "affected_subsystems": {"type": "array", "items": {"type": "string"}},
             "before": {
                 "type": "array",
@@ -106,6 +116,7 @@ EMIT_TOOL = ToolSpec(
         "required": [
             "title",
             "summary",
+            "confidence",
             "affected_subsystems",
             "conflicts",
             "sources",

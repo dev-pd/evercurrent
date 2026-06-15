@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
+from dataclasses import dataclass, field
 from importlib import resources
 from typing import Any
 
@@ -18,6 +19,18 @@ log = structlog.get_logger(__name__)
 
 _MAX_TURNS = 8
 _MAX_TOKENS = 2048
+
+
+@dataclass
+class EveRun:
+    insight: dict[str, Any] | None
+    evidence: list[dict[str, Any]] = field(default_factory=list)
+    tool_calls: list[str] = field(default_factory=list)
+
+    @property
+    def searched(self) -> bool:
+        read_names = {t.name for t in READ_TOOLS}
+        return any(name in read_names for name in self.tool_calls)
 _TOOL_RESULT_CHAR_CAP = 6000
 _PROMPT_PKG = "evercurrent.eve.prompts"
 
@@ -68,7 +81,7 @@ async def run_eve(
     seed: str | None = None,
     llm: LLMProvider | None = None,
     mcp: InProcessMCPClient | None = None,
-) -> dict[str, Any] | None:
+) -> EveRun:
     provider = llm or get_provider()
     client = mcp or InProcessMCPClient()
     tools = [*READ_TOOLS, EMIT_TOOL]
@@ -81,6 +94,7 @@ async def run_eve(
     messages: list[dict[str, Any]] = [{"role": "user", "content": goal}]
     nudged = False
     evidence: list[dict[str, Any]] = []
+    tool_calls: list[str] = []
 
     for turn in range(_MAX_TURNS):
         result = await provider.complete(
@@ -94,7 +108,7 @@ async def run_eve(
         if not result.tool_calls:
             if nudged:
                 log.info("eve.no_tool_calls", turn=turn, stop=result.stop_reason)
-                return None
+                return EveRun(insight=None, evidence=evidence, tool_calls=tool_calls)
             nudged = True
             if result.text:
                 messages.append({"role": "assistant", "content": result.text})
@@ -125,8 +139,15 @@ async def run_eve(
                 emitted = dict(tc.input)
                 if not emitted.get("sources") and evidence:
                     emitted["sources"] = evidence[:3]
-                log.info("eve.emitted", turn=turn, title=emitted.get("title"))
-                return emitted
+                log.info(
+                    "eve.emitted",
+                    turn=turn,
+                    title=emitted.get("title"),
+                    confidence=emitted.get("confidence"),
+                    searched=bool(tool_calls),
+                )
+                return EveRun(insight=emitted, evidence=evidence, tool_calls=tool_calls)
+            tool_calls.append(tc.name)
             try:
                 out = await client.call(tc.name, session, {**tc.input, "project_id": project_id})
                 jsonable = to_jsonable(out)
@@ -141,4 +162,4 @@ async def run_eve(
         messages.append({"role": "user", "content": tool_results})
 
     log.info("eve.max_turns_reached")
-    return None
+    return EveRun(insight=None, evidence=evidence, tool_calls=tool_calls)

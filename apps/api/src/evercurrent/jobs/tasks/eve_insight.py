@@ -16,15 +16,33 @@ from typing import Any
 import structlog
 from sqlalchemy import text
 
+from evercurrent.config import Settings, get_settings
 from evercurrent.db.session import session_scope
-from evercurrent.eve import run_eve
+from evercurrent.eve import EveRun, run_eve
+from evercurrent.eve.grounding import ground_sources
 from evercurrent.rag.embedder import get_embedder
 from evercurrent.realtime import publish_event
 from evercurrent.tenancy.rls import set_org_context
 
 log = structlog.get_logger(__name__)
 
-_DEDUP_THRESHOLD = 0.82
+
+def _gate(
+    emitted: dict[str, Any],
+    run: EveRun,
+    settings: Settings,
+) -> tuple[str | None, list[dict[str, Any]]]:
+    """Deterministic acceptance gate. Returns (rejection_reason or None,
+    grounded_sources). Order matters: cheapest/strongest checks first."""
+    grounded = ground_sources(emitted.get("sources") or [], run.evidence)
+    if not run.searched:
+        return "no_search", grounded
+    if len(grounded) < settings.eve_min_grounded_sources:
+        return "ungrounded", grounded
+    confidence = float(emitted.get("confidence") or 0.0)
+    if confidence < settings.eve_min_confidence:
+        return "low_confidence", grounded
+    return None, grounded
 
 
 def _normalize(emitted: dict[str, Any], *, insight_id: str, when: str) -> dict[str, Any]:
@@ -43,6 +61,7 @@ def _normalize(emitted: dict[str, Any], *, insight_id: str, when: str) -> dict[s
         "req_id": emitted.get("req_id") or "—",
         "title": emitted.get("title") or "Untitled insight",
         "detected_at": when,
+        "confidence": emitted.get("confidence"),
         "summary": emitted.get("summary") or "",
         "before": emitted.get("before") or [],
         "after": emitted.get("after") or [],
@@ -98,6 +117,7 @@ async def generate_eve_insight(
 ) -> dict[str, Any]:
     pid = uuid.UUID(project_id)
     oid = uuid.UUID(org_id)
+    settings = get_settings()
     async with session_scope() as session:
         await set_org_context(session, oid)
         recent = [
@@ -113,17 +133,44 @@ async def generate_eve_insight(
             ).all()
         ]
 
-        emitted = await run_eve(session, project_id=pid, seed=_build_goal(recent))
+        count_today = (
+            await session.execute(
+                text(
+                    "SELECT count(*) FROM insights WHERE org_id = :o "
+                    "AND created_at >= date_trunc('day', now())",
+                ),
+                {"o": str(oid)},
+            )
+        ).scalar_one()
+        if count_today >= settings.eve_max_insights_per_day:
+            publish_event(pid, "insight_failed", {"reason": "daily_cap"})
+            return {"status": "daily_cap", "count": int(count_today)}
+
+        run = await run_eve(session, project_id=pid, seed=_build_goal(recent))
+        emitted = run.insight
         if emitted is None:
             publish_event(pid, "insight_failed", {"reason": "none"})
             return {"status": "no_insight"}
+
+        reason, grounded = _gate(emitted, run, settings)
+        emitted["sources"] = grounded
+        if reason is not None:
+            log.info(
+                "eve.rejected",
+                reason=reason,
+                searched=run.searched,
+                grounded=len(grounded),
+                confidence=emitted.get("confidence"),
+            )
+            publish_event(pid, "insight_failed", {"reason": reason})
+            return {"status": "rejected", "reason": reason}
 
         insight_id = str(uuid.uuid4())
         when = dt.datetime.now(dt.UTC).isoformat()
         payload = _normalize(emitted, insight_id=insight_id, when=when)
 
         max_sim = await _is_duplicate(payload, recent)
-        if max_sim >= _DEDUP_THRESHOLD:
+        if max_sim >= settings.eve_dedup_threshold:
             log.info("eve.duplicate_skipped", max_sim=round(max_sim, 3), title=payload["title"])
             publish_event(pid, "insight_failed", {"reason": "duplicate"})
             return {"status": "duplicate", "max_sim": max_sim}

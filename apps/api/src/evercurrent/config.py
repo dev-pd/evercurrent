@@ -58,6 +58,11 @@ class Settings(BaseSettings):
 
     connector_secret_key: str | None = None
 
+    eve_min_confidence: float = 0.55
+    eve_min_grounded_sources: int = 1
+    eve_max_insights_per_day: int = 25
+    eve_dedup_threshold: float = 0.82
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
