@@ -7,11 +7,6 @@ signal, and writes a personalised morning briefing per engineer per
 day. The product is not a chatbot — it is the autonomous worker behind
 every screen, so two short visits a day replace the open-tab firehose.
 
-> A 90-second demo would walk: post a Slack message from a phone, watch
-> a Card slide into the dashboard within a second; click "regenerate"
-> on the digest, see three priority buckets with citation pills that
-> resolve back to the source Slack message and the Dropbox PDF.
-
 ## Status
 
 The core product is built and runnable: Slack + Dropbox ingestion, Haiku
@@ -92,11 +87,11 @@ This works on a real Slack workspace in about two minutes.
    post a few cross-subsystem messages in those channels by hand.
 4. Open the dashboard. Pick a member. Click "Regenerate digest." Watch
    Sonnet draft a three-section briefing with citation pills.
-5. Post a new message in `#mech-design` from your phone: *"Decided:
-   switching BRK-A1 to AL-7075-T6. ECO-178 drafted."*
-6. Within ~2 seconds a Card appears on the dashboard with topic `eco`,
-   urgency `high`, entities `[BRK-A1, AL-7075-T6, ECO-178]`. The
-   linked Slack thread is one click away.
+5. Post a new message in one of the channels describing a decision, risk,
+   or question — e.g. a part swap, a spec change, or a blocker.
+6. Within a couple of seconds a Card appears on the dashboard, tagged with
+   its topic, urgency, and the entities the router extracted, linking back
+   to the source Slack message.
 
 ## Verification
 
@@ -120,7 +115,3 @@ strict, Tailwind v4, shadcn/ui, TanStack Query v5, Zustand, Zod.
 
 Infra (local only): Docker + docker-compose, Prometheus + Loki +
 Grafana for observability.
-
-## License
-
-MIT. See `LICENSE`.
