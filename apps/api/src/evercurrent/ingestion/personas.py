@@ -117,6 +117,14 @@ PERSONAS: list[Persona] = [
         ["CMF", "ergonomics", "industrial_design"],
         ["mech-design", "general"],
     ),
+    Persona(
+        "Prasad",
+        "mech",
+        ":crown:",
+        "platform admin + mech; owns thermal/FCS, asks cross-subsystem impact",
+        ["thermal", "motor_mount", "fcs", "bracket", "chassis", "emc"],
+        ["mech-design", "general"],
+    ),
 ]
 
 BY_NAME: dict[str, Persona] = {p.name: p for p in PERSONAS}
