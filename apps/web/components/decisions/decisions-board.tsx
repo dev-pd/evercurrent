@@ -41,7 +41,7 @@ function inMyScope(card: CardListItem, mySubs: string[]): boolean {
 function matches(card: CardListItem, f: Filter, mySubs: string[]): boolean {
   if (f.key === "all") return true;
   if (f.key === "open") return card.status === "open";
-  if (f.key === "kind") return inMyScope(card, mySubs) && card.kind === f.kind;
+  if (f.key === "kind") return card.status === "open" && card.kind === f.kind;
   return inMyScope(card, mySubs);
 }
 
