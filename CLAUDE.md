@@ -11,8 +11,8 @@
   touch, wait for `go`, implement, run `make lint`, verify, then
   commit with a Conventional Commit. Stop; don't auto-start the next
   task.
-- Path-scoped rules in `.claude/rules/` auto-load on matching
-  files (`apps/api/**/*.py`, `apps/web/**/*.{ts,tsx}`).
+- Code conventions live in `AGENTS.md` §5. `apps/web/AGENTS.md` carries
+  the Next.js breaking-change warning — read it before writing web code.
 
 ## Anti-patterns
 

@@ -1,57 +1,36 @@
 # AGENTS.md
 
-This is the source of truth for working in this repository. It is loaded into
-every Claude Code session via `CLAUDE.md`, and is also the file other coding
-agents (Codex, Copilot, etc.) read.
+Source of truth for working in this repo. Loaded into every Claude Code session
+via `CLAUDE.md`; also read by other coding agents (Codex, Copilot). Wins for
+code-style decisions.
+
+`docs/ARCHITECTURE.md` covers backend architecture + rationale. The build is
+complete; the code is the source of truth. `apps/web/AGENTS.md` carries the
+Next.js breaking-change warning — **read it before writing web code; the
+installed Next 16.2 / React 19 / Tailwind v4 APIs differ from training data.**
 
 ## 1. Project
 
-**EverCurrent** is an agentic AI layer for hardware engineering teams. It
-personalizes information by role, project phase, and behavior. It tracks
-cross-functional dependencies. It extracts structured decisions from team
-chatter. It answers questions by reasoning across team docs and conversations.
+**EverCurrent** — agentic AI layer for hardware engineering teams. Personalizes
+info by role/phase/behavior, tracks cross-functional dependencies, extracts
+structured decisions from chatter, answers questions by reasoning across team
+docs and conversations. Take-home demonstrating production-grade engineering.
 
-This is a take-home project demonstrating production-grade engineering for the
-EverCurrent team.
+## 2. Tech stack (locked, May 2026)
 
-## 2. Authoritative documents
+- **Backend:** Python 3.13 (uv), FastAPI 0.136.1, Pydantic 2.12+, SQLAlchemy 2.0
+  async, Alembic, Postgres 17 + pgvector 0.8+, Celery 5.4 (Redis broker/backend)
+  + Beat, Anthropic SDK (Sonnet 4.6 `claude-sonnet-4-6`, Haiku 4.5
+  `claude-haiku-4-5-20251001`), Voyage `voyage-3-lite` (512d), structlog,
+  OpenTelemetry, dependency-injector. ruff (lint+format), ty (types).
+- **Frontend:** Node 25.x, pnpm 11+, Next.js 16.2 App Router, React 19, TS 5
+  strict, Tailwind v4, shadcn/ui, Lucide, TanStack Query v5, Zustand (sparingly),
+  Zod at boundaries. ESLint, Prettier.
+- **Infra (local):** Docker compose, GitHub Actions CI.
 
-The step-by-step build is complete; the code is the source of truth.
+Locked versions are deliberate. Don't add dependencies without asking.
 
-- `docs/ARCHITECTURE.md` — backend architecture and rationale.
-- `AGENTS.md` (this file) — coding standards and conventions.
-
-This file wins for code-style decisions.
-
-## 3. Tech stack (locked, May 2026)
-
-### Backend
-
-- Python 3.13 with uv
-- FastAPI 0.136.1, Pydantic 2.12+, SQLAlchemy 2.0 async, Alembic
-- Postgres 17 with pgvector 0.8+
-- Celery 5.4 (Redis broker + result backend) + Celery Beat for sub-minute scheduling
-- Anthropic SDK with Claude Sonnet 4.6 (`claude-sonnet-4-6`) and Haiku 4.5
-  (`claude-haiku-4-5-20251001`)
-- Voyage AI (`voyage-3-lite`, 512 dims) for embeddings
-- structlog, OpenTelemetry SDK, dependency-injector
-- ruff (lint + format), ty (type check)
-
-### Frontend
-
-- Node 25.x (latest stable), pnpm 11+
-- Next.js 16.2 App Router, React 19, TypeScript 5 strict
-- Tailwind v4, shadcn/ui, Lucide icons
-- TanStack Query v5, Zustand for client state (sparingly)
-- Zod at every external boundary
-- ESLint strict, Prettier
-
-### Infra (local only)
-
-- Docker + docker-compose for local dev
-- GitHub Actions for CI
-
-## 4. Repository layout
+## 3. Repository layout
 
 ```
 evercurrent/
@@ -82,165 +61,105 @@ evercurrent/
 └── docs/
 ```
 
-## 5. Architecture principles
+## 4. Architecture principles
 
-- **Layered.** Routes → services → repositories → database. No SQL in routes.
-  No HTTP concerns in services. No business logic in repositories.
-- **Pure domain models** in `domain/` with zero I/O dependencies. SQLAlchemy
-  models in `db/` map to/from domain models.
-- **Dependency injection.** Side-effecting collaborators (DB session,
-  Anthropic client, embedder, Redis) are injected via FastAPI `Depends()` or
-  the `dependency-injector` container. No globals.
-- **Adapter pattern for external services.** `EmbeddingProvider` interface
-  with `VoyageEmbedder` implementation. `LLMProvider` interface with
-  `AnthropicProvider` implementation. Swappable.
-- **Self-contained service modules.** `enrichment/`, `scoring/`, `digest/`,
+- **Layered.** Routes → services → repositories → DB. No SQL in routes, no HTTP
+  concerns in services, no business logic in repositories.
+- **Pure domain models** in `domain/` (zero I/O); `db/` SQLAlchemy models map
+  to/from them.
+- **Dependency injection** for side-effecting collaborators (DB, Anthropic,
+  embedder, Redis) via `Depends()` or the container. No globals.
+- **Adapter pattern** for external services: `EmbeddingProvider`/`VoyageEmbedder`,
+  `LLMProvider`/`AnthropicProvider`. Swappable.
+- **Self-contained service modules:** `enrichment/`, `scoring/`, `digest/`,
   `decisions/`, `rag/`, `agent/` each own their domain end-to-end.
 
-## 6. Python coding standards
+## 5. Code conventions (non-obvious — defaults differ)
 
-- Type hints on every function signature and return type. No exceptions.
-- No `Any` except where genuinely dynamic, with `# type: ignore[...]` and
-  a comment explaining why.
-- Pydantic v2 strict mode on all schemas:
-  `model_config = ConfigDict(strict=True)`.
-- Async/await for all I/O (database, Anthropic, Voyage, Redis, HTTP).
-- `asyncio.TaskGroup` for structured concurrency. No orphaned tasks.
-- Connection pool management via FastAPI lifespan events.
-- **structlog** for all logging with JSON output. Never `print()`, never
-  bare `logging`.
-- Request ID propagation through logs via middleware.
-- Graceful shutdown handlers for SIGTERM in API and worker.
-- `ruff check` and `ty check` must pass clean before commit.
-- `pyproject.toml` is the single source of truth. No `setup.py`, no
-  `requirements.txt`, no `setup.cfg`.
-- Function bodies under 50 lines. Files under 400 lines. Both are smells if
-  exceeded — refactor.
-- Prefer composition over inheritance.
+These are project calls I would otherwise get wrong; the rest (type hints,
+`strict`, async I/O, no `import *`) is assumed.
 
-## 7. TypeScript coding standards
+**Python (`apps/api`)**
 
-- `strict: true` in tsconfig.
-- No `any`. Use `unknown` and narrow.
-- Zod schemas validate every external boundary (API responses, form input,
-  localStorage reads).
-- Server components by default in Next.js. Add `"use client"` only when
-  interactivity demands it.
-- TanStack Query for all server state. No `useEffect` for data fetching.
-- Zustand for client state only when component-local state is insufficient.
-- Tailwind only. No CSS-in-JS. No inline styles except where dynamic values
-  require it.
-- Lucide icons via shadcn. No emojis in code.
-- File names: `kebab-case.tsx` for files, `PascalCase` for component names.
-- Hooks start with `use`, exported from `apps/web/hooks/`.
+- Logging is **structlog only** — never `print()`, never bare `logging`.
+- No raw `anthropic.AsyncAnthropic()` — all LLM calls go through
+  `src/evercurrent/llm/client.py`.
+- Repositories return **domain models**, never SQLAlchemy models. Repos take an
+  `AsyncSession` param; they don't create their own.
+- Pydantic v2 `model_config = ConfigDict(strict=True)` on every schema.
+- FastAPI collaborators via `Depends(get_x)` factories — no module globals.
+- Celery tasks in `jobs/tasks/<name>.py`, registered in `celery_tasks.py`, and
+  **idempotent** (replay-safe via unique constraints / upserts).
+- No docstrings/inline comments by default; never strip functional directives
+  (`# noqa`, `# type: ignore`, `# ruff:`, shebangs).
+- Smells: function >50 lines, file >400 lines.
 
-## 8. SQL and database conventions
+**Web (`apps/web`)**
 
-- All DDL goes through Alembic migrations. Never edit a migration after it
-  has been merged.
-- Use snake_case for table and column names.
-- Every table has `id UUID PRIMARY KEY DEFAULT gen_random_uuid()` unless
-  there is a domain-specific natural key.
-- Timestamps are `timestamptz`, not `timestamp`. Default to `now()`.
-- Foreign keys always have `ON DELETE` behavior specified.
-- Indexes are deliberate. Comment in the migration explains the query they
-  serve.
-- pgvector columns use `vector(512)` for `voyage-3-lite`. HNSW index for
-  ANN search.
+- **No `useEffect` for data fetching** — TanStack Query for all server state
+  (one `useQuery` per resource, tuple keys, explicit invalidation).
+- Zod validates **every** external boundary (API responses, forms,
+  localStorage, non-trivial URL params).
+- Server components by default; `"use client"` only when interactivity demands.
+- Zustand for cross-component client state, sparingly. No Redux/MobX/Recoil/Jotai.
+- No `any` (use `unknown` + narrow). No `as` assertions unless unavoidable.
+- Naming: `kebab-case.tsx` files, `PascalCase` components, `use-camel-case.ts`
+  hooks, lowercase Zod schemas. Named exports except page components.
+- SSE: parser in `lib/stream.ts`, consumed via the `useAgent` hook.
+- Tailwind only (`cn()` helper for conditionals). Lucide via shadcn, no emojis.
+- Smells: component >200 lines, file >300 lines.
 
-## 9. LLM and prompt conventions
+## 6. SQL & database
+
+- All DDL via Alembic. Never edit a merged migration.
+- snake_case names. `timestamptz` not `timestamp`, default `now()`.
+- Every table: `id UUID PRIMARY KEY DEFAULT gen_random_uuid()` unless a natural key.
+- FKs always specify `ON DELETE`. Indexes deliberate, commented with the query
+  they serve.
+- pgvector: `vector(512)` for `voyage-3-lite`, HNSW index for ANN.
+
+## 7. LLM & prompts
 
 - All LLM calls go through `src/evercurrent/llm/client.py`. No raw
   `anthropic.AsyncAnthropic()` elsewhere.
-- Model selection via `llm/tiering.py`:
-  - `tag()` → Haiku (`claude-haiku-4-5-20251001`)
-  - `generate_digest()`, `extract_decisions()`, `chat_with_tools()` → Sonnet
-    (`claude-sonnet-4-6`)
-- Prompts live in `<module>/prompts/<name>.txt`, NOT inline in Python code.
-- Prompt outputs are parsed via Pydantic models in `<module>/schemas.py`.
-- Retry transient errors with exponential backoff via tenacity.
-- Log every LLM call with: model name, input token count, output token
-  count, latency.
+- Model tiering in `llm/tiering.py`: `tag()` → Haiku; `generate_digest()`,
+  `extract_decisions()`, `chat_with_tools()` → Sonnet.
+- Prompts in `<module>/prompts/<name>.txt`, never inline. Outputs parsed via
+  Pydantic in `<module>/schemas.py`.
+- Retry transient errors with tenacity backoff. Log every call: model, in/out
+  tokens, latency.
 
-## 10. Git workflow
+## 8. Git workflow
 
-- Conventional Commits: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`.
-- Scope is the phase: `feat(phase-2.3): scoring engine and weights`.
-- One commit per subphase. Atomic.
-- Branch names: `feat/phase-N.M-short-description`.
-- Never `git commit --no-verify`. Pre-commit hooks are there for a reason.
-- Attribution is empty (see `.claude/settings.json`). No `Co-Authored-By`.
+- Conventional Commits: `feat:`/`fix:`/`refactor:`/`chore:`/`docs:`. Scope =
+  phase. Atomic, one per subphase. Branches: `feat/phase-N.M-short-description`.
+- Never `--no-verify`. Attribution empty (`.claude/settings.json`) — no
+  `Co-Authored-By`.
+- Per task: restate goal + files, wait for `go`, implement only what's asked,
+  `make lint`, verify, commit, stop. Don't expand scope — ask if ambiguous.
 
-## 11. Testing strategy (revised — supersedes prior "no tests" rule)
+## 9. Testing
 
-We write tests. TDD on deterministic code, evals on LLM behaviour.
-This is the right hybrid for an AI-native app: deterministic layers
-(auth, RLS, ingestion, scoring, repositories) get red-green-refactor
-unit tests; prompt + agent quality goes through an offline eval
-harness instead of brittle string-match unit tests.
+TDD on deterministic code, evals on LLM behaviour.
 
-### What we test, where it lives
+| Kind | Location | Runner | When |
+|------|----------|--------|------|
+| Unit (Python) | `apps/api/tests/unit/` | pytest + asyncio | pre-commit, CI, `make test` |
+| Integration | `apps/api/tests/integration/` | pytest + testcontainers | CI, `make test` |
+| Eval (LLM) | `apps/api/tests/evals/` | custom runner | `make eval`, not CI gate |
+| Unit (TS) | `apps/web/__tests__/` | vitest + RTL + msw | pre-commit, CI |
+| E2E | `apps/web/e2e/` | Playwright | CI, `make e2e` |
 
-| Kind | Location | Runner | When run |
-|------|----------|--------|----------|
-| Unit (Python, deterministic) | `apps/api/tests/unit/` | pytest + pytest-asyncio | pre-commit, CI, `make test` |
-| Integration (route → service → DB) | `apps/api/tests/integration/` | pytest + testcontainers Postgres + Redis | CI, `make test` |
-| Eval (LLM quality) | `apps/api/tests/evals/` | custom runner | `make eval`, not CI gate |
-| Unit (TS, components + hooks) | `apps/web/__tests__/` | vitest + testing-library + msw | pre-commit, CI |
-| E2E (one happy path) | `apps/web/e2e/` | Playwright | CI, `make e2e` |
+- New deterministic modules: red → green → refactor. Test public behaviour, not
+  privates. Name tests as full sentences.
+- Coverage gate 80% on `auth/`, `tenancy/`, `scoring/`, `cards/`, `ingestion/`,
+  `db/repositories/`, `connectors/*/events`. Agents + prompts excluded.
+- Do NOT unit-test: prompt strings, LLM content, generated SQL (test real DB via
+  testcontainers), thin SDK wrappers.
 
-### TDD discipline
+## 10. Honest disagreement
 
-- For new deterministic modules (`scoring/`, `cards/builder`, `ingestion/chunking`, `tenancy/rls`, signature verification, repository methods): **red → green → refactor**. Write the failing test, write the minimum code to pass, refactor.
-- Test public behaviour, not implementation. No tests on private helpers.
-- One assert per test where possible. Name tests as full sentences (`test_score_includes_role_match_when_user_owns_subsystem`).
-- Coverage gate: **80% line coverage** on `auth/`, `tenancy/`, `scoring/`, `cards/`, `ingestion/`, `db/repositories/`, `connectors/*/events`. Agents + prompts excluded from coverage.
-
-### What we do NOT unit-test
-
-- Prompt strings. They live in `<module>/prompts/*.txt`; eval harness covers them.
-- LLM-returned content. Evals + Pydantic schema validation handle this.
-- Generated SQL queries (test against real DB via testcontainers, not by string match).
-- Glue code that is purely a thin wrapper around a third-party SDK.
-
-### Eval harness (unchanged)
-
-- RAG retrieval: precision@5 and MRR on hand-labelled question/source pairs.
-- Router agent: accuracy on hand-labelled message → tags pairs.
-- Scoring: scenario-based ranking checks.
-- Digest quality: LLM-as-judge with rubric.
-- Reference numbers live in the eval harness output. Not a CI gate.
-
-## 12. Workflow
-
-1. Restate the goal in one sentence and list the files to be touched.
-2. Wait for `go` from the user.
-3. Implement only what was asked.
-4. Run `make lint` after implementation.
-5. Verify the change works.
-6. Commit with a Conventional Commit (`feat:`, `fix:`, `refactor:`, …).
-7. Stop. Do not auto-start the next task.
-
-If you find yourself doing something not asked for, stop and ask. Scope
-creep is the most common failure mode.
-
-## 13. Comments and docstrings — keep it minimal
-
-Code is the documentation. Names carry the meaning; prose rots.
-
-- **No inline comments.** If code needs a comment to be understood,
-  rename or refactor it instead. The rare exception is a genuinely
-  non-obvious *why* (a workaround, a spec quirk) — one short line.
-- **No docstrings** by default. Add a single terse line only when a
-  module's or function's purpose isn't obvious from its name.
-- Never strip functional directives — `# noqa`, `# type: ignore`,
-  `# ruff:`/`# pyright:`, `// eslint-disable`, `// @ts-expect-error`,
-  shebangs. They are not comments.
-- `docs/ARCHITECTURE.md` is the only prose doc; it records the backend
-  architecture and rationale.
-
-## 14. Honest disagreement
-
-If you (Claude) think a coding standard in this file is wrong for a
-specific case, say so. Don't silently violate it, and don't blindly follow
-it into a broken design. The standards are defaults, not laws.
+If a standard here is wrong for a specific case, say so. Don't silently violate
+it, don't follow it into a broken design. Defaults, not laws.
+</content>
+</invoke>
