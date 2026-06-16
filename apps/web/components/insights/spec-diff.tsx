@@ -15,13 +15,13 @@ export function SpecDiff({ label, specs, tone }: SpecDiffProps) {
         {label}
       </div>
       <dl className="mt-2 flex flex-col gap-2">
-        {specs.map((s) => (
-          <div key={s.label} className="min-w-0">
+        {specs.map((spec) => (
+          <div key={spec.label} className="min-w-0">
             <dt className="text-[10px] tracking-wide text-[var(--text-muted)] uppercase">
-              {s.label}
+              {spec.label}
             </dt>
             <dd className="mt-0.5 font-mono text-sm break-words text-[var(--text-primary)]">
-              {s.value}
+              {spec.value}
             </dd>
           </div>
         ))}

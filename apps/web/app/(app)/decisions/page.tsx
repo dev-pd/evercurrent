@@ -25,7 +25,7 @@ export default async function DecisionsPage() {
   ]);
 
   const viewedId = (await cookies()).get(VIEW_AS_COOKIE)?.value ?? null;
-  const viewed = members.find((m) => m.id === viewedId) ?? members[0] ?? null;
+  const viewed = members.find((member) => member.id === viewedId) ?? members[0] ?? null;
   const mySubsystems = viewed?.owned_subsystems ?? [];
 
   const subtitle = viewed

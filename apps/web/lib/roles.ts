@@ -13,7 +13,7 @@ export const ENG_ROLES = [
 export type EngRole = (typeof ENG_ROLES)[number]["value"];
 
 const ROLE_LABEL: Record<string, string> = Object.fromEntries(
-  ENG_ROLES.map((r) => [r.value, r.label]),
+  ENG_ROLES.map((role) => [role.value, role.label]),
 );
 
 export function roleLabel(value: string | null | undefined): string {

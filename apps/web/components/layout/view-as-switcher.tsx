@@ -9,7 +9,7 @@ import { roleLabel } from "@/lib/roles";
 
 function readCookie(): string | null {
   if (typeof document === "undefined") return null;
-  const hit = document.cookie.split("; ").find((c) => c.startsWith(`${VIEW_AS_COOKIE}=`));
+  const hit = document.cookie.split("; ").find((entry) => entry.startsWith(`${VIEW_AS_COOKIE}=`));
   return hit ? decodeURIComponent(hit.split("=")[1]) : null;
 }
 
@@ -65,9 +65,9 @@ export function ViewAsSwitcher() {
           onChange={(e) => onSwitch(e.target.value)}
           className="appearance-none rounded-md border border-[var(--border-default)] bg-white py-1.5 pr-8 pl-8 text-xs font-medium text-[var(--text-primary)] hover:border-[var(--border-strong)] disabled:opacity-60"
         >
-          {members.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.display_name} — {roleLabel(m.eng_role)}
+          {members.map((member) => (
+            <option key={member.id} value={member.id}>
+              {member.display_name} — {roleLabel(member.eng_role)}
             </option>
           ))}
         </select>

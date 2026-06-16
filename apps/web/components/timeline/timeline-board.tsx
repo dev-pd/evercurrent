@@ -32,16 +32,16 @@ export function TimelineBoard({ timeline }: TimelineBoardProps) {
             className="grid border-b border-[var(--border-default)] pb-1.5 text-[10px] font-medium tracking-wider text-[var(--text-muted)] uppercase"
             style={cols}
           >
-            {timeline.months.map((m, idx) => (
-              <div key={`${m}-${idx}`} className="text-center">
-                {m}
+            {timeline.months.map((month, idx) => (
+              <div key={`${month}-${idx}`} className="text-center">
+                {month}
               </div>
             ))}
           </div>
 
           <div className="relative mt-2 grid gap-0" style={cols}>
-            {timeline.phases.map((p) => (
-              <PhaseBadge key={p.label} phase={p} span={span} />
+            {timeline.phases.map((phase) => (
+              <PhaseBadge key={phase.label} phase={phase} span={span} />
             ))}
           </div>
 

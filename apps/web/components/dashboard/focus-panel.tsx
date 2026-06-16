@@ -41,12 +41,12 @@ export function FocusPanel({ focus }: { focus: FocusTopic[] }) {
               />
             </div>
             <div className="flex w-44 shrink-0 flex-wrap justify-end gap-1">
-              {item.sources.map((s) => (
+              {item.sources.map((source) => (
                 <span
-                  key={s}
-                  className={`rounded px-1.5 py-0.5 text-[9px] font-medium ${SOURCE_META[s]?.cls ?? ""}`}
+                  key={source}
+                  className={`rounded px-1.5 py-0.5 text-[9px] font-medium ${SOURCE_META[source]?.cls ?? ""}`}
                 >
-                  {SOURCE_META[s]?.label ?? s}
+                  {SOURCE_META[source]?.label ?? source}
                 </span>
               ))}
             </div>

@@ -77,8 +77,8 @@ export function ContextBar({
       <p className="text-sm text-[var(--text-secondary)]">{summary}</p>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {kpis.map((k) => (
-          <KpiTile key={k.label} label={k.label} value={k.value} hint={k.hint} />
+        {kpis.map((kpi) => (
+          <KpiTile key={kpi.label} label={kpi.label} value={kpi.value} hint={kpi.hint} />
         ))}
       </div>
     </div>

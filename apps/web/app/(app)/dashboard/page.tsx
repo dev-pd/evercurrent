@@ -38,7 +38,8 @@ export default async function DashboardPage() {
   ]);
 
   const memberList = members ?? [];
-  const currentMember = memberList.find((m) => m.id === asMember) ?? memberList[0] ?? null;
+  const currentMember =
+    memberList.find((member) => member.id === asMember) ?? memberList[0] ?? null;
   const projectId = projects?.[0]?.id ?? null;
 
   const [today, timeline, cards, focus] = await Promise.all([
@@ -54,7 +55,7 @@ export default async function DashboardPage() {
   const dayIndex = today?.live_day ?? digest?.day_index ?? 0;
   const summary = buildSummary(buckets.top_priority.length, currentMember?.display_name ?? "there");
 
-  const openDecisions = (cards ?? []).filter((c) => c.status === "open").length;
+  const openDecisions = (cards ?? []).filter((card) => card.status === "open").length;
   const fcsTarget = timeline?.fcs_label?.split(" FCS")[0] ?? "—";
 
   const kpis = [

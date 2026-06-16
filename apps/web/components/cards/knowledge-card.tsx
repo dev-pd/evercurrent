@@ -57,13 +57,13 @@ export function KnowledgeCard({ card }: KnowledgeCardProps) {
             Activity
           </h2>
           <ul className="flex flex-col gap-1.5 text-sm">
-            {card.activity.map((a) => {
-              const at = formatTimestamp(a.at);
+            {card.activity.map((activity) => {
+              const at = formatTimestamp(activity.at);
               return (
-                <li key={a.id} className="text-zinc-700">
+                <li key={activity.id} className="text-zinc-700">
                   <span className="text-xs text-zinc-500">{at}</span>
-                  {a.actor && <span className="ml-2 font-medium">{a.actor}</span>}
-                  <span className="ml-2">{a.description}</span>
+                  {activity.actor && <span className="ml-2 font-medium">{activity.actor}</span>}
+                  <span className="ml-2">{activity.description}</span>
                 </li>
               );
             })}

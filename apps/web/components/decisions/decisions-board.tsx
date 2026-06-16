@@ -35,7 +35,7 @@ function buildFilters(hasSubs: boolean): { label: string; filter: Filter }[] {
 function inMyScope(card: CardListItem, mySubs: string[]): boolean {
   if (card.status !== "open") return false;
   if (mySubs.length === 0) return true;
-  return card.affected_subsystems.some((s) => mySubs.includes(s));
+  return card.affected_subsystems.some((subsystem) => mySubs.includes(subsystem));
 }
 
 function matches(card: CardListItem, f: Filter, mySubs: string[]): boolean {
@@ -61,7 +61,7 @@ export function DecisionsBoard({
   const hasSubs = mySubsystems.length > 0;
   const filters = buildFilters(hasSubs);
   const [filter, setFilter] = useState<Filter>(hasSubs ? { key: "mine" } : { key: "open" });
-  const filtered = cards.filter((c) => matches(c, filter, mySubsystems));
+  const filtered = cards.filter((card) => matches(card, filter, mySubsystems));
   const open = useDecisionModal((s) => s.open);
 
   return (

@@ -8,8 +8,8 @@ import { useDecisionModal } from "@/stores/decision-modal";
 export function BlockerBoard({ cards, limit = 8 }: { cards: CardListItem[]; limit?: number }) {
   const open = useDecisionModal((s) => s.open);
   const blockers = cards
-    .filter((c) => c.kind === "risk" && c.status === "open")
-    .sort((a, b) => (b.occurred_at ?? "").localeCompare(a.occurred_at ?? ""))
+    .filter((card) => card.kind === "risk" && card.status === "open")
+    .sort((left, right) => (right.occurred_at ?? "").localeCompare(left.occurred_at ?? ""))
     .slice(0, limit);
 
   return (
@@ -27,28 +27,28 @@ export function BlockerBoard({ cards, limit = 8 }: { cards: CardListItem[]; limi
         <p className="text-sm text-[var(--text-muted)]">No open blockers. Clear runway.</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {blockers.map((b) => (
-            <li key={b.id}>
+          {blockers.map((blocker) => (
+            <li key={blocker.id}>
               <button
                 type="button"
-                onClick={() => open(b.id)}
+                onClick={() => open(blocker.id)}
                 className="group flex w-full items-start gap-3 rounded-md border border-[var(--border-default)] p-3 text-left hover:bg-[var(--surface-muted)]"
               >
                 <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-500" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--color-accent-700)]">
-                    {b.summary}
+                    {blocker.summary}
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
-                    {b.affected_subsystems.slice(0, 4).map((s) => (
+                    {blocker.affected_subsystems.slice(0, 4).map((subsystem) => (
                       <span
-                        key={s}
+                        key={subsystem}
                         className="rounded bg-[var(--surface-muted)] px-1.5 py-0.5 text-[var(--text-secondary)]"
                       >
-                        {s}
+                        {subsystem}
                       </span>
                     ))}
-                    <span className="ml-auto tabular-nums">{timeAgo(b.occurred_at)}</span>
+                    <span className="ml-auto tabular-nums">{timeAgo(blocker.occurred_at)}</span>
                   </div>
                 </div>
               </button>

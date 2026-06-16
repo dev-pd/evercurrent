@@ -61,19 +61,19 @@ export function ProjectsCard({ projects }: { projects: Project[] }) {
             No projects yet. Create one to anchor digests and phases.
           </p>
         ) : (
-          projects.map((p, i) => (
+          projects.map((project, i) => (
             <div
-              key={p.id}
+              key={project.id}
               className={`flex items-center justify-between gap-3 p-4 ${
                 i > 0 ? "border-t border-[var(--border-default)]" : ""
               }`}
             >
-              <span className="text-sm font-medium text-[var(--text-primary)]">{p.name}</span>
+              <span className="text-sm font-medium text-[var(--text-primary)]">{project.name}</span>
               <span className="inline-flex items-center gap-2 text-xs text-[var(--text-muted)]">
                 <span className="rounded-full bg-[var(--surface-muted)] px-2 py-0.5 font-medium uppercase">
-                  {p.current_phase}
+                  {project.current_phase}
                 </span>
-                day {p.current_day}
+                day {project.current_day}
               </span>
             </div>
           ))

@@ -9,7 +9,7 @@ import { TeamCard } from "@/components/settings/team-card";
 import { messages } from "@/lib/messages";
 import type { ConnectorSummary, Me, MemberSummary, Project } from "@/lib/types";
 
-const t = messages.settings;
+const copy = messages.settings;
 
 async function safe<T>(fn: () => Promise<T>): Promise<T | null> {
   try {
@@ -41,11 +41,14 @@ export default async function SettingsPage() {
   return (
     <PageContainer
       header={
-        <PageHeader title={t.title} subtitle={isAdmin ? t.adminSubtitle : t.memberSubtitle} />
+        <PageHeader
+          title={copy.title}
+          subtitle={isAdmin ? copy.adminSubtitle : copy.memberSubtitle}
+        />
       }
     >
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t.account}</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-primary)]">{copy.account}</h2>
         <div className="flex items-center justify-between rounded-lg border border-[var(--border-default)] bg-white p-4">
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-accent-100)] text-sm font-semibold text-[var(--color-accent-700)]">
@@ -54,9 +57,9 @@ export default async function SettingsPage() {
             <div className="flex flex-col">
               <span className="text-sm font-medium text-[var(--text-primary)]">{displayName}</span>
               <span className="text-xs text-[var(--text-muted)]">
-                {me?.org_name || t.workspace}
+                {me?.org_name || copy.workspace}
                 {email ? ` · ${email}` : ""}
-                {isAdmin ? ` · ${t.admin}` : ""}
+                {isAdmin ? ` · ${copy.admin}` : ""}
               </span>
             </div>
           </div>
@@ -64,7 +67,7 @@ export default async function SettingsPage() {
             href="/api/auth/logout"
             className="inline-flex items-center rounded-md border border-[var(--border-default)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
           >
-            {t.logOut}
+            {copy.logOut}
           </a>
         </div>
       </section>
@@ -77,9 +80,9 @@ export default async function SettingsPage() {
         </>
       ) : (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t.workspace}</h2>
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">{copy.workspace}</h2>
           <div className="rounded-lg border border-[var(--border-default)] bg-white p-4 text-sm text-[var(--text-muted)]">
-            {t.managedByAdmin}
+            {copy.managedByAdmin}
           </div>
         </section>
       )}

@@ -69,8 +69,8 @@ function DigestColumn({ bucket, bullets }: { bucket: Bucket; bullets: DigestBull
           </p>
         ) : (
           <div className="flex flex-col gap-2.5">
-            {bullets.map((b, i) => (
-              <BulletCard key={i} bullet={b} accent={meta.accent} />
+            {bullets.map((bullet, i) => (
+              <BulletCard key={i} bullet={bullet} accent={meta.accent} />
             ))}
           </div>
         )}

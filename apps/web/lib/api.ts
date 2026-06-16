@@ -339,7 +339,7 @@ export function apiServerAdmin(): Promise<ApiClient> {
 
 function readViewAsCookie(): string | null {
   if (typeof document === "undefined") return null;
-  const hit = document.cookie.split("; ").find((c) => c.startsWith(`${VIEW_AS_COOKIE}=`));
+  const hit = document.cookie.split("; ").find((entry) => entry.startsWith(`${VIEW_AS_COOKIE}=`));
   return hit ? decodeURIComponent(hit.split("=")[1]) : null;
 }
 

@@ -41,23 +41,23 @@ export function GanttChart({ startDate, fcsLabel, cards }: GanttProps) {
   // eslint-disable-next-line react-hooks/purity -- "today" marker intentionally reads wall-clock
   const now = Date.now();
   const span = Math.max(now - start, 1);
-  const pct = (t: number) => Math.min(100, Math.max(0, ((t - start) / span) * 100));
+  const pct = (time: number) => Math.min(100, Math.max(0, ((time - start) / span) * 100));
 
   // Phases = 4 equal windows from start -> today (corpus was posted in phase order).
-  const phaseBounds = PHASES.map((p, i) => ({
-    ...p,
+  const phaseBounds = PHASES.map((phase, i) => ({
+    ...phase,
     left: (i / PHASES.length) * 100,
     width: 100 / PHASES.length,
   }));
 
   // Plot open decisions + risks by their real (backdated) date.
   const markers: Marker[] = cards
-    .filter((c) => c.status === "open" && c.kind !== "question" && c.occurred_at)
-    .map((c) => ({ card: c, pct: pct(new Date(c.occurred_at as string).getTime()) }));
+    .filter((card) => card.status === "open" && card.kind !== "question" && card.occurred_at)
+    .map((card) => ({ card, pct: pct(new Date(card.occurred_at as string).getTime()) }));
 
   const ticks = Array.from({ length: 5 }, (_, i) => {
-    const t = start + (span * i) / 4;
-    return { pct: (i / 4) * 100, label: fmt(new Date(t)) };
+    const tickTime = start + (span * i) / 4;
+    return { pct: (i / 4) * 100, label: fmt(new Date(tickTime)) };
   });
 
   return (
@@ -70,13 +70,15 @@ export function GanttChart({ startDate, fcsLabel, cards }: GanttProps) {
       </div>
 
       <div className="relative h-9 w-full overflow-hidden rounded-md">
-        {phaseBounds.map((p) => (
+        {phaseBounds.map((phase) => (
           <div
-            key={p.key}
-            className={`absolute top-0 flex h-full items-center justify-center ${p.band}`}
-            style={{ left: `${p.left}%`, width: `${p.width}%` }}
+            key={phase.key}
+            className={`absolute top-0 flex h-full items-center justify-center ${phase.band}`}
+            style={{ left: `${phase.left}%`, width: `${phase.width}%` }}
           >
-            <span className={`text-[11px] font-semibold tracking-wider ${p.label}`}>{p.key}</span>
+            <span className={`text-[11px] font-semibold tracking-wider ${phase.label}`}>
+              {phase.key}
+            </span>
           </div>
         ))}
         <div
@@ -88,16 +90,16 @@ export function GanttChart({ startDate, fcsLabel, cards }: GanttProps) {
       {/* Decision / risk markers track */}
       <div className="relative h-10 w-full">
         <div className="absolute top-1/2 h-px w-full -translate-y-1/2 bg-[var(--border-default)]" />
-        {markers.map((m, i) => (
+        {markers.map((marker, i) => (
           <button
-            key={m.card.id + i}
+            key={marker.card.id + i}
             type="button"
-            onClick={() => open(m.card.id)}
-            onMouseEnter={() => setHover(m)}
+            onClick={() => open(marker.card.id)}
+            onMouseEnter={() => setHover(marker)}
             onMouseLeave={() => setHover(null)}
-            aria-label={m.card.summary}
-            className={`absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ${KIND_DOT[m.card.kind] ?? "bg-zinc-400 ring-zinc-200"} hover:scale-150`}
-            style={{ left: `${m.pct}%` }}
+            aria-label={marker.card.summary}
+            className={`absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ${KIND_DOT[marker.card.kind] ?? "bg-zinc-400 ring-zinc-200"} hover:scale-150`}
+            style={{ left: `${marker.pct}%` }}
           />
         ))}
         <div
@@ -107,13 +109,13 @@ export function GanttChart({ startDate, fcsLabel, cards }: GanttProps) {
       </div>
 
       <div className="relative h-4 w-full text-[10px] text-[var(--text-muted)]">
-        {ticks.map((t) => (
+        {ticks.map((tick) => (
           <span
-            key={t.pct}
+            key={tick.pct}
             className="absolute -translate-x-1/2 tabular-nums"
-            style={{ left: `${Math.min(96, Math.max(2, t.pct))}%` }}
+            style={{ left: `${Math.min(96, Math.max(2, tick.pct))}%` }}
           >
-            {t.label}
+            {tick.label}
           </span>
         ))}
       </div>

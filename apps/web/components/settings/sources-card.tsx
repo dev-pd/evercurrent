@@ -42,7 +42,7 @@ export function SourcesCard({ connectors }: SourcesCardProps) {
       <h2 className="text-sm font-semibold text-[var(--text-primary)]">Sources</h2>
       <div className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-white">
         {SOURCES.map((source, index) => {
-          const connector = connectors.find((c) => c.kind === source.kind);
+          const connector = connectors.find((candidate) => candidate.kind === source.kind);
           const connected = !!connector && connector.status === "active";
           const Icon = source.icon;
           return (
