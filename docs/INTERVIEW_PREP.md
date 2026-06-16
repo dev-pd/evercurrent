@@ -222,6 +222,23 @@ fix → what you'd do to prevent it.
    container was a baked `next start` build, not HMR.
 5. **502s after every rebuild.** nginx cached the old upstream IP; fixed
    with Docker's embedded DNS resolver + variable `proxy_pass`.
+6. **Grafana dashboard blank.** Stacked: provisioned datasources had
+   auto-generated UIDs but the dashboard referenced fixed uids
+   (`Prometheus`/`Loki`) → "datasource not found"; the error panel queried
+   label `status_code` but the instrumentator emits `status`; and the LLM
+   cost metric was emitted in the Celery **worker** whose process the
+   API's `/metrics` never exposes. Fixes: pin datasource uids, fix the
+   label, and scrape the worker via Prometheus **multiprocess** mode.
+7. **"Eve is taking a while" stuck forever.** The 45s UI safety timeout
+   was shorter than Eve's real ~52s agent loop, AND `useEvents` had
+   `enabled: running` — so when the timeout flipped `running=false` the
+   SSE listener disconnected and the eventual `insight_created` was never
+   received. Fix: longer Eve timeout + keep the listener alive so a late
+   result still clears the UI.
+8. **Risks tab empty.** The Decisions/Risks/Questions *type* filters were
+   wrongly gated by `inMyScope` (the viewed persona's subsystems), so a
+   persona that didn't own a risk's subsystem saw nothing. Type filters
+   shouldn't depend on the persona.
 
 ## 12. Rapid-fire (one-liners — know cold)
 

@@ -330,8 +330,8 @@ without ever leaving their org.
 - The hook `hooks/use-events.ts` routes each event to the right cache
   invalidation / refresh.
 
-Two bugs fixed in this area (both worth knowing as "why it didn't work"
-stories):
+**Three** independent bugs kept realtime dead — all worth knowing as
+"why it didn't work" stories, because they stack:
 
 1. **Channel mismatch.** Three tasks were publishing to
    `events:{org_id}` while the client subscribes on
@@ -342,6 +342,14 @@ stories):
    not `redis.exceptions.TimeoutError` (a different class); an idle
    socket read crashed the stream, and the browser reconnected every
    ~8s. Fixed by catching both as a keepalive.
+3. **Named-event mismatch.** The stream emitted `event: update\ndata: …`
+   (a *named* SSE event), but the client listens via
+   `EventSource.onmessage`, which only fires for the **default**
+   (unnamed) event — named events need `addEventListener`. So no event
+   ever reached the handler. The type is already in the JSON body, so
+   the fix was to drop the event name and emit a default event.
+
+Only after all three was realtime actually working end-to-end.
 
 ---
 
@@ -374,7 +382,32 @@ visibly updates itself ~20s later with no manual reload.
 
 ---
 
-## 11. Tech stack (the "why")
+## 11. Observability (metrics, logs, dashboards)
+
+- **HTTP metrics.** `prometheus_fastapi_instrumentator` exposes request
+  rate, latency histograms, and status counts at `/metrics` on the API;
+  Prometheus scrapes it.
+- **Worker + LLM cost.** LLM calls run in the Celery prefork worker, whose
+  counters live in forked children the API's `/metrics` never sees. The
+  worker runs Prometheus **multiprocess mode** (`PROMETHEUS_MULTIPROC_DIR`)
+  and serves an aggregated `/metrics` on `:9100`, scraped as a second job.
+  Every `AnthropicProvider.complete()` increments `llm_tokens_total` and
+  `llm_cost_usd_total{tier}` (`llm/metrics.py`) — so the dashboard shows
+  real spend.
+- **Logs.** structlog JSON with a propagated `request_id`; container logs
+  aggregated by Loki/promtail.
+- **Dashboards.** Grafana (`make up-monitor`, port **3030**) provisions a
+  board: request rate, p50/p95/p99 latency, 5xx rate, LLM cost, and a Loki
+  log panel. Datasource UIDs are pinned (`Prometheus`/`Loki`) so the
+  provisioned dashboard resolves them.
+- **Gap:** OTel **distributed tracing** is a config field
+  (`otel_exporter_otlp_endpoint`) but not wired — no spans across
+  webhook → worker → DB. That plus SLOs/alerting is the main remaining
+  observability work (see `docs/SCALING.md`).
+
+---
+
+## 12. Tech stack (the "why")
 
 - **FastAPI + async SQLAlchemy + asyncpg** — all I/O is async; HTTP
   handlers never block on LLM/DB.
@@ -394,7 +427,7 @@ visibly updates itself ~20s later with no manual reload.
 
 ---
 
-## 12. Likely interview questions (and the crisp answer)
+## 13. Likely interview questions (and the crisp answer)
 
 - **"Why is ranking not done by the LLM?"** Determinism,
   explainability, testability, and safety. The scorer is pure code with
@@ -423,7 +456,7 @@ visibly updates itself ~20s later with no manual reload.
 
 ---
 
-## 13. File map (where to look)
+## 14. File map (where to look)
 
 | Concern | Entry point |
 |---|---|
