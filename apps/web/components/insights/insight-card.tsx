@@ -1,4 +1,5 @@
 import { Sparkles } from "lucide-react";
+import { formatTimestamp } from "@/lib/format-date";
 import type { ProactiveInsight } from "@/lib/types";
 import { ConflictList } from "./conflict-list";
 import { ImpactSummary } from "./impact-summary";
@@ -8,17 +9,6 @@ import { SuggestedActionBar } from "./suggested-action-bar";
 
 interface InsightCardProps {
   insight: ProactiveInsight;
-}
-
-function formatDetectedAt(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 export function InsightCard({ insight }: InsightCardProps) {
@@ -34,7 +24,7 @@ export function InsightCard({ insight }: InsightCardProps) {
             <span aria-hidden="true">·</span>
             <span className="font-mono">{insight.req_id}</span>
             <span aria-hidden="true">·</span>
-            <span>detected {formatDetectedAt(insight.detected_at)}</span>
+            <span>detected {formatTimestamp(insight.detected_at) ?? insight.detected_at}</span>
           </div>
           <h2 className="text-base font-semibold text-[var(--text-primary)]">{insight.title}</h2>
           <p className="mt-1 text-sm text-[var(--text-secondary)]">{insight.summary}</p>

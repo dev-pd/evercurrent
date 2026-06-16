@@ -1,4 +1,5 @@
 import { FileText, MessageSquare } from "lucide-react";
+import { formatTimestamp } from "@/lib/format-date";
 import type { CardSource } from "@/lib/types";
 
 interface CardSourceListProps {
@@ -12,20 +13,6 @@ function sourceIcon(kind: string) {
   return <FileText className="h-3.5 w-3.5 text-zinc-500" aria-hidden="true" />;
 }
 
-function formatTs(ts: string | null | undefined): string | null {
-  if (!ts) return null;
-  try {
-    return new Date(ts).toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return ts;
-  }
-}
-
 export function CardSourceList({ sources }: CardSourceListProps) {
   if (sources.length === 0) {
     return <p className="text-xs text-zinc-500">No sources linked yet.</p>;
@@ -33,7 +20,7 @@ export function CardSourceList({ sources }: CardSourceListProps) {
   return (
     <ul className="flex flex-col gap-2">
       {sources.map((source) => {
-        const ts = formatTs(source.ts);
+        const ts = formatTimestamp(source.ts);
         return (
           <li key={source.id} className="rounded-md border border-zinc-200 bg-white p-3 text-sm">
             <div className="flex items-center gap-2 text-xs text-zinc-500">

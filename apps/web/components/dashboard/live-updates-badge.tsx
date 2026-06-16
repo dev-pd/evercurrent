@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { Bell } from "lucide-react";
 import { useEvents, type StreamEvent } from "@/hooks/use-events";
+import { formatTimestamp } from "@/lib/format-date";
 import { cn } from "@/lib/utils";
 
 interface LiveUpdatesBadgeProps {
@@ -33,12 +34,7 @@ export function LiveUpdatesBadge({ projectId, generatedAt }: LiveUpdatesBadgePro
 
   const { connected } = useEvents({ projectId, onEvent: handleEvent });
 
-  const updatedAt = generatedAt
-    ? new Date(generatedAt).toLocaleTimeString(undefined, {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : null;
+  const updatedAt = formatTimestamp(generatedAt, "time");
 
   return (
     <div

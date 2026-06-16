@@ -38,8 +38,8 @@ export function ViewAsSwitcher() {
   // Safety net: never let the overlay stick if the transition never settles.
   useEffect(() => {
     if (!switching) return undefined;
-    const t = setTimeout(() => setSwitching(false), 4000);
-    return () => clearTimeout(t);
+    const timeout = setTimeout(() => setSwitching(false), 4000);
+    return () => clearTimeout(timeout);
   }, [switching]);
 
   if (members.length === 0) return null;

@@ -1,17 +1,9 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
+import { timeAgo } from "@/lib/format-date";
 import type { CardListItem } from "@/lib/types";
 import { useDecisionModal } from "@/stores/decision-modal";
-
-function ago(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return "today";
-  if (days === 1) return "1d ago";
-  if (days < 7) return `${days}d ago`;
-  return `${Math.floor(days / 7)}w ago`;
-}
 
 export function BlockerBoard({ cards, limit = 8 }: { cards: CardListItem[]; limit?: number }) {
   const open = useDecisionModal((s) => s.open);
@@ -56,7 +48,7 @@ export function BlockerBoard({ cards, limit = 8 }: { cards: CardListItem[]; limi
                         {s}
                       </span>
                     ))}
-                    <span className="ml-auto tabular-nums">{ago(b.occurred_at)}</span>
+                    <span className="ml-auto tabular-nums">{timeAgo(b.occurred_at)}</span>
                   </div>
                 </div>
               </button>

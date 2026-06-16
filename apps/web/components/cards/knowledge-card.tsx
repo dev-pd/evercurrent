@@ -1,23 +1,15 @@
 import { CardSourceList } from "@/components/cards/card-source-list";
 import { CardEdgesList } from "@/components/cards/card-edges-list";
+import { formatTimestamp } from "@/lib/format-date";
 import type { CardResponse } from "@/lib/types";
 
 interface KnowledgeCardProps {
   card: CardResponse;
 }
 
-function formatTs(ts: string | null | undefined): string | null {
-  if (!ts) return null;
-  try {
-    return new Date(ts).toLocaleString();
-  } catch {
-    return ts;
-  }
-}
-
 export function KnowledgeCard({ card }: KnowledgeCardProps) {
-  const decided = formatTs(card.decided_at);
-  const updated = formatTs(card.updated_at);
+  const decided = formatTimestamp(card.decided_at);
+  const updated = formatTimestamp(card.updated_at);
 
   return (
     <article className="glass-strong flex flex-col gap-6 rounded-lg border border-[var(--glass-border)] p-6">
@@ -66,7 +58,7 @@ export function KnowledgeCard({ card }: KnowledgeCardProps) {
           </h2>
           <ul className="flex flex-col gap-1.5 text-sm">
             {card.activity.map((a) => {
-              const at = formatTs(a.at);
+              const at = formatTimestamp(a.at);
               return (
                 <li key={a.id} className="text-zinc-700">
                   <span className="text-xs text-zinc-500">{at}</span>
