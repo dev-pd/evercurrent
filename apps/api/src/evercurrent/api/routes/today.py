@@ -5,10 +5,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import text
 
 from evercurrent.auth.deps import CurrentUserDep, SessionDep
 from evercurrent.db.repositories import ProjectRepository
+from evercurrent.db.repositories.read_stats import ReadStatsRepository
 
 router = APIRouter(prefix="/api/v1/today", tags=["today"])
 
@@ -38,16 +38,7 @@ async def get_today(
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="project not found")
 
-    msg_count_row = await session.execute(
-        text(
-            "SELECT count(*) AS c, max(posted_at) AS last_at "
-            "FROM messages "
-            "WHERE project_id = :pid "
-            "AND posted_at >= now() - interval '24 hours'"
-        ),
-        {"pid": str(project_id)},
-    )
-    msg_count, last_message_at = msg_count_row.one()
+    activity = await ReadStatsRepository(session).recent_message_activity(project_id)
 
     last_digest_at = None
 
@@ -58,7 +49,7 @@ async def get_today(
         start_date=project.start_date.isoformat(),
         phase=project.current_phase,
         phase_concerns=project.phase_concerns.get(project.current_phase, []),
-        message_count=int(msg_count or 0),
-        last_message_at=last_message_at.isoformat() if last_message_at else None,
+        message_count=activity.count,
+        last_message_at=activity.last_at.isoformat() if activity.last_at else None,
         last_digest_generated_at=last_digest_at.isoformat() if last_digest_at else None,
     )

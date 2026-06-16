@@ -5,9 +5,9 @@ from typing import Any
 
 from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import text
 
 from evercurrent.auth.deps import CurrentUserDep, SessionDep
+from evercurrent.db.repositories.memberships import MembershipRepository
 
 router = APIRouter(prefix="/api/v1/me", tags=["me"])
 
@@ -27,22 +27,13 @@ class MeResponse(BaseModel):
 
 @router.get("")
 async def get_me(current_user: CurrentUserDep, session: SessionDep) -> MeResponse:
-    row = (
-        await session.execute(
-            text(
-                "SELECT o.name, o.branding, m.role "
-                "FROM orgs o JOIN org_memberships m ON m.org_id = o.id "
-                "WHERE m.id = :mid",
-            ),
-            {"mid": str(current_user.membership_id)},
-        )
-    ).first()
+    profile = await MembershipRepository(session).get_me_profile(current_user.membership_id)
     return MeResponse(
         membership_id=current_user.membership_id,
         org_id=current_user.org_id,
-        org_name=str(row[0]) if row else "",
-        branding=dict(row[1]) if row and row[1] else {},
-        role=str(row[2]) if row else "member",
+        org_name=profile.org_name if profile else "",
+        branding=profile.branding if profile else {},
+        role=profile.role if profile else "member",
         auth0_user_id=current_user.auth0_user_id,
         email=current_user.email,
         display_name=current_user.display_name,

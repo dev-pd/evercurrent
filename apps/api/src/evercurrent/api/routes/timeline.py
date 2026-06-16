@@ -4,25 +4,15 @@ import uuid
 
 import structlog
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import func, select
 
 from evercurrent.auth.deps import CurrentUserDep, SessionDep
-from evercurrent.db.models import User as UserModel
 from evercurrent.db.repositories import ProjectRepository
+from evercurrent.db.repositories.read_stats import ReadStatsRepository
 from evercurrent.timeline import TimelineProjection, build_timeline
 
 log = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/api/v1/timeline", tags=["timeline"])
-
-
-async def _project_subsystems(session: SessionDep, project_id: uuid.UUID) -> list[str]:
-    rows = await session.execute(
-        select(func.distinct(func.unnest(UserModel.owned_subsystems))).where(
-            UserModel.project_id == project_id,
-        ),
-    )
-    return [s for (s,) in rows.all() if s]
 
 
 @router.get("/{project_id}", response_model=TimelineProjection)
@@ -39,7 +29,7 @@ async def get_timeline(
             detail="project not found",
         )
 
-    subsystems = await _project_subsystems(session, project_id)
+    subsystems = await ReadStatsRepository(session).project_subsystems(project_id)
     return build_timeline(
         project_id=project.id,
         project_name=project.name,

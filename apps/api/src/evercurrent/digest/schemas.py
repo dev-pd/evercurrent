@@ -7,6 +7,17 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 
+class DigestMessageRow(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    id: uuid.UUID
+    channel: str | None
+    author_display_name: str | None
+    posted_at: dt.datetime | None
+    text: str | None
+    urgency: str | None
+
+
 def _coerce_uuid(v: object) -> uuid.UUID:
     if isinstance(v, uuid.UUID):
         return v

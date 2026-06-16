@@ -5,7 +5,6 @@ from typing import Annotated
 
 import structlog
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import text
 
 from evercurrent.auth.deps import CurrentUserDep, SessionDep
 from evercurrent.cards import repository as cards_repo
@@ -14,6 +13,7 @@ from evercurrent.cards.schemas import (
     CardListItem,
     CardResponse,
 )
+from evercurrent.db.repositories.memberships import MembershipRepository
 
 log = structlog.get_logger(__name__)
 
@@ -107,27 +107,11 @@ async def _bump_membership_topic_weight(
     delta: float,
 ) -> float:
     try:
-        result = await session.execute(
-            text(
-                "UPDATE org_memberships "
-                "SET topic_weights = COALESCE(topic_weights, '{}'::jsonb) "
-                "  || jsonb_build_object(:topic, "
-                "       COALESCE("
-                "         (topic_weights ->> :topic)::float, 0.0"
-                "       ) + :delta) "
-                "WHERE id = :id "
-                "RETURNING (topic_weights ->> :topic)::float",
-            ),
-            {
-                "id": str(membership_id),
-                "topic": topic,
-                "delta": delta,
-            },
+        updated = await MembershipRepository(session).bump_topic_weight(
+            membership_id,
+            topic=topic,
+            delta=delta,
         )
-        row = result.first()
-        if row is None or row[0] is None:
-            return delta
-        return float(row[0])
     except Exception as exc:  # noqa: BLE001
         log.warning(
             "cards.feedback.weight_bump_failed",
@@ -136,3 +120,4 @@ async def _bump_membership_topic_weight(
             error=str(exc),
         )
         return delta
+    return updated if updated is not None else delta

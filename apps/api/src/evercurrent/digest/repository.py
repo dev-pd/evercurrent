@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from evercurrent.db.models import Digest as DigestModel
 from evercurrent.digest.schemas import (
     CardSummary,
+    DigestMessageRow,
     PriorDigest,
     ScoredItem,
 )
@@ -242,3 +243,40 @@ async def list_active_memberships(
         .all()
     )
     return [dict(r) for r in rows]
+
+
+async def load_message_items(
+    session: AsyncSession,
+    *,
+    message_ids: list[uuid.UUID],
+) -> list[DigestMessageRow]:
+    if not message_ids:
+        return []
+    rows = (
+        (
+            await session.execute(
+                text(
+                    "SELECT m.id, m.channel, m.author_display_name, "
+                    "       m.posted_at, m.text, mt.urgency "
+                    "FROM messages m "
+                    "LEFT JOIN message_tags mt ON mt.message_id = m.id "
+                    "WHERE m.id = ANY(:ids) "
+                    "ORDER BY m.posted_at DESC",
+                ),
+                {"ids": [str(i) for i in message_ids]},
+            )
+        )
+        .mappings()
+        .all()
+    )
+    return [
+        DigestMessageRow(
+            id=r["id"],
+            channel=r["channel"],
+            author_display_name=r["author_display_name"],
+            posted_at=r["posted_at"],
+            text=r["text"],
+            urgency=r["urgency"],
+        )
+        for r in rows
+    ]

@@ -5,7 +5,6 @@ import uuid
 import structlog
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import text
 
 from evercurrent.auth.deps import CurrentUserDep, SessionDep
 from evercurrent.digest import repository as digest_repo
@@ -119,41 +118,21 @@ async def _build_items(
     *,
     message_ids: list[uuid.UUID],
 ) -> list[DigestItemV2]:
-    if not message_ids:
-        return []
-    rows = (
-        (
-            await session.execute(
-                text(
-                    """
-                SELECT m.id, m.channel, m.author_display_name,
-                       m.posted_at, m.text, mt.urgency
-                FROM messages m
-                LEFT JOIN message_tags mt ON mt.message_id = m.id
-                WHERE m.id = ANY(:ids)
-                ORDER BY m.posted_at DESC
-                """,
-                ),
-                {"ids": [str(i) for i in message_ids]},
-            )
-        )
-        .mappings()
-        .all()
-    )
+    rows = await digest_repo.load_message_items(session, message_ids=message_ids)
     out: list[DigestItemV2] = []
     for r in rows:
-        urgency = (r["urgency"] or "normal").lower()
+        urgency = (r.urgency or "normal").lower()
         bucket = (
             "top_priority" if urgency == "high" else "watch_outs" if urgency == "normal" else "fyi"
         )
         out.append(
             DigestItemV2(
-                id=str(r["id"]),
+                id=str(r.id),
                 bucket=bucket,
-                source=f"#{r['channel']}" if r["channel"] else "—",
-                author_display_name=r["author_display_name"],
-                ts=r["posted_at"].isoformat() if r["posted_at"] else None,
-                why_this_matters=(r["text"] or "")[:280],
+                source=f"#{r.channel}" if r.channel else "—",
+                author_display_name=r.author_display_name,
+                ts=r.posted_at.isoformat() if r.posted_at else None,
+                why_this_matters=(r.text or "")[:280],
                 card_id=None,
             ),
         )

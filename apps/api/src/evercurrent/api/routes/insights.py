@@ -6,9 +6,9 @@ from typing import Annotated
 import structlog
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import text
 
 from evercurrent.auth.deps import CurrentUserDep, SessionDep
+from evercurrent.db.repositories.insights import InsightRepository
 
 log = structlog.get_logger(__name__)
 
@@ -68,16 +68,8 @@ async def list_insights(
     user: CurrentUserDep,
     limit: Annotated[int, Query(ge=1, le=20)] = 5,
 ) -> list[ProactiveInsight]:
-    rows = (
-        await session.execute(
-            text(
-                "SELECT payload FROM insights WHERE org_id = :org "
-                "ORDER BY created_at DESC LIMIT :n",
-            ),
-            {"org": str(user.org_id), "n": limit},
-        )
-    ).all()
-    return [ProactiveInsight(**row[0]) for row in rows]
+    payloads = await InsightRepository(session).list_payloads(org_id=user.org_id, limit=limit)
+    return [ProactiveInsight(**payload) for payload in payloads]
 
 
 class GenerateStarted(BaseModel):
@@ -92,10 +84,9 @@ class GenerateStarted(BaseModel):
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def generate_insight(session: SessionDep, user: CurrentUserDep) -> GenerateStarted:
-    project = (await session.execute(text("SELECT id FROM projects LIMIT 1"))).first()
-    if project is None:
+    pid = await InsightRepository(session).get_first_project_id()
+    if pid is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="no project")
-    pid = uuid.UUID(str(project[0]))
 
     from evercurrent.jobs.celery_app import celery_app
 
