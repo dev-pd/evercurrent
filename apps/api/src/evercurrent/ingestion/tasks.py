@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import uuid
 from pathlib import Path
 from typing import Any
@@ -229,7 +230,7 @@ async def ingest_pdf_bytes(
             size=len(pdf_bytes),
         )
         return {"document_id": None, "chunks": 0, "skipped": "too_large"}
-    blocks = extract_blocks(pdf_bytes)
+    blocks = await asyncio.to_thread(extract_blocks, pdf_bytes)
     return await _ingest_blocks(
         blocks=blocks,
         org_id=org_id,
@@ -251,7 +252,7 @@ async def ingest_pdf_path(
     kind_hint: str = "pdf",
     embedder: EmbeddingProvider | None = None,
 ) -> dict[str, Any]:
-    blocks = extract_blocks(pdf_path)
+    blocks = await asyncio.to_thread(extract_blocks, pdf_path)
     return await _ingest_blocks(
         blocks=blocks,
         org_id=org_id,
