@@ -225,8 +225,11 @@ async def _resolve_source_detail(
             (
                 await session.execute(
                     text(
-                        "SELECT channel, text, author_display_name, external_id "
-                        "FROM messages WHERE id = :id",
+                        "SELECT m.channel, m.text, m.author_display_name, m.external_id, "
+                        "       m.posted_at, cc.name AS channel_name "
+                        "FROM messages m "
+                        "LEFT JOIN connector_channels cc ON cc.external_id = m.channel "
+                        "WHERE m.id = :id",
                     ),
                     {"id": str(source_id)},
                 )
@@ -235,17 +238,18 @@ async def _resolve_source_detail(
             .first()
         )
         if r is not None:
-            channel = r["channel"]
-            ts = str(r["external_id"]) if r["external_id"] else None
-            url = _slack_permalink(team_id, channel, ts)
+            channel_id = r["channel"]
+            slack_ts = str(r["external_id"]) if r["external_id"] else None
+            display_channel = r["channel_name"] or channel_id
+            display_ts = r["posted_at"].isoformat() if r["posted_at"] else slack_ts
             return CardSourceDetail(
                 id=source_id,
                 kind="message",
-                channel=channel,
+                channel=display_channel,
                 author_display_name=r["author_display_name"],
-                ts=ts,
+                ts=display_ts,
                 text=str(r["text"] or ""),
-                url=url,
+                url=_slack_permalink(team_id, channel_id, slack_ts),
             )
     snippet = await _resolve_source_snippet(session, source_kind, source_id)
     return CardSourceDetail(
