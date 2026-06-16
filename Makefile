@@ -149,6 +149,18 @@ logs-pretty: ## Tail api logs and pretty-print structlog JSON
 	@command -v jq >/dev/null 2>&1 || { echo "Install jq: brew install jq"; exit 1; }
 	$(COMPOSE) logs -f api worker beat | grep --line-buffered -E '^\S+\s+\|' | sed -u 's/^[^|]*| //' | jq -r 'select(.event != null) | "\(.timestamp // "") \(.level // "info" | ascii_upcase | .[0:4]) \(.event) \(. | del(.timestamp, .level, .event) | to_entries | map("\(.key)=\(.value)") | join(" "))"' 2>/dev/null
 
+# ----- Demo / load -----------------------------------------------------------
+
+.PHONY: demo-chatter
+demo-chatter: ## Fire one demo-chatter batch now (personas -> Slack -> webhook -> pipeline). Needs DEMO_CHATTER_ENABLED=true.
+	@$(COMPOSE) exec -T worker python -c "from evercurrent.jobs.celery_app import celery_app; r = celery_app.send_task('evercurrent.emit_demo_chatter'); print('enqueued', r.id)"
+
+.PHONY: webhook-chatter
+webhook-chatter: ## Post a message AS YOUR USER (xoxp) -> live webhook -> pipeline. Needs SLACK_USER_TOKEN in .env. Vars: CHANNEL, COUNT, INTERVAL.
+	@set -a; [ -f .env ] && . ./.env; set +a; cd apps/api && \
+		CHATTER_CHANNEL=$${CHANNEL:-mech-design} CHATTER_COUNT=$${COUNT:-1} CHATTER_INTERVAL=$${INTERVAL:-3} \
+		uv run python seed_data/user_chatter.py
+
 .PHONY: prune
 prune: ## DESTRUCTIVE: nuke containers + volumes + dangling images for this project
 	$(COMPOSE) --profile dev --profile monitor down -v --remove-orphans
