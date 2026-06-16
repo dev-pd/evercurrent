@@ -35,7 +35,7 @@
       "title": "Error rate (5xx)",
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{service=\"api\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{service=\"api\"}[5m]))",
+          "expr": "(sum(rate(http_requests_total{service=\"api\",status=~\"5..\"}[5m])) or vector(0)) / sum(rate(http_requests_total{service=\"api\"}[5m]))",
           "datasource": {"type": "prometheus", "uid": "Prometheus"}
         }
       ],
