@@ -100,9 +100,8 @@ async def main() -> None:
             raise SystemExit("no slack connector — connect Slack first")
         token = vault.decrypt(conn[0])
         channels = (
-            (await session.execute(text("SELECT external_id, name FROM connector_channels")))
-            .all()
-        )
+            await session.execute(text("SELECT external_id, name FROM connector_channels"))
+        ).all()
     if not channels:
         raise SystemExit("no channels — run Sync once so channels are discovered")
 
@@ -124,7 +123,7 @@ async def main() -> None:
                         )
                         posted += 1
                         break
-                    except Exception as exc:  # noqa: BLE001, PERF203
+                    except Exception as exc:
                         failed_channels.add(ext_id)
                         print(f"  channel {ch_name} unusable: {exc}")
     finally:

@@ -23,13 +23,17 @@ from evercurrent.ingestion.synthetic import CHANNEL_TOPICS, generate_batch
 from evercurrent.ingestion.synthetic_schemas import PHASES
 
 
-async def _post(client: SlackClient, channel_id: str, author: str, text: str,
-                thread_ts: str | None) -> str | None:
+async def _post(
+    client: SlackClient, channel_id: str, author: str, text: str, thread_ts: str | None
+) -> str | None:
     persona = BY_NAME.get(author)
     try:
         resp = await client.chat_post_message(
-            channel=channel_id, text=text, username=author,
-            icon_emoji=persona.emoji if persona else None, thread_ts=thread_ts,
+            channel=channel_id,
+            text=text,
+            username=author,
+            icon_emoji=persona.emoji if persona else None,
+            thread_ts=thread_ts,
         )
         return str(resp.get("ts")) if resp.get("ts") else None
     except SlackAPIError as exc:

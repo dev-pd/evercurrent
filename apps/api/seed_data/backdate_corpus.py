@@ -33,8 +33,7 @@ async def main() -> None:
         rows = (
             await session.execute(
                 text(
-                    "SELECT id FROM messages WHERE source = 'slack' "
-                    "ORDER BY external_id ASC",
+                    "SELECT id FROM messages WHERE source = 'slack' ORDER BY external_id ASC",
                 ),
             )
         ).all()

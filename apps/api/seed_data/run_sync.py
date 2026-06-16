@@ -51,20 +51,27 @@ async def main() -> None:
                             "ON CONFLICT (connector_id, external_id) "
                             "DO UPDATE SET name = EXCLUDED.name RETURNING id",
                         ),
-                        {"o": str(connector.org_id), "c": str(connector.id),
-                         "e": ch.id, "n": ch.name},
+                        {
+                            "o": str(connector.org_id),
+                            "c": str(connector.id),
+                            "e": ch.id,
+                            "n": ch.name,
+                        },
                     )
                 ).scalar_one()
                 await session.commit()
                 try:
                     summary = await backfill_channel(
-                        session=session, vault=vault, connector_channel_id=cc_id,
-                        days=30, slack_client=client,
+                        session=session,
+                        vault=vault,
+                        connector_channel_id=cc_id,
+                        days=30,
+                        slack_client=client,
                     )
                     raw_total += summary.raw_events_inserted
                     channels_done += 1
                     print(f"  #{ch.name}: +{summary.raw_events_inserted} raw")
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     print(f"  #{ch.name} backfill failed: {exc}")
             members = await _provision_authors(session, client, connector.org_id)
         finally:
