@@ -24,6 +24,9 @@ from evercurrent.db.session import admin_session_scope
 
 async def main() -> None:
     settings = get_settings()
+    if settings.connector_secret_key is None:
+        msg = "CONNECTOR_SECRET_KEY not set"
+        raise SystemExit(msg)
     vault = TokenVault(settings.connector_secret_key)
     async with admin_session_scope() as session:
         connector = (
