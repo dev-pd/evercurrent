@@ -9,7 +9,7 @@ from evercurrent.notify.schemas import SubscriptionItem, SubscriptionsPayload
 
 log = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="/api/v1/subscriptions", tags=["subscriptions"])
+router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
 
 
 @router.get("")

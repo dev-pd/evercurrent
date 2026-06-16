@@ -12,7 +12,7 @@ from evercurrent.timeline import TimelineProjection, build_timeline
 
 log = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="/api/v1/timeline", tags=["timeline"])
+router = APIRouter(prefix="/timeline", tags=["timeline"])
 
 
 @router.get("/{project_id}", response_model=TimelineProjection)

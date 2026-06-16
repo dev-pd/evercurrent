@@ -13,7 +13,7 @@ from evercurrent.api.schemas import (
 from evercurrent.auth.deps import AdminUserDep, CurrentUserDep, SessionDep
 from evercurrent.db.repositories import ProjectRepository
 
-router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
+router = APIRouter(prefix="/projects", tags=["projects"])
 
 
 def _to_response(project: object) -> ProjectResponse:

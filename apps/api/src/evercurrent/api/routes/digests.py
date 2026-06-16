@@ -17,7 +17,7 @@ from evercurrent.realtime import publish_event
 
 log = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="/api/v1/digests", tags=["digests"])
+router = APIRouter(prefix="/digests", tags=["digests"])
 
 
 class DigestItemV2(BaseModel):

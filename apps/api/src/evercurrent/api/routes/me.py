@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict
 from evercurrent.auth.deps import CurrentUserDep, SessionDep
 from evercurrent.db.repositories.memberships import MembershipRepository
 
-router = APIRouter(prefix="/api/v1/me", tags=["me"])
+router = APIRouter(prefix="/me", tags=["me"])
 
 
 class MeResponse(BaseModel):

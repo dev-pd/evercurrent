@@ -12,7 +12,7 @@ from evercurrent.db.repositories.insights import InsightRepository
 
 log = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="/api/v1/insights", tags=["insights"])
+router = APIRouter(prefix="/insights", tags=["insights"])
 
 
 class SpecSnapshot(BaseModel):

@@ -12,7 +12,7 @@ from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from evercurrent.config import get_settings
 
-router = APIRouter(prefix="/api/v1/events", tags=["events"])
+router = APIRouter(prefix="/events", tags=["events"])
 
 _KEEPALIVE_SECONDS = 15.0
 

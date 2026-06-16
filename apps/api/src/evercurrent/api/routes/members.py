@@ -10,7 +10,7 @@ from evercurrent.config import get_settings
 from evercurrent.db.repositories.memberships import MembershipRepository
 from evercurrent.domain.memberships import MemberSummary
 
-router = APIRouter(prefix="/api/v1/members", tags=["members"])
+router = APIRouter(prefix="/members", tags=["members"])
 
 
 class MemberUpdate(BaseModel):

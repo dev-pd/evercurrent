@@ -10,7 +10,7 @@ from evercurrent.auth.deps import CurrentUserDep, SessionDep
 from evercurrent.db.repositories import ProjectRepository
 from evercurrent.db.repositories.read_stats import ReadStatsRepository
 
-router = APIRouter(prefix="/api/v1/today", tags=["today"])
+router = APIRouter(prefix="/today", tags=["today"])
 
 
 class TodayResponse(BaseModel):

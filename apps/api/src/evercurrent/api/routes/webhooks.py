@@ -20,7 +20,7 @@ from evercurrent.db.session import admin_session_scope
 
 log = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="/api/v1/webhooks", tags=["webhooks"])
+router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 
 class Auth0OrgEvent(BaseModel):

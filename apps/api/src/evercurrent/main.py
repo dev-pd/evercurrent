@@ -12,21 +12,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import text
 
 from evercurrent.api.middleware import RequestIDMiddleware
-from evercurrent.api.routes.cards import router as cards_router
-from evercurrent.api.routes.connectors import router as connectors_router
-from evercurrent.api.routes.digests import router as digests_router
-from evercurrent.api.routes.documents import router as documents_router
-from evercurrent.api.routes.events import router as events_router
-from evercurrent.api.routes.focus import router as focus_router
-from evercurrent.api.routes.insights import router as insights_router
-from evercurrent.api.routes.jobs import router as jobs_router
-from evercurrent.api.routes.me import router as me_router
-from evercurrent.api.routes.members import router as members_router
-from evercurrent.api.routes.projects import router as projects_router
-from evercurrent.api.routes.subscriptions import router as subscriptions_router
-from evercurrent.api.routes.timeline import router as timeline_router
-from evercurrent.api.routes.today import router as today_router
-from evercurrent.api.routes.webhooks import router as webhooks_router
+from evercurrent.api.router import api_v1
 from evercurrent.auth.auth0 import Auth0Verifier
 from evercurrent.config import get_settings
 from evercurrent.db.session import dispose_engine, get_sessionmaker, init_engine
@@ -101,21 +87,7 @@ def create_app() -> FastAPI:
             checks["db"] = "ok"
         return {"status": "ok", "checks": checks}
 
-    app.include_router(me_router)
-    app.include_router(members_router)
-    app.include_router(focus_router)
-    app.include_router(webhooks_router)
-    app.include_router(projects_router)
-    app.include_router(digests_router)
-    app.include_router(documents_router)
-    app.include_router(events_router)
-    app.include_router(jobs_router)
-    app.include_router(today_router)
-    app.include_router(timeline_router)
-    app.include_router(connectors_router)
-    app.include_router(cards_router)
-    app.include_router(insights_router)
-    app.include_router(subscriptions_router)
+    app.include_router(api_v1)
 
     Instrumentator(
         excluded_handlers=["/metrics", "/health"],

@@ -22,7 +22,7 @@ from evercurrent.ingestion.personas import BY_NAME
 
 log = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="/api/v1/connectors", tags=["connectors"])
+router = APIRouter(prefix="/connectors", tags=["connectors"])
 router.include_router(dropbox_router)
 
 

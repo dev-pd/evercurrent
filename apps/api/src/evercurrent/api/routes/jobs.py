@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 from evercurrent.jobs.celery_app import celery_app
 
-router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
+router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 _PENDING_STATES = {"PENDING", "RECEIVED", "STARTED", "RETRY"}
 

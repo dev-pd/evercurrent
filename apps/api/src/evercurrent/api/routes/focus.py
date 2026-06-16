@@ -10,7 +10,7 @@ from evercurrent.focus import FocusTopic, compute_focus
 
 log = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="/api/v1/focus", tags=["focus"])
+router = APIRouter(prefix="/focus", tags=["focus"])
 
 
 async def _load_and_compute(session: SessionDep, membership_id: str) -> list[FocusTopic]:

@@ -9,7 +9,7 @@ from evercurrent.api.schemas import DocumentResponse
 from evercurrent.auth.deps import CurrentUserDep, SessionDep
 from evercurrent.db.repositories import DocumentRepository, ProjectRepository
 
-router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
+router = APIRouter(prefix="/documents", tags=["documents"])
 
 _EXCERPT_CHARS = 280
 

@@ -17,7 +17,7 @@ from evercurrent.db.repositories.memberships import MembershipRepository
 
 log = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="/api/v1/cards", tags=["cards"])
+router = APIRouter(prefix="/cards", tags=["cards"])
 
 
 @router.get("", response_model=list[CardListItem])
