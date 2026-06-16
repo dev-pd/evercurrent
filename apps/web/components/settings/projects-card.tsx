@@ -4,7 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FolderPlus, Loader2 } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
+import { messages } from "@/lib/messages";
 import type { Project } from "@/lib/types";
+
+const copy = messages.projects;
 
 const PHASES = [
   { value: "evt", label: "EVT" },
@@ -30,7 +33,7 @@ export function ProjectsCard({ projects }: { projects: Project[] }) {
 
   async function create() {
     if (!name.trim() || !startDate) {
-      setError("Name and start date are required.");
+      setError(copy.validationRequired);
       return;
     }
     setBusy(true);
@@ -46,7 +49,7 @@ export function ProjectsCard({ projects }: { projects: Project[] }) {
       setStartDate("");
       router.refresh();
     } catch {
-      setError("Could not create the project.");
+      setError(copy.createFailed);
     } finally {
       setBusy(false);
     }
@@ -54,12 +57,10 @@ export function ProjectsCard({ projects }: { projects: Project[] }) {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold text-[var(--text-primary)]">Projects</h2>
+      <h2 className="text-sm font-semibold text-[var(--text-primary)]">{copy.heading}</h2>
       <div className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-white">
         {projects.length === 0 ? (
-          <p className="p-4 text-xs text-[var(--text-muted)]">
-            No projects yet. Create one to anchor digests and phases.
-          </p>
+          <p className="p-4 text-xs text-[var(--text-muted)]">{copy.empty}</p>
         ) : (
           projects.map((project, i) => (
             <div
@@ -73,7 +74,7 @@ export function ProjectsCard({ projects }: { projects: Project[] }) {
                 <span className="rounded-full bg-[var(--surface-muted)] px-2 py-0.5 font-medium uppercase">
                   {project.current_phase}
                 </span>
-                day {project.current_day}
+                {copy.dayPrefix} {project.current_day}
               </span>
             </div>
           ))
@@ -81,16 +82,16 @@ export function ProjectsCard({ projects }: { projects: Project[] }) {
         {projects.length === 0 && (
           <div className="flex flex-wrap items-end gap-2 border-t border-[var(--border-default)] bg-[var(--surface-muted)] p-4">
             <label className="flex flex-col gap-1 text-xs text-[var(--text-muted)]">
-              Name
+              {copy.nameLabel}
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Atlas v2"
+                placeholder={copy.namePlaceholder}
                 className="w-44 rounded-md border border-[var(--border-default)] bg-white px-2 py-1 text-sm text-[var(--text-primary)]"
               />
             </label>
             <label className="flex flex-col gap-1 text-xs text-[var(--text-muted)]">
-              Phase
+              {copy.phaseLabel}
               <select
                 value={phase}
                 onChange={(e) => setPhase(e.target.value)}
@@ -104,7 +105,7 @@ export function ProjectsCard({ projects }: { projects: Project[] }) {
               </select>
             </label>
             <label className="flex flex-col gap-1 text-xs text-[var(--text-muted)]">
-              Start date
+              {copy.startDateLabel}
               <input
                 type="date"
                 value={startDate}
@@ -123,7 +124,7 @@ export function ProjectsCard({ projects }: { projects: Project[] }) {
               ) : (
                 <FolderPlus className="h-4 w-4" />
               )}
-              Create
+              {copy.create}
             </button>
           </div>
         )}

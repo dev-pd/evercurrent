@@ -5,7 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, X } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
 import { KnowledgeCard } from "@/components/cards/knowledge-card";
+import { messages } from "@/lib/messages";
 import { useDecisionModal } from "@/stores/decision-modal";
+
+const copy = messages.decisions;
 
 export function DecisionModal() {
   const cardId = useDecisionModal((s) => s.cardId);
@@ -50,7 +53,7 @@ export function DecisionModal() {
       >
         <div className="flex shrink-0 items-center justify-between border-b border-[var(--border-default)] px-4 py-2.5">
           <span className="text-xs font-semibold tracking-wider text-[var(--text-muted)] uppercase">
-            Decision
+            {copy.modalLabel}
           </span>
           <button
             type="button"

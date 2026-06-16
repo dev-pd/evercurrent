@@ -1,6 +1,7 @@
 import { Providers } from "@/app/providers";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { messages } from "@/lib/messages";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EverCurrent",
-  description: "Agentic AI layer for hardware engineering teams.",
+  title: messages.meta.title,
+  description: messages.meta.description,
 };
 
 export default function RootLayout({

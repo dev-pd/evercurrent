@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { apiServer } from "@/lib/api";
 import { PageContainer } from "@/components/layout/page-header";
 import { KnowledgeCard } from "@/components/cards/knowledge-card";
+import { messages } from "@/lib/messages";
 import type { CardResponse } from "@/lib/types";
 
 async function safeGetCard(id: string): Promise<CardResponse | null> {
@@ -38,7 +39,7 @@ export default async function CardDetailPage({ params }: CardDetailPageProps) {
           className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to Decisions
+          {messages.decisions.backToDecisions}
         </Link>
       }
     >

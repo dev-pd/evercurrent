@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { Loader2, Sparkles } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
 import { EVE_JOB_TIMEOUT_MS } from "@/lib/constants";
+import { messages } from "@/lib/messages";
 import { useEvents } from "@/hooks/use-events";
+
+const copy = messages.insights;
 
 export function GenerateInsightButton({ projectId }: { projectId: string | null }) {
   const router = useRouter();
@@ -31,7 +34,7 @@ export function GenerateInsightButton({ projectId }: { projectId: string | null 
         router.refresh();
       } else if (e.type === "insight_failed") {
         stop();
-        setError(running ? "Eve found nothing worth flagging right now. Try again." : null);
+        setError(running ? copy.eveNothing : null);
       }
     },
   });
@@ -43,13 +46,13 @@ export function GenerateInsightButton({ projectId }: { projectId: string | null 
     setRunning(true);
     timer.current = setTimeout(() => {
       stop();
-      setError("Eve is taking longer than usual — it'll appear automatically when ready.");
+      setError(copy.eveSlow);
     }, EVE_JOB_TIMEOUT_MS);
     try {
       await apiBrowser().generateInsight();
     } catch {
       stop();
-      setError("Could not start Eve. Try again.");
+      setError(copy.eveStartFailed);
     }
   }
 
@@ -62,7 +65,7 @@ export function GenerateInsightButton({ projectId }: { projectId: string | null 
         className="inline-flex items-center gap-2 rounded-md bg-[var(--color-accent-600)] px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-accent-700)] disabled:opacity-60"
       >
         {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-        {running ? "Eve is investigating…" : "Run Eve"}
+        {running ? copy.eveInvestigating : copy.runEve}
       </button>
       {error && <p className="text-xs text-red-700">{error}</p>}
     </div>

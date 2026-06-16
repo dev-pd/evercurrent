@@ -3,6 +3,9 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { TriangleAlert, RotateCw, ArrowLeft } from "lucide-react";
+import { messages } from "@/lib/messages";
+
+const copy = messages.errors;
 
 export default function Error({
   error,
@@ -26,15 +29,12 @@ export default function Error({
 
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
-            Something went wrong
+            {copy.title}
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-muted)]">
-            An unexpected error occurred while loading this page. You can try again, or head back to
-            your digest.
-          </p>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">{copy.routeBody}</p>
           {error.digest && (
             <p className="mt-2 font-mono text-[11px] text-[var(--text-muted)]">
-              ref: {error.digest}
+              {copy.refPrefix} {error.digest}
             </p>
           )}
         </div>
@@ -46,14 +46,14 @@ export default function Error({
             className="inline-flex items-center gap-2 rounded-md bg-[var(--color-accent-600)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-700)]"
           >
             <RotateCw className="h-4 w-4" aria-hidden="true" />
-            Try again
+            {messages.common.tryAgain}
           </button>
           <Link
             href="/dashboard"
             className="inline-flex items-center gap-2 rounded-md border border-[var(--border-default)] bg-white px-4 py-2 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface-muted)]"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Back to digest
+            {copy.backToDigest}
           </Link>
         </div>
       </div>

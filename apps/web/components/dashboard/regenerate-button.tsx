@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useRegenerateDigest } from "@/hooks/use-digest";
 import { useRegen } from "@/stores/regen";
+import { messages } from "@/lib/messages";
+
+const copy = messages.dashboard;
 
 export function RegenerateButton() {
   const mutation = useRegenerateDigest();
@@ -25,7 +28,7 @@ export function RegenerateButton() {
       size="sm"
     >
       {busy ? <Spinner size="xs" /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />}
-      {busy ? "Regenerating…" : "Regenerate"}
+      {busy ? copy.regenerating : copy.regenerate}
     </Button>
   );
 }

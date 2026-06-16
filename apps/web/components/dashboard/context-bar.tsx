@@ -1,8 +1,11 @@
 import { CircuitBoard } from "lucide-react";
+import { messages } from "@/lib/messages";
 import type { MemberSummary } from "@/lib/types";
 import { KpiTile } from "@/components/ui/kpi-tile";
 import { RegenerateButton } from "./regenerate-button";
 import { LiveUpdatesBadge } from "./live-updates-badge";
+
+const copy = messages.dashboard;
 
 const ROLE_LABEL: Record<string, string> = {
   mech: "Mechanical",
@@ -16,7 +19,7 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 function roleLabel(role: string | null): string {
-  if (!role) return "Member";
+  if (!role) return copy.memberFallback;
   return ROLE_LABEL[role] ?? role;
 }
 
@@ -54,15 +57,15 @@ export function ContextBar({
           </span>
           <div className="flex flex-col leading-tight">
             <span className="text-sm font-semibold text-[var(--text-primary)]">
-              {currentMember?.display_name ?? "Your digest"}
+              {currentMember?.display_name ?? copy.yourDigest}
               <span className="ml-2 font-normal text-[var(--text-muted)]">
                 · {roleLabel(currentMember?.eng_role ?? null)}
               </span>
             </span>
             <span className="text-xs text-[var(--text-muted)]">
-              Phase {phase} · Day {dayIndex}
+              {copy.phaseDay(phase, dayIndex)}
               {currentMember && currentMember.owned_subsystems.length > 0 && (
-                <> · owns {currentMember.owned_subsystems.join(", ")}</>
+                <> · {copy.owns(currentMember.owned_subsystems.join(", "))}</>
               )}
             </span>
           </div>

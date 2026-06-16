@@ -1,5 +1,8 @@
 import { AlertTriangle } from "lucide-react";
+import { messages } from "@/lib/messages";
 import type { InsightConflict } from "@/lib/types";
+
+const copy = messages.insights;
 
 const SEVERITY_CLASSES: Record<InsightConflict["severity"], string> = {
   info: "border-zinc-200 bg-zinc-50 text-zinc-700",
@@ -17,7 +20,7 @@ export function ConflictList({ conflicts, affectedSubsystems }: ConflictListProp
     <section className="border-t border-[var(--color-accent-100)] bg-white/60 px-5 py-4">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold tracking-wider text-[var(--text-secondary)] uppercase">
-          Potential conflicts
+          {copy.conflictsHeading}
         </h3>
         <div className="flex gap-1">
           {affectedSubsystems.map((subsystem) => (
@@ -47,7 +50,9 @@ export function ConflictList({ conflicts, affectedSubsystems }: ConflictListProp
               <p className="mt-1 text-xs opacity-80">{conflict.detail}</p>
               {conflict.impact && (
                 <p className="mt-1.5 text-xs">
-                  <span className="font-semibold tracking-wide uppercase opacity-60">Impact </span>
+                  <span className="font-semibold tracking-wide uppercase opacity-60">
+                    {copy.impactLabel}{" "}
+                  </span>
                   <span className="opacity-90">{conflict.impact}</span>
                 </p>
               )}

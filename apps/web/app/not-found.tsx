@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { CircuitBoard, ArrowLeft } from "lucide-react";
+import { messages } from "@/lib/messages";
+
+const copy = messages.errors;
 
 export default function NotFound() {
   return (
@@ -11,15 +14,12 @@ export default function NotFound() {
 
         <div>
           <p className="font-mono text-sm font-semibold tracking-widest text-[var(--color-accent-600)] uppercase">
-            404
+            {copy.notFoundCode}
           </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
-            Page not found
+            {copy.notFoundTitle}
           </h1>
-          <p className="mt-2 max-w-sm text-sm text-[var(--text-muted)]">
-            That route doesn&apos;t exist. It may have moved, or you typed something the app
-            doesn&apos;t serve.
-          </p>
+          <p className="mt-2 max-w-sm text-sm text-[var(--text-muted)]">{copy.notFoundBody}</p>
         </div>
 
         <Link
@@ -27,7 +27,7 @@ export default function NotFound() {
           className="inline-flex items-center gap-2 rounded-md bg-[var(--color-accent-600)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-700)]"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to your digest
+          {copy.notFoundBack}
         </Link>
       </div>
     </main>

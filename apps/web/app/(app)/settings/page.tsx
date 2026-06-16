@@ -35,7 +35,8 @@ export default async function SettingsPage() {
       ])
     : [null, null, null];
 
-  const displayName = me?.display_name ?? user?.name ?? user?.email ?? "Account";
+  const displayName =
+    me?.display_name ?? user?.name ?? user?.email ?? messages.common.accountFallback;
   const email = me?.email ?? user?.email ?? null;
 
   return (

@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
+import { messages } from "@/lib/messages";
 import type { DigestAnomaly } from "@/lib/types";
+
+const copy = messages.dashboard;
 
 interface AnomalyBannerProps {
   anomalies: DigestAnomaly[];
@@ -13,7 +16,7 @@ export function AnomalyBanner({ anomalies }: AnomalyBannerProps) {
     <section aria-label="Anomalies" className="rounded-lg border border-amber-200 bg-amber-50 p-4">
       <header className="mb-2 flex items-center gap-2">
         <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />
-        <h2 className="text-sm font-semibold text-amber-900">You might be missing</h2>
+        <h2 className="text-sm font-semibold text-amber-900">{copy.anomaliesHeading}</h2>
         <span className="text-xs text-amber-700">({anomalies.length})</span>
       </header>
       <ul className="flex flex-col gap-2">
@@ -25,7 +28,7 @@ export function AnomalyBanner({ anomalies }: AnomalyBannerProps) {
                 href={`/decisions/${anomaly.card_id}`}
                 className="ml-2 text-xs font-medium text-amber-700 underline hover:text-amber-900"
               >
-                Open
+                {messages.common.open}
               </Link>
             )}
           </li>

@@ -2,8 +2,11 @@
 
 import { AlertTriangle } from "lucide-react";
 import { timeAgo } from "@/lib/format-date";
+import { messages } from "@/lib/messages";
 import type { CardListItem } from "@/lib/types";
 import { useDecisionModal } from "@/stores/decision-modal";
+
+const copy = messages.timeline;
 
 export function BlockerBoard({ cards, limit = 8 }: { cards: CardListItem[]; limit?: number }) {
   const open = useDecisionModal((s) => s.open);
@@ -16,7 +19,7 @@ export function BlockerBoard({ cards, limit = 8 }: { cards: CardListItem[]; limi
     <section className="flex flex-col gap-3 rounded-lg border border-[var(--border-default)] bg-white p-5">
       <div className="flex items-center justify-between">
         <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
-          <AlertTriangle className="h-4 w-4 text-amber-500" /> Active blockers
+          <AlertTriangle className="h-4 w-4 text-amber-500" /> {copy.blockersHeading}
         </h3>
         <span className="font-mono text-xs text-[var(--text-muted)] tabular-nums">
           {blockers.length}
@@ -24,7 +27,7 @@ export function BlockerBoard({ cards, limit = 8 }: { cards: CardListItem[]; limi
       </div>
 
       {blockers.length === 0 ? (
-        <p className="text-sm text-[var(--text-muted)]">No open blockers. Clear runway.</p>
+        <p className="text-sm text-[var(--text-muted)]">{copy.blockersEmpty}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {blockers.map((blocker) => (

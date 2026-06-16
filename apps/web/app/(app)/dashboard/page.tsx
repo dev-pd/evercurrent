@@ -8,7 +8,10 @@ import { DigestColumns } from "@/components/dashboard/digest-columns";
 import { AnomalyBanner } from "@/components/dashboard/anomaly-banner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { parseDigest } from "@/lib/digest-parse";
+import { messages } from "@/lib/messages";
 import type { DigestV2, MemberSummary } from "@/lib/types";
+
+const copy = messages.dashboard;
 
 async function safeFetch<T>(fn: () => Promise<T>): Promise<T | null> {
   try {
@@ -22,9 +25,8 @@ async function safeFetch<T>(fn: () => Promise<T>): Promise<T | null> {
 }
 
 function buildSummary(topCount: number, name: string): string {
-  if (topCount === 0) return `You're caught up, ${name.split(" ")[0]}. Nothing needs you today.`;
-  const noun = topCount === 1 ? "thing needs" : "things need";
-  return `${topCount} ${noun} you today.`;
+  if (topCount === 0) return copy.caughtUp(name.split(" ")[0]);
+  return copy.needsYou(topCount);
 }
 
 export default async function DashboardPage() {
@@ -59,10 +61,10 @@ export default async function DashboardPage() {
   const fcsTarget = timeline?.fcs_label?.split(" FCS")[0] ?? "—";
 
   const kpis = [
-    { label: "Signals today", value: today?.message_count ?? 0 },
-    { label: "Program progress", value: `${timeline?.progress_pct ?? 0}%`, hint: phase },
-    { label: "FCS target", value: fcsTarget },
-    { label: "Open decisions", value: openDecisions },
+    { label: copy.kpiSignalsToday, value: today?.message_count ?? 0 },
+    { label: copy.kpiProgramProgress, value: `${timeline?.progress_pct ?? 0}%`, hint: phase },
+    { label: copy.kpiFcsTarget, value: fcsTarget },
+    { label: copy.kpiOpenDecisions, value: openDecisions },
   ];
 
   return (
@@ -87,10 +89,7 @@ export default async function DashboardPage() {
           <AnomalyBanner anomalies={digest?.anomalies ?? []} />
 
           {digest === null ? (
-            <EmptyState
-              title="No digest yet."
-              hint="Connect Slack and regenerate to draft the first briefing."
-            />
+            <EmptyState title={copy.noDigestTitle} hint={copy.noDigestHint} />
           ) : (
             <DigestColumns buckets={buckets} />
           )}

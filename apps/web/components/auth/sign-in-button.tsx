@@ -2,6 +2,9 @@
 
 import { useUser } from "@auth0/nextjs-auth0";
 import { Button } from "@/components/ui/button";
+import { messages } from "@/lib/messages";
+
+const copy = messages.auth;
 
 interface SignInButtonProps {
   loginPath?: string;
@@ -17,7 +20,7 @@ export function SignInButton({
   if (isLoading) {
     return (
       <Button variant="outline" size="sm" disabled>
-        Loading
+        {copy.loading}
       </Button>
     );
   }
@@ -25,14 +28,14 @@ export function SignInButton({
   if (user) {
     return (
       <Button asChild variant="outline" size="sm">
-        <a href={logoutPath}>Sign out</a>
+        <a href={logoutPath}>{copy.signOut}</a>
       </Button>
     );
   }
 
   return (
     <Button asChild size="sm">
-      <a href={loginPath}>Sign in</a>
+      <a href={loginPath}>{copy.signIn}</a>
     </Button>
   );
 }

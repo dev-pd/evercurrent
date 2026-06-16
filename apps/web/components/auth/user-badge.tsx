@@ -1,5 +1,6 @@
 import { LogOut } from "lucide-react";
 import { auth0 } from "@/lib/auth0";
+import { messages } from "@/lib/messages";
 
 export async function UserBadge() {
   const session = await auth0.getSession();
@@ -8,7 +9,9 @@ export async function UserBadge() {
   }
 
   const email =
-    typeof session.user.email === "string" ? session.user.email : (session.user.sub ?? "Account");
+    typeof session.user.email === "string"
+      ? session.user.email
+      : (session.user.sub ?? messages.common.accountFallback);
   const initial = email.charAt(0).toUpperCase();
 
   return (

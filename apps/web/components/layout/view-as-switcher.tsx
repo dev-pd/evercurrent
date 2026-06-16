@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { ChevronDown, Eye, Loader2 } from "lucide-react";
 import { apiBrowser, VIEW_AS_COOKIE } from "@/lib/api";
+import { messages } from "@/lib/messages";
 import { roleLabel } from "@/lib/roles";
+
+const copy = messages.viewAs;
 
 function readCookie(): string | null {
   if (typeof document === "undefined") return null;
@@ -83,7 +86,7 @@ export function ViewAsSwitcher() {
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="h-7 w-7 animate-spin text-[var(--color-accent-600)]" />
             <span className="text-xs font-medium text-[var(--text-secondary)]">
-              Switching view…
+              {copy.switching}
             </span>
           </div>
         </div>

@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { ArrowUpRight, GitBranch, MessageSquare } from "lucide-react";
+import { messages } from "@/lib/messages";
 import type { CardListItem } from "@/lib/types";
 import { useDecisionModal } from "@/stores/decision-modal";
+
+const copy = messages.decisions;
 
 const KIND_STYLES: Record<string, string> = {
   decision: "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -23,12 +26,12 @@ type Filter =
 
 function buildFilters(hasSubs: boolean): { label: string; filter: Filter }[] {
   return [
-    ...(hasSubs ? [{ label: "Mine (open)", filter: { key: "mine" } as Filter }] : []),
-    { label: "All open", filter: { key: "open" } },
-    { label: "Decisions", filter: { key: "kind", kind: "decision" } },
-    { label: "Risks", filter: { key: "kind", kind: "risk" } },
-    { label: "Questions", filter: { key: "kind", kind: "question" } },
-    { label: "All", filter: { key: "all" } },
+    ...(hasSubs ? [{ label: copy.filterMine, filter: { key: "mine" } as Filter }] : []),
+    { label: copy.filterAllOpen, filter: { key: "open" } },
+    { label: copy.filterDecisions, filter: { key: "kind", kind: "decision" } },
+    { label: copy.filterRisks, filter: { key: "kind", kind: "risk" } },
+    { label: copy.filterQuestions, filter: { key: "kind", kind: "question" } },
+    { label: copy.filterAll, filter: { key: "all" } },
   ];
 }
 
@@ -91,9 +94,7 @@ export function DecisionsBoard({
 
       {filtered.length === 0 ? (
         <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-white p-8 text-center">
-          <p className="text-sm font-medium text-[var(--text-primary)]">
-            No cards match this filter.
-          </p>
+          <p className="text-sm font-medium text-[var(--text-primary)]">{copy.noMatch}</p>
         </div>
       ) : (
         <ul className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-white">

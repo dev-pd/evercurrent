@@ -4,7 +4,10 @@ import { useCallback, useState } from "react";
 import { Bell } from "lucide-react";
 import { useEvents, type StreamEvent } from "@/hooks/use-events";
 import { formatTimestamp } from "@/lib/format-date";
+import { messages } from "@/lib/messages";
 import { cn } from "@/lib/utils";
+
+const copy = messages.dashboard;
 
 interface LiveUpdatesBadgeProps {
   projectId: string | null;
@@ -48,9 +51,11 @@ export function LiveUpdatesBadge({ projectId, generatedAt }: LiveUpdatesBadgePro
       aria-live="polite"
     >
       <Bell className="h-3 w-3" aria-hidden="true" />
-      <span>{visibleCount === 0 ? "Live" : `${visibleCount} new`}</span>
+      <span>{visibleCount === 0 ? copy.live : copy.newCount(visibleCount)}</span>
       {updatedAt && (
-        <span className="border-l border-current/20 pl-2 opacity-70">updated {updatedAt}</span>
+        <span className="border-l border-current/20 pl-2 opacity-70">
+          {copy.updatedAt(updatedAt)}
+        </span>
       )}
     </div>
   );

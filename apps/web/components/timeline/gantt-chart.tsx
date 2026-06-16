@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { Flag } from "lucide-react";
+import { messages } from "@/lib/messages";
 import type { CardListItem } from "@/lib/types";
 import { useDecisionModal } from "@/stores/decision-modal";
+
+const copy = messages.timeline;
 
 const PHASES = [
   { key: "EVT", band: "bg-sky-100", label: "text-sky-700" },
@@ -63,7 +66,7 @@ export function GanttChart({ startDate, fcsLabel, cards }: GanttProps) {
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-[var(--border-default)] bg-white p-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[var(--text-primary)]">Program timeline</h3>
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">{copy.programTimeline}</h3>
         <span className="inline-flex items-center gap-1 text-xs text-[var(--text-muted)]">
           <Flag className="h-3 w-3" /> {fcsLabel}
         </span>
@@ -122,12 +125,12 @@ export function GanttChart({ startDate, fcsLabel, cards }: GanttProps) {
 
       <div className="flex flex-wrap items-center gap-3 text-[11px] text-[var(--text-muted)]">
         <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" /> decision
+          <span className="h-2 w-2 rounded-full bg-emerald-500" /> {copy.legendDecision}
         </span>
         <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-amber-500" /> risk
+          <span className="h-2 w-2 rounded-full bg-amber-500" /> {copy.legendRisk}
         </span>
-        <span>· markers = open items by date · click to open · vertical line = today</span>
+        <span>{copy.legendNote}</span>
       </div>
 
       {hover && (

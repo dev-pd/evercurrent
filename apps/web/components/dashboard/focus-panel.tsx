@@ -1,10 +1,13 @@
 import { Target, TrendingDown, TrendingUp } from "lucide-react";
+import { messages } from "@/lib/messages";
 import type { FocusTopic } from "@/lib/types";
 
+const copy = messages.focus;
+
 const SOURCE_META: Record<string, { label: string; cls: string }> = {
-  role: { label: "your role", cls: "bg-indigo-100 text-indigo-700" },
-  phase: { label: "this phase", cls: "bg-amber-100 text-amber-700" },
-  learned: { label: "your activity", cls: "bg-emerald-100 text-emerald-700" },
+  role: { label: copy.sources.role, cls: "bg-indigo-100 text-indigo-700" },
+  phase: { label: copy.sources.phase, cls: "bg-amber-100 text-amber-700" },
+  learned: { label: copy.sources.learned, cls: "bg-emerald-100 text-emerald-700" },
 };
 
 export function FocusPanel({ focus }: { focus: FocusTopic[] }) {
@@ -14,11 +17,9 @@ export function FocusPanel({ focus }: { focus: FocusTopic[] }) {
       <div className="mb-2 flex items-center gap-2">
         <Target className="h-3.5 w-3.5 text-[var(--color-accent-600)]" aria-hidden="true" />
         <h2 className="text-xs font-semibold tracking-wider text-[var(--text-secondary)] uppercase">
-          What you&apos;re tracking now
+          {copy.heading}
         </h2>
-        <span className="text-[11px] text-[var(--text-muted)]">
-          built from your role, the project phase, and what you engage with
-        </span>
+        <span className="text-[11px] text-[var(--text-muted)]">{copy.subhead}</span>
       </div>
       <div className="divide-y divide-[var(--border-default)]">
         {focus.map((item) => (

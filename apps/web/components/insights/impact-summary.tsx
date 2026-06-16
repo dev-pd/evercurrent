@@ -1,3 +1,7 @@
+import { messages } from "@/lib/messages";
+
+const copy = messages.insights;
+
 interface ImpactSummaryProps {
   impact: Record<string, string>;
 }
@@ -17,12 +21,12 @@ export function ImpactSummary({ impact }: ImpactSummaryProps) {
   return (
     <section className="border-t border-[var(--color-accent-100)] bg-white/60 px-5 py-4">
       <h3 className="text-xs font-semibold tracking-wider text-[var(--text-secondary)] uppercase">
-        Impact summary
+        {copy.impactSummaryHeading}
       </h3>
       <div className="mt-2 grid grid-cols-1 gap-3 text-xs sm:grid-cols-3">
-        <ImpactStat label="Cost" value={impact.cost ?? "—"} />
-        <ImpactStat label="Schedule" value={impact.schedule ?? "—"} />
-        <ImpactStat label="Revenue at risk" value={impact.revenue_at_risk ?? "—"} />
+        <ImpactStat label={copy.impactCost} value={impact.cost ?? "—"} />
+        <ImpactStat label={copy.impactSchedule} value={impact.schedule ?? "—"} />
+        <ImpactStat label={copy.impactRevenueAtRisk} value={impact.revenue_at_risk ?? "—"} />
       </div>
     </section>
   );

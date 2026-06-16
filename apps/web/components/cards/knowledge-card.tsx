@@ -1,7 +1,10 @@
 import { CardSourceList } from "@/components/cards/card-source-list";
 import { CardEdgesList } from "@/components/cards/card-edges-list";
 import { formatTimestamp } from "@/lib/format-date";
+import { messages } from "@/lib/messages";
 import type { CardResponse } from "@/lib/types";
+
+const copy = messages.card;
 
 interface KnowledgeCardProps {
   card: CardResponse;
@@ -18,22 +21,34 @@ export function KnowledgeCard({ card }: KnowledgeCardProps) {
           <span className="rounded-full bg-zinc-100 px-2 py-0.5 font-medium text-zinc-700">
             {card.kind}
           </span>
-          <span>status: {card.status}</span>
+          <span>
+            {copy.statusPrefix} {card.status}
+          </span>
           {typeof card.confidence === "number" && (
-            <span>confidence: {card.confidence.toFixed(2)}</span>
+            <span>
+              {copy.confidencePrefix} {card.confidence.toFixed(2)}
+            </span>
           )}
         </div>
         <h1 className="text-xl font-semibold tracking-tight text-zinc-900">{card.summary}</h1>
         <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
-          {decided && <span>decided: {decided}</span>}
-          {updated && <span>updated: {updated}</span>}
+          {decided && (
+            <span>
+              {copy.decidedPrefix} {decided}
+            </span>
+          )}
+          {updated && (
+            <span>
+              {copy.updatedPrefix} {updated}
+            </span>
+          )}
         </div>
       </header>
 
       {card.body && (
         <section>
           <h2 className="mb-2 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
-            Detail
+            {copy.detail}
           </h2>
           <p className="text-sm whitespace-pre-line text-zinc-800">{card.body}</p>
         </section>
@@ -41,20 +56,22 @@ export function KnowledgeCard({ card }: KnowledgeCardProps) {
 
       <section>
         <h2 className="mb-2 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
-          Sources
+          {copy.sources}
         </h2>
         <CardSourceList sources={card.sources} />
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold tracking-wide text-zinc-700 uppercase">Impact</h2>
+        <h2 className="mb-2 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
+          {copy.impact}
+        </h2>
         <CardEdgesList edges={card.edges} />
       </section>
 
       {card.activity.length > 0 && (
         <section>
           <h2 className="mb-2 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
-            Activity
+            {copy.activity}
           </h2>
           <ul className="flex flex-col gap-1.5 text-sm">
             {card.activity.map((activity) => {

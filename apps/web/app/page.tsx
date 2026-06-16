@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { CircuitBoard, FileText, MessageSquare, ScanSearch } from "lucide-react";
 import { auth0 } from "@/lib/auth0";
 import { SignInButton } from "@/components/auth/sign-in-button";
+import { messages } from "@/lib/messages";
+
+const copy = messages.landing;
 
 export default async function Home() {
   const session = await auth0.getSession();
@@ -18,7 +21,7 @@ export default async function Home() {
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-accent-600)] text-white">
             <CircuitBoard className="h-4 w-4" aria-hidden="true" />
           </span>
-          <span className="text-sm font-semibold tracking-tight">EverCurrent</span>
+          <span className="text-sm font-semibold tracking-tight">{messages.common.brand}</span>
         </div>
         <SignInButton />
       </header>
@@ -26,17 +29,13 @@ export default async function Home() {
       <section className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-start justify-center gap-8 px-6 py-16">
         <div className="flex flex-col gap-3">
           <span className="font-mono text-[11px] tracking-wider text-[var(--color-accent-700)] uppercase">
-            For hardware engineering teams
+            {copy.eyebrow}
           </span>
           <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-5xl">
-            Stop drowning in Slack. <br />
-            <span className="text-[var(--text-secondary)]">See what actually changed.</span>
+            {copy.headlineLine1} <br />
+            <span className="text-[var(--text-secondary)]">{copy.headlineLine2}</span>
           </h1>
-          <p className="max-w-xl text-base text-[var(--text-secondary)]">
-            EverCurrent reads your team&apos;s Slack, specs, and ECOs. Surfaces decisions, risks,
-            and cross-functional dependencies. Personalized to your role and the phase you&apos;re
-            in.
-          </p>
+          <p className="max-w-xl text-base text-[var(--text-secondary)]">{copy.lede}</p>
         </div>
 
         <SignInButton />
@@ -44,24 +43,24 @@ export default async function Home() {
         <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
           <FeatureCard
             icon={MessageSquare}
-            title="Daily digest"
-            body="Per-engineer briefing: what changed, what to watch, what to ignore."
+            title={copy.features.digestTitle}
+            body={copy.features.digestBody}
           />
           <FeatureCard
             icon={FileText}
-            title="Decisions log"
-            body="Auto-extracted with rationale, decided-by, and source traceability."
+            title={copy.features.decisionsTitle}
+            body={copy.features.decisionsBody}
           />
           <FeatureCard
             icon={ScanSearch}
-            title="Document graph"
-            body="Specs, BOMs, FAI reports indexed alongside team chatter."
+            title={copy.features.graphTitle}
+            body={copy.features.graphBody}
           />
         </div>
       </section>
 
       <footer className="border-t border-[var(--border-default)] bg-white px-6 py-4 text-[11px] text-[var(--text-muted)]">
-        <span className="font-mono">v0.12.0</span> · take-home build
+        <span className="font-mono">{copy.version}</span> · {copy.buildNote}
       </footer>
     </main>
   );

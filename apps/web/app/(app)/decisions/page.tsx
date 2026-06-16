@@ -4,7 +4,10 @@ import { cookies } from "next/headers";
 import { apiServer, VIEW_AS_COOKIE } from "@/lib/api";
 import { PageContainer, PageHeader } from "@/components/layout/page-header";
 import { DecisionsBoard } from "@/components/decisions/decisions-board";
+import { messages } from "@/lib/messages";
 import type { CardListItem, MemberSummary } from "@/lib/types";
+
+const copy = messages.decisions;
 
 async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -28,12 +31,10 @@ export default async function DecisionsPage() {
   const viewed = members.find((member) => member.id === viewedId) ?? members[0] ?? null;
   const mySubsystems = viewed?.owned_subsystems ?? [];
 
-  const subtitle = viewed
-    ? `Open decisions, risks, and questions for ${viewed.display_name}'s subsystems — switch the full log below.`
-    : "Structured decisions, risks, and questions extracted from team chatter and docs.";
+  const subtitle = viewed ? copy.subtitleScoped(viewed.display_name) : copy.subtitleDefault;
 
   return (
-    <PageContainer header={<PageHeader title="Decisions" subtitle={subtitle} />}>
+    <PageContainer header={<PageHeader title={copy.title} subtitle={subtitle} />}>
       <DecisionsBoard cards={cards} mySubsystems={mySubsystems} />
     </PageContainer>
   );

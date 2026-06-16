@@ -5,7 +5,10 @@ import { PageContainer, PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InsightCard } from "@/components/insights/insight-card";
 import { GenerateInsightButton } from "@/components/insights/generate-insight-button";
+import { messages } from "@/lib/messages";
 import type { ProactiveInsight, Project } from "@/lib/types";
+
+const copy = messages.insights;
 
 async function safeFetch<T>(fn: () => Promise<T>): Promise<T | null> {
   try {
@@ -31,17 +34,14 @@ export default async function InsightsPage() {
     <PageContainer
       header={
         <PageHeader
-          title="Insights"
-          subtitle="Proactive changes Eve detected across requirements, specs, and downstream impact."
+          title={copy.title}
+          subtitle={copy.subtitle}
           action={<GenerateInsightButton projectId={projectId} />}
         />
       }
     >
       {insightList.length === 0 ? (
-        <EmptyState
-          title="No insights yet."
-          hint="Eve surfaces requirement changes and cross-subsystem conflicts here as they appear."
-        />
+        <EmptyState title={copy.emptyTitle} hint={copy.emptyHint} />
       ) : (
         <div className="flex flex-col gap-6">
           {insightList.map((insight) => (

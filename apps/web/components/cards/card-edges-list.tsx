@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { messages } from "@/lib/messages";
 import type { CardEdge } from "@/lib/types";
+
+const copy = messages.card;
 
 interface CardEdgesListProps {
   edges: CardEdge[];
@@ -8,7 +11,7 @@ interface CardEdgesListProps {
 
 export function CardEdgesList({ edges }: CardEdgesListProps) {
   if (edges.length === 0) {
-    return <p className="text-xs text-zinc-500">No linked cards.</p>;
+    return <p className="text-xs text-zinc-500">{copy.noEdges}</p>;
   }
   return (
     <ul className="flex flex-col gap-1.5">

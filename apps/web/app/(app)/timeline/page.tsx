@@ -5,7 +5,10 @@ import { PageContainer, PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { GanttChart } from "@/components/timeline/gantt-chart";
 import { BlockerBoard } from "@/components/timeline/blocker-board";
+import { messages } from "@/lib/messages";
 import type { CardListItem, Timeline } from "@/lib/types";
+
+const copy = messages.timeline;
 
 async function safeFetch<T>(fn: () => Promise<T>): Promise<T | null> {
   try {
@@ -41,14 +44,7 @@ export default async function TimelinePage({ searchParams }: TimelinePageProps) 
   const cardList = cards ?? [];
 
   return (
-    <PageContainer
-      header={
-        <PageHeader
-          title="Timeline"
-          subtitle="Program phases, decisions, and active blockers across the NPI schedule."
-        />
-      }
-    >
+    <PageContainer header={<PageHeader title={copy.title} subtitle={copy.subtitle} />}>
       {timeline ? (
         <>
           <GanttChart
@@ -59,10 +55,7 @@ export default async function TimelinePage({ searchParams }: TimelinePageProps) 
           <BlockerBoard cards={cardList} />
         </>
       ) : (
-        <EmptyState
-          title="No timeline yet."
-          hint="Once a project exists, its phase plan and subsystem lanes show here."
-        />
+        <EmptyState title={copy.emptyTitle} hint={copy.emptyHint} />
       )}
     </PageContainer>
   );

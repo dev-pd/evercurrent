@@ -1,5 +1,8 @@
+import { messages } from "@/lib/messages";
 import type { DigestItemV2 } from "@/lib/types";
 import type { DigestBullet, ParsedDigest } from "@/lib/digest-parse";
+
+const copy = messages.digest;
 
 type Bucket = DigestItemV2["bucket"];
 
@@ -8,25 +11,25 @@ const BUCKET_META: Record<
   { label: string; dot: string; ring: string; accent: string; desc: string }
 > = {
   top_priority: {
-    label: "Top priority",
+    label: copy.topPriorityLabel,
     dot: "bg-red-500",
     ring: "ring-red-100",
     accent: "border-l-red-500",
-    desc: "Act today",
+    desc: copy.topPriorityDesc,
   },
   watch_outs: {
-    label: "Watch-outs",
+    label: copy.watchOutsLabel,
     dot: "bg-amber-500",
     ring: "ring-amber-100",
     accent: "border-l-amber-500",
-    desc: "Keep an eye on",
+    desc: copy.watchOutsDesc,
   },
   fyi: {
-    label: "FYI",
+    label: copy.fyiLabel,
     dot: "bg-sky-500",
     ring: "ring-sky-100",
     accent: "border-l-sky-500",
-    desc: "Context only",
+    desc: copy.fyiDesc,
   },
 };
 
@@ -65,7 +68,7 @@ function DigestColumn({ bucket, bullets }: { bucket: Bucket; bullets: DigestBull
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
         {bullets.length === 0 ? (
           <p className="rounded-lg border border-dashed border-[var(--border-default)] px-3 py-8 text-center text-xs text-[var(--text-muted)]">
-            Nothing here.
+            {copy.empty}
           </p>
         ) : (
           <div className="flex flex-col gap-2.5">

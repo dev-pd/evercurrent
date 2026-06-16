@@ -1,6 +1,9 @@
 import { FileText, MessageSquare } from "lucide-react";
 import { formatTimestamp } from "@/lib/format-date";
+import { messages } from "@/lib/messages";
 import type { CardSource } from "@/lib/types";
+
+const copy = messages.card;
 
 interface CardSourceListProps {
   sources: CardSource[];
@@ -15,7 +18,7 @@ function sourceIcon(kind: string) {
 
 export function CardSourceList({ sources }: CardSourceListProps) {
   if (sources.length === 0) {
-    return <p className="text-xs text-zinc-500">No sources linked yet.</p>;
+    return <p className="text-xs text-zinc-500">{copy.noSources}</p>;
   }
   return (
     <ul className="flex flex-col gap-2">
@@ -36,7 +39,7 @@ export function CardSourceList({ sources }: CardSourceListProps) {
                     : { target: "_blank", rel: "noreferrer" })}
                   className="ml-auto text-xs font-medium text-zinc-700 hover:text-zinc-900"
                 >
-                  Open in Slack
+                  {copy.openInSlack}
                 </a>
               )}
             </div>

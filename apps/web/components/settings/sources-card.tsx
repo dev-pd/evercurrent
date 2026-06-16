@@ -39,7 +39,7 @@ export function SourcesCard({ connectors }: SourcesCardProps) {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold text-[var(--text-primary)]">Sources</h2>
+      <h2 className="text-sm font-semibold text-[var(--text-primary)]">{copy.heading}</h2>
       <div className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-white">
         {SOURCES.map((source, index) => {
           const connector = connectors.find((candidate) => candidate.kind === source.kind);
@@ -104,7 +104,7 @@ interface SyncButtonProps {
 function SyncButton({ connectorId }: SyncButtonProps) {
   const router = useRouter();
   const [state, setState] = useState<"idle" | "syncing" | "done">("idle");
-  const [label, setLabel] = useState("Sync");
+  const [label, setLabel] = useState<string>(copy.sync);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Clear the background-sync poll if the component unmounts mid-poll.
@@ -121,7 +121,7 @@ function SyncButton({ connectorId }: SyncButtonProps) {
     setState("syncing");
     try {
       await apiBrowser().syncSlack(connectorId);
-      setLabel("Syncing in background…");
+      setLabel(copy.syncingBackground);
       setState("done");
       let ticks = 0;
       pollRef.current = setInterval(() => {
@@ -129,11 +129,11 @@ function SyncButton({ connectorId }: SyncButtonProps) {
         if (++ticks >= SYNC_POLL_TICKS) {
           clearPoll();
           setState("idle");
-          setLabel("Sync");
+          setLabel(copy.sync);
         }
       }, SYNC_POLL_INTERVAL_MS);
     } catch {
-      setLabel("Failed");
+      setLabel(copy.syncFailed);
       setState("idle");
     }
   }
@@ -150,7 +150,7 @@ function SyncButton({ connectorId }: SyncButtonProps) {
       ) : (
         <RefreshCw className="h-3.5 w-3.5" />
       )}
-      {state === "syncing" ? "Syncing…" : label}
+      {state === "syncing" ? copy.syncing : label}
     </button>
   );
 }
@@ -165,7 +165,7 @@ function DisconnectButton({ connectorId, label }: DisconnectButtonProps) {
   const [busy, setBusy] = useState(false);
 
   async function disconnect() {
-    if (!window.confirm(`Disconnect ${label}? Ingested data is kept; re-connect anytime.`)) {
+    if (!window.confirm(copy.disconnectConfirm(label))) {
       return;
     }
     setBusy(true);
@@ -186,7 +186,7 @@ function DisconnectButton({ connectorId, label }: DisconnectButtonProps) {
       className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-white px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
     >
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Unplug className="h-3.5 w-3.5" />}
-      Disconnect
+      {copy.disconnect}
     </button>
   );
 }

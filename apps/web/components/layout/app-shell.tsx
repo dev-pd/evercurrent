@@ -4,6 +4,7 @@ import { CircuitBoard, FileText, GanttChartSquare, Home, Settings, Sparkles } fr
 import { UserBadge } from "@/components/auth/user-badge";
 import { ViewAsSwitcher } from "@/components/layout/view-as-switcher";
 import { DecisionModal } from "@/components/decisions/decision-modal";
+import { messages } from "@/lib/messages";
 
 interface NavItem {
   href: string;
@@ -12,11 +13,11 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: "/dashboard", label: "Digest", icon: Home },
-  { href: "/decisions", label: "Decisions", icon: FileText },
-  { href: "/insights", label: "Insights", icon: Sparkles },
-  { href: "/timeline", label: "Timeline", icon: GanttChartSquare },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard", label: messages.nav.digest, icon: Home },
+  { href: "/decisions", label: messages.nav.decisions, icon: FileText },
+  { href: "/insights", label: messages.nav.insights, icon: Sparkles },
+  { href: "/timeline", label: messages.nav.timeline, icon: GanttChartSquare },
+  { href: "/settings", label: messages.nav.settings, icon: Settings },
 ];
 
 interface AppShellProps {
@@ -40,7 +41,7 @@ export function AppShell({
   isAdmin = false,
   eveRail = true,
 }: AppShellProps) {
-  const workspace = orgName || "Workspace";
+  const workspace = orgName || messages.common.workspaceFallback;
   const phaseLabel = phase ? `${phase.toUpperCase()}${day != null ? ` · Day ${day}` : ""}` : null;
   const themeStyle = accent
     ? ({ "--color-accent-600": accent, "--color-accent-700": accent } as CSSProperties)
@@ -57,7 +58,9 @@ export function AppShell({
             )}
           </span>
           <div className="flex min-w-0 flex-col leading-tight">
-            <span className="truncate text-sm font-semibold tracking-tight">EverCurrent</span>
+            <span className="truncate text-sm font-semibold tracking-tight">
+              {messages.common.brand}
+            </span>
             <span className="truncate text-[11px] text-[var(--text-muted)]">{workspace}</span>
           </div>
         </div>
