@@ -10,14 +10,13 @@ from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from evercurrent.config import get_settings
 from evercurrent.connectors.slack.client import SlackClient
 from evercurrent.connectors.slack.crypto import TokenVault
 from evercurrent.db import models
 from evercurrent.tenancy.rls import set_org_context
 
 log = structlog.get_logger(__name__)
-
-DEFAULT_BACKFILL_DAYS = 30
 
 
 @dataclass(frozen=True)
@@ -31,9 +30,11 @@ async def backfill_channel(
     session: AsyncSession,
     vault: TokenVault,
     connector_channel_id: uuid.UUID,
-    days: int = DEFAULT_BACKFILL_DAYS,
+    days: int | None = None,
     slack_client: SlackClient | None = None,
 ) -> BackfillSummary:
+    if days is None:
+        days = get_settings().slack_backfill_days
     channel_row = (
         await session.execute(
             select(models.ConnectorChannel).where(

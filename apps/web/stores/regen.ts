@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { ASYNC_JOB_TIMEOUT_MS } from "@/lib/constants";
 
 interface RegenState {
   pending: boolean;
@@ -12,7 +13,7 @@ export const useRegen = create<RegenState>((set) => ({
   pending: false,
   start: () => {
     if (safety) clearTimeout(safety);
-    safety = setTimeout(() => set({ pending: false }), 45_000);
+    safety = setTimeout(() => set({ pending: false }), ASYNC_JOB_TIMEOUT_MS);
     set({ pending: true });
   },
   done: () => {

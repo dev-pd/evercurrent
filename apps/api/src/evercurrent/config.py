@@ -63,6 +63,10 @@ class Settings(BaseSettings):
     eve_max_insights_per_day: int = 25
     eve_dedup_threshold: float = 0.82
 
+    digest_hour: int = 8
+    digest_window_minutes: int = 5
+    slack_backfill_days: int = 30
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

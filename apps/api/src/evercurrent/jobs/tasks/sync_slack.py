@@ -75,7 +75,6 @@ async def sync_slack_connector(_ctx: dict[str, Any], connector_id: str) -> dict[
                         session=session,
                         vault=vault,
                         connector_channel_id=cc_id,
-                        days=30,
                         slack_client=client,
                     )
                     raw_total += summary.raw_events_inserted

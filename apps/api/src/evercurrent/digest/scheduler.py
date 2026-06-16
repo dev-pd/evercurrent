@@ -9,6 +9,7 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from evercurrent.config import get_settings
 from evercurrent.db.session import session_scope
 from evercurrent.digest import repository as digest_repo
 
@@ -16,9 +17,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 log = structlog.get_logger(__name__)
-
-_DIGEST_HOUR = 8
-_DIGEST_WINDOW_MINUTES = 5
 
 
 def _safe_zone(tz_name: str) -> ZoneInfo:
@@ -36,11 +34,12 @@ def members_due_at(
     if now_utc.tzinfo is None:
         now_utc = now_utc.replace(tzinfo=dt.UTC)
 
+    settings = get_settings()
     due: list[uuid.UUID] = []
     for m in memberships:
         tz_name = str(m.get("timezone") or "UTC")
         local = now_utc.astimezone(_safe_zone(tz_name))
-        if local.hour == _DIGEST_HOUR and local.minute < _DIGEST_WINDOW_MINUTES:
+        if local.hour == settings.digest_hour and local.minute < settings.digest_window_minutes:
             due.append(uuid.UUID(str(m["id"])))
     return due
 

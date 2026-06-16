@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Sparkles } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
+import { ASYNC_JOB_TIMEOUT_MS } from "@/lib/constants";
 import { useEvents } from "@/hooks/use-events";
 
 export function GenerateInsightButton({ projectId }: { projectId: string | null }) {
@@ -40,7 +41,7 @@ export function GenerateInsightButton({ projectId }: { projectId: string | null 
     timer.current = setTimeout(() => {
       stop();
       setError("Eve is taking a while — refresh in a moment to see the result.");
-    }, 45_000);
+    }, ASYNC_JOB_TIMEOUT_MS);
     try {
       await apiBrowser().generateInsight();
     } catch {
