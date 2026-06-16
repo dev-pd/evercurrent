@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 from evercurrent.db.session import session_scope
 from evercurrent.jobs.tasks.route_message_db import (
+    link_author_membership,
     load_raw_event,
     resolve_author_role,
     resolve_project_phase,
@@ -130,6 +131,13 @@ async def _route(
             author_display_name=author_display,
             posted_at_epoch=posted_at_epoch,
             thread_ts=thread_ts,
+        )
+
+        await link_author_membership(
+            session,
+            org_id=org_id,
+            message_id=message_id,
+            slack_user_id=slack_user_str,
         )
 
         thread_parent_text = await resolve_thread_parent_text(

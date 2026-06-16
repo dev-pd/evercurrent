@@ -150,6 +150,44 @@ async def resolve_author_role(
     return str(row[0])
 
 
+async def link_author_membership(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    message_id: uuid.UUID,
+    slack_user_id: str | None,
+) -> str | None:
+    """Link a webhook message to an already-provisioned member by Slack uid so
+    the live path resolves author name/membership immediately, instead of
+    leaving the raw uid until the next Sync. Returns the resolved display name,
+    or None when no member exists yet (a later Sync provisions them)."""
+    if not slack_user_id:
+        return None
+    row = (
+        (
+            await session.execute(
+                text(
+                    "SELECT id, display_name FROM org_memberships "
+                    "WHERE org_id = :org_id AND slack_user_id = :uid LIMIT 1",
+                ),
+                {"org_id": str(org_id), "uid": slack_user_id},
+            )
+        )
+        .mappings()
+        .first()
+    )
+    if row is None:
+        return None
+    await session.execute(
+        text(
+            "UPDATE messages SET author_membership_id = :mid, author_display_name = :name "
+            "WHERE id = :msg",
+        ),
+        {"mid": str(row["id"]), "name": row["display_name"], "msg": str(message_id)},
+    )
+    return str(row["display_name"])
+
+
 async def resolve_project_phase(
     session: AsyncSession,
     project_id: uuid.UUID | None,
