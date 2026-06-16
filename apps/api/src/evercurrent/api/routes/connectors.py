@@ -6,7 +6,7 @@ from typing import Annotated
 import structlog
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select
 from starlette.responses import RedirectResponse
 
 from evercurrent.auth.deps import AdminUserDep, SessionDep
@@ -23,6 +23,7 @@ from evercurrent.connectors.slack import install as slack_install
 from evercurrent.connectors.slack.client import SlackClient
 from evercurrent.connectors.slack.crypto import TokenVault
 from evercurrent.db import models
+from evercurrent.db.repositories.provisioning import ProvisioningRepository
 from evercurrent.db.session import admin_session_scope
 from evercurrent.ingestion.personas import BY_NAME
 
@@ -133,20 +134,10 @@ class SyncStartedResult(BaseModel):
 
 async def _provision_authors(session: SessionDep, client: SlackClient, org_id: uuid.UUID) -> int:
     """Create a member for each Slack author seen in messages, with their real name."""
-    bot_name = get_settings().slack_app_bot_name
-    authors = (
-        (
-            await session.execute(
-                text(
-                    "SELECT DISTINCT author_display_name FROM messages "
-                    "WHERE org_id = :o AND author_membership_id IS NULL "
-                    "AND author_display_name NOT IN ('unknown', :bot)",
-                ),
-                {"o": str(org_id), "bot": bot_name},
-            )
-        )
-        .scalars()
-        .all()
+    repo = ProvisioningRepository(session)
+    authors = await repo.unprovisioned_author_names(
+        org_id=org_id,
+        bot_name=get_settings().slack_app_bot_name,
     )
 
     provisioned = 0
@@ -164,41 +155,21 @@ async def _provision_authors(session: SessionDep, client: SlackClient, org_id: u
             name = slack_uid
 
         persona = BY_NAME.get(name)
-        eng_role = persona.eng_role if persona else None
-        subsystems = persona.owned_subsystems if persona else []
-        member_id = (
-            await session.execute(
-                text("SELECT id FROM org_memberships WHERE org_id = :o AND slack_user_id = :s"),
-                {"o": str(org_id), "s": slack_uid},
-            )
-        ).scalar_one_or_none()
+        member_id = await repo.find_member_by_slack_uid(org_id=org_id, slack_uid=slack_uid)
         if member_id is None:
-            member_id = (
-                await session.execute(
-                    text(
-                        "INSERT INTO org_memberships "
-                        "(org_id, auth0_user_id, slack_user_id, display_name, email, "
-                        " role, eng_role, owned_subsystems) "
-                        "VALUES (:o, :sub, :s, :n, '', 'member', :er, "
-                        "        CAST(:sub_arr AS text[])) RETURNING id",
-                    ),
-                    {
-                        "o": str(org_id),
-                        "sub": f"slack:{slack_uid}",
-                        "s": slack_uid,
-                        "n": name,
-                        "er": eng_role,
-                        "sub_arr": list(subsystems),
-                    },
-                )
-            ).scalar_one()
+            member_id = await repo.create_slack_member(
+                org_id=org_id,
+                slack_uid=slack_uid,
+                name=name,
+                eng_role=persona.eng_role if persona else None,
+                owned_subsystems=list(persona.owned_subsystems if persona else []),
+            )
             provisioned += 1
-        await session.execute(
-            text(
-                "UPDATE messages SET author_membership_id = :mid, author_display_name = :n "
-                "WHERE org_id = :o AND author_display_name = :s",
-            ),
-            {"mid": str(member_id), "n": name, "o": str(org_id), "s": slack_uid},
+        await repo.link_messages_to_member(
+            org_id=org_id,
+            slack_uid=slack_uid,
+            member_id=member_id,
+            name=name,
         )
     await session.commit()
     return provisioned
