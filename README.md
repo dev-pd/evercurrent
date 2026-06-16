@@ -21,7 +21,7 @@ Email), and AWS deploy (ECS + RDS + ElastiCache).
 
 Docs: `docs/ARCHITECTURE.md` (design rationale),
 `docs/SYSTEM_DESIGN.md` (runtime flows), `docs/SCALING.md` (gaps +
-hardening), `docs/INTERVIEW_PREP.md` (question bank).
+hardening).
 
 ## Quick start
 

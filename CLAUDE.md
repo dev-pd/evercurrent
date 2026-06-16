@@ -11,8 +11,9 @@
   touch, wait for `go`, implement, run `make lint`, verify, then
   commit with a Conventional Commit. Stop; don't auto-start the next
   task.
-- Code conventions live in `AGENTS.md` §5. `apps/web/AGENTS.md` carries
-  the Next.js breaking-change warning — read it before writing web code.
+- Code conventions are split by app: `apps/api/AGENTS.md` (backend) and
+  `apps/web/AGENTS.md` (frontend, incl. the Next.js breaking-change warning).
+  Each auto-loads with its subtree via a nested `CLAUDE.md`.
 
 ## Anti-patterns
 
