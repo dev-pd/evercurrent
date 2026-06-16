@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Sparkles } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
-import { ASYNC_JOB_TIMEOUT_MS } from "@/lib/constants";
+import { EVE_JOB_TIMEOUT_MS } from "@/lib/constants";
 import { useEvents } from "@/hooks/use-events";
 
 export function GenerateInsightButton({ projectId }: { projectId: string | null }) {
@@ -18,17 +18,20 @@ export function GenerateInsightButton({ projectId }: { projectId: string | null 
     setRunning(false);
   }
 
-  // Eve runs on the worker (~10s) and pushes the result over SSE.
+  // Eve runs on the worker (50-90s) and pushes the result over SSE. Keep
+  // listening whenever the page is open — not only while `running` — so a
+  // result that lands after the safety timeout still clears the UI.
   useEvents({
     projectId,
-    enabled: running,
+    enabled: !!projectId,
     onEvent: (e) => {
       if (e.type === "insight_created") {
         stop();
+        setError(null);
         router.refresh();
       } else if (e.type === "insight_failed") {
         stop();
-        setError("Eve found nothing worth flagging right now. Try again.");
+        setError(running ? "Eve found nothing worth flagging right now. Try again." : null);
       }
     },
   });
@@ -40,8 +43,8 @@ export function GenerateInsightButton({ projectId }: { projectId: string | null 
     setRunning(true);
     timer.current = setTimeout(() => {
       stop();
-      setError("Eve is taking a while — refresh in a moment to see the result.");
-    }, ASYNC_JOB_TIMEOUT_MS);
+      setError("Eve is taking longer than usual — it'll appear automatically when ready.");
+    }, EVE_JOB_TIMEOUT_MS);
     try {
       await apiBrowser().generateInsight();
     } catch {
