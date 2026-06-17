@@ -1,3 +1,6 @@
+"""Celery app singleton: Redis broker/backend wiring + the beat schedule for the
+recurring digest/insight/sync jobs."""
+
 from __future__ import annotations
 
 import os

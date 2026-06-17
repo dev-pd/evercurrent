@@ -1,3 +1,6 @@
+"""Task: draft a decision card from a message (resolves the message's org,
+delegates to cards.card_drafter, publishes a card_created SSE event)."""
+
 from __future__ import annotations
 
 import uuid

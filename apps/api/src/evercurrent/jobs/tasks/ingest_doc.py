@@ -1,3 +1,6 @@
+"""Task: ingest a document's bytes (extract, chunk, embed, classify, persist) off
+the request path."""
+
 from __future__ import annotations
 
 import uuid

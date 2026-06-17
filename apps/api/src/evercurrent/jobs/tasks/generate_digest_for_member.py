@@ -1,3 +1,6 @@
+"""Task: generate (or regenerate) one member's digest for a given day, skipping
+if a fresh one already exists unless forced."""
+
 from __future__ import annotations
 
 import uuid

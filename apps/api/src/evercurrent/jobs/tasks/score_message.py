@@ -1,3 +1,6 @@
+"""Task: score a tagged message against every project member and bulk-upsert the
+per-member relevance scores."""
+
 from __future__ import annotations
 
 import uuid

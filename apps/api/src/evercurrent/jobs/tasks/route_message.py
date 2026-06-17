@@ -1,3 +1,7 @@
+"""The per-message pipeline: load a raw event, persist the message, classify it,
+write tags, and fan out to scoring + card creation. Orchestration only; SQL lives
+in route_message_db.py."""
+
 from __future__ import annotations
 
 import json

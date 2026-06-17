@@ -1,3 +1,6 @@
+"""Celery task registry: thin sync wrappers that run the async task impls from
+jobs/tasks/. Task name strings are the public contract — keep them stable."""
+
 from __future__ import annotations
 
 import asyncio
