@@ -1,3 +1,6 @@
+"""FastAPI application entrypoint: builds the app, mounts the v1 router and
+middleware, and exposes /metrics + lifespan startup/shutdown."""
+
 from __future__ import annotations
 
 import contextlib

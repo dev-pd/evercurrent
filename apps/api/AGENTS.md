@@ -15,11 +15,21 @@ get wrong. The rest (type hints, `strict`, async I/O, no `import *`) is assumed.
   shared read-model lives in its repository module (e.g. `MemberSummary` in
   `db/repositories/memberships.py`).
 - Pydantic v2 `model_config = ConfigDict(strict=True)` on every schema.
+- **Shapes — three mechanisms, pick by role:** a SQLAlchemy `Base` subclass is a
+  **model** (a table, `db/models/` only). A Pydantic `BaseModel` is a **schema**
+  (a *validated* boundary shape): HTTP DTOs go in `api/schemas.py` if shared or
+  at the top of their router if route-specific; feature/LLM shapes in
+  `<feature>/schemas.py`; repo read-models with their repository. A plain
+  `@dataclass` is an **internal value our own code builds** (no validation) —
+  e.g. an adapter's interface types next to its protocol (`ToolSpec` in
+  `llm/client.py`). Rule: *validate at boundaries → Pydantic; trusted internal
+  struct → dataclass; a table → model.*
 - FastAPI collaborators via `Depends(get_x)` factories — no module globals.
 - Celery tasks in `jobs/tasks/<name>.py`, registered in `celery_tasks.py`, and
   **idempotent** (replay-safe via unique constraints / upserts).
-- No docstrings/inline comments by default; never strip functional directives
-  (`# noqa`, `# type: ignore`, `# ruff:`, shebangs).
+- A **terse one-line module docstring** for orientation is fine; otherwise no
+  docstrings/inline comments by default (comments say *why*, not *what*). Never
+  strip functional directives (`# noqa`, `# type: ignore`, `# ruff:`, shebangs).
 - Smells: function >50 lines, file >400 lines.
 
 ## SQL & database

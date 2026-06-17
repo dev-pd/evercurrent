@@ -1,3 +1,6 @@
+"""Typed application settings (env-backed) and the cached get_settings()
+accessor used everywhere instead of reading os.environ directly."""
+
 from __future__ import annotations
 
 from functools import lru_cache
