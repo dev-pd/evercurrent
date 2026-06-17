@@ -1,3 +1,5 @@
+"""Pydantic shapes for Slack webhook envelopes, OAuth responses, and channel summaries."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field

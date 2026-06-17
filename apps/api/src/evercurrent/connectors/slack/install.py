@@ -1,3 +1,5 @@
+"""Slack OAuth install flow: signed state encode/decode and building the workspace install URL."""
+
 from __future__ import annotations
 
 import base64

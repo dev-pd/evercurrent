@@ -1,3 +1,5 @@
+"""Dropbox OAuth install flow: signed state encode/decode and building the install URL."""
+
 from __future__ import annotations
 
 import base64

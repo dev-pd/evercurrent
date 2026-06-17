@@ -1,3 +1,5 @@
+"""TokenVault: symmetric encryption for stored connector tokens so provider secrets aren't persisted in plaintext."""
+
 from __future__ import annotations
 
 from cryptography.fernet import Fernet, InvalidToken

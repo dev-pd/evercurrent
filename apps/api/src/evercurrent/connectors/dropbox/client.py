@@ -1,3 +1,5 @@
+"""Dropbox API client: OAuth token exchange/refresh and folder listing (TokenSet, FolderEntry)."""
+
 from __future__ import annotations
 
 import json

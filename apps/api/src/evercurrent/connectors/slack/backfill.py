@@ -1,3 +1,5 @@
+"""Historical Slack backfill: page channel history, hydrate thread replies, and persist messages as raw events."""
+
 from __future__ import annotations
 
 import json

@@ -1,3 +1,5 @@
+"""Bridge from the Slack connector to Celery: enqueue route_message for a persisted raw event."""
+
 from __future__ import annotations
 
 import uuid
