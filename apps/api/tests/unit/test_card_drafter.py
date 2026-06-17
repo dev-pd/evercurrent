@@ -60,7 +60,7 @@ def fake_session() -> AsyncMock:
 
 
 @pytest.fixture
-def mcp_client_with_thread(now_utc: dt.datetime) -> MagicMock:
+def tool_client_with_thread(now_utc: dt.datetime) -> MagicMock:
     root_id = uuid.uuid4()
     reply_id = uuid.uuid4()
     root = MessageRef(
@@ -165,7 +165,7 @@ def _patch_meta_and_project(
 async def test_build_card_happy_path_writes_card_and_sources(
     monkeypatch: pytest.MonkeyPatch,
     fake_session: AsyncMock,
-    mcp_client_with_thread: MagicMock,
+    tool_client_with_thread: MagicMock,
 ) -> None:
     org_id = uuid.uuid4()
     project_id = uuid.uuid4()
@@ -191,7 +191,7 @@ async def test_build_card_happy_path_writes_card_and_sources(
         message_id=message_id,
         kind="decision",
         summary_hint="Switch alloy",
-        mcp_client=mcp_client_with_thread,
+        tool_client=tool_client_with_thread,
     )
 
     assert result["card_id"] == card_id
@@ -207,15 +207,15 @@ async def test_build_card_happy_path_writes_card_and_sources(
     assert len(captured["source_calls"]) == 1
     refs = captured["source_calls"][0]["refs"]
     assert ("message", message_id) in refs
-    assert ("message", mcp_client_with_thread._root_id) in refs
-    assert ("message", mcp_client_with_thread._reply_id) in refs
+    assert ("message", tool_client_with_thread._root_id) in refs
+    assert ("message", tool_client_with_thread._reply_id) in refs
 
 
 @pytest.mark.asyncio
 async def test_build_card_idempotent_when_existing(
     monkeypatch: pytest.MonkeyPatch,
     fake_session: AsyncMock,
-    mcp_client_with_thread: MagicMock,
+    tool_client_with_thread: MagicMock,
 ) -> None:
     org_id = uuid.uuid4()
     project_id = uuid.uuid4()
@@ -248,7 +248,7 @@ async def test_build_card_idempotent_when_existing(
         message_id=message_id,
         kind="decision",
         summary_hint="ignored",
-        mcp_client=mcp_client_with_thread,
+        tool_client=tool_client_with_thread,
     )
 
     assert result["card_id"] == card_id
@@ -256,14 +256,14 @@ async def test_build_card_idempotent_when_existing(
     assert len(llm.calls) == 0
     assert len(captured["insert_calls"]) == 0
     assert len(captured["source_calls"]) == 0
-    mcp_client_with_thread.call.assert_not_called()
+    tool_client_with_thread.call.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_build_card_handles_integrity_error_race(
     monkeypatch: pytest.MonkeyPatch,
     fake_session: AsyncMock,
-    mcp_client_with_thread: MagicMock,
+    tool_client_with_thread: MagicMock,
 ) -> None:
     org_id = uuid.uuid4()
     project_id = uuid.uuid4()
@@ -304,7 +304,7 @@ async def test_build_card_handles_integrity_error_race(
         message_id=message_id,
         kind="decision",
         summary_hint="race",
-        mcp_client=mcp_client_with_thread,
+        tool_client=tool_client_with_thread,
     )
 
     assert result["card_id"] == existing_card_id

@@ -1,3 +1,6 @@
+"""SQL for cards: idempotent insert (one card per triggering message + kind),
+source linking, and the paginated/detail read queries."""
+
 from __future__ import annotations
 
 import uuid

@@ -1,3 +1,6 @@
+"""Card shapes: the LLM draft (CardDraft), the list/detail HTTP responses
+(CardListItem, CardPage, CardResponse), and their source references."""
+
 from __future__ import annotations
 
 import datetime as dt

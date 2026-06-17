@@ -1,3 +1,6 @@
+"""Drafts a decision/risk/question card from a triggering message: pulls the
+thread context, prompts Sonnet for a CardDraft, and persists it idempotently."""
+
 from __future__ import annotations
 
 import json
@@ -167,7 +170,7 @@ async def build_card(
     message_id: uuid.UUID,
     kind: str,
     summary_hint: str,
-    mcp_client: InProcessToolClient | None = None,
+    tool_client: InProcessToolClient | None = None,
 ) -> dict[str, Any]:
     existing = await cards_repo.get_existing_card(
         session,
@@ -191,7 +194,7 @@ async def build_card(
     org_id = uuid.UUID(str(meta["org_id"]))
     project_id = uuid.UUID(str(meta["project_id"])) if meta["project_id"] else None
 
-    client = mcp_client or InProcessToolClient()
+    client = tool_client or InProcessToolClient()
     thread = await client.call(
         "get_thread_context",
         session,
