@@ -1,4 +1,5 @@
-"""Connector Protocol: the provider-agnostic interface a source connector (Slack, Dropbox) implements."""
+"""Connector Protocol: the provider-agnostic interface a source connector (Slack, Dropbox)
+implements."""
 
 from __future__ import annotations
 

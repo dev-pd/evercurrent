@@ -1,4 +1,5 @@
-"""Slack webhook events: verify the request signature, persist the raw event, and enqueue route_message (returns a SlackHandlerResult)."""
+"""Slack webhook events: verify the request signature, persist the raw event, and enqueue
+route_message (returns a SlackHandlerResult)."""
 
 from __future__ import annotations
 

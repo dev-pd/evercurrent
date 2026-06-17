@@ -1,4 +1,5 @@
-"""Dropbox folder sync: refresh the access token, find new PDFs, and enqueue each for document ingestion."""
+"""Dropbox folder sync: refresh the access token, find new PDFs, and enqueue each for document
+ingestion."""
 
 from __future__ import annotations
 

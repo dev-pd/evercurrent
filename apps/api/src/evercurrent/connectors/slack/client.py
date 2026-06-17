@@ -1,4 +1,5 @@
-"""Slack Web API client: typed calls (channel listing, history paging, posting), raising SlackAPIError on failure."""
+"""Slack Web API client: typed calls (channel listing, history paging, posting), raising
+SlackAPIError on failure."""
 
 from __future__ import annotations
 
