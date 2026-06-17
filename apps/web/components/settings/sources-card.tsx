@@ -2,9 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Check, Cloud, Loader2, MessageSquare, RefreshCw, Unplug } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
 import { messages } from "@/lib/messages";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/stores/toast";
 import type { ConnectorSummary } from "@/lib/types";
 
 const copy = messages.sources;
@@ -14,8 +17,9 @@ const SOURCES = [
   { kind: "dropbox", label: "Dropbox", desc: copy.dropboxDesc, icon: Cloud },
 ] as const;
 
-const SYNC_POLL_INTERVAL_MS = 10_000;
-const SYNC_POLL_TICKS = 18;
+const SYNC_POLL_INTERVAL_MS = 3_000;
+const SYNC_POLL_MAX_TICKS = 25;
+const SYNC_SETTLE_TICKS = 2;
 
 interface SourcesCardProps {
   connectors: ConnectorSummary[];
@@ -63,8 +67,8 @@ export function SourcesCard({ connectors }: SourcesCardProps) {
                   <span className="text-xs text-[var(--text-muted)]">
                     {connected
                       ? source.kind === "slack"
-                        ? copy.channels(connector.channels_count)
-                        : copy.connected
+                        ? copy.synced(connector.message_count, connector.channels_count)
+                        : copy.documents(connector.message_count)
                       : source.desc}
                   </span>
                 </div>
@@ -103,11 +107,11 @@ interface SyncButtonProps {
 
 function SyncButton({ connectorId }: SyncButtonProps) {
   const router = useRouter();
-  const [state, setState] = useState<"idle" | "syncing" | "done">("idle");
-  const [label, setLabel] = useState<string>(copy.sync);
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [syncing, setSyncing] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Clear the background-sync poll if the component unmounts mid-poll.
   useEffect(() => () => clearPoll(), []);
 
   function clearPoll() {
@@ -117,40 +121,65 @@ function SyncButton({ connectorId }: SyncButtonProps) {
     }
   }
 
+  async function finish(memberCount: number) {
+    clearPoll();
+    await queryClient.invalidateQueries({ queryKey: ["members"] });
+    router.refresh();
+    setSyncing(false);
+    toast.show(copy.syncComplete(memberCount), "success");
+  }
+
   async function sync() {
-    setState("syncing");
+    setSyncing(true);
     try {
       await apiBrowser().syncSlack(connectorId);
-      setLabel(copy.syncingBackground);
-      setState("done");
-      let ticks = 0;
-      pollRef.current = setInterval(() => {
-        router.refresh();
-        if (++ticks >= SYNC_POLL_TICKS) {
-          clearPoll();
-          setState("idle");
-          setLabel(copy.sync);
-        }
-      }, SYNC_POLL_INTERVAL_MS);
     } catch {
-      setLabel(copy.syncFailed);
-      setState("idle");
+      setSyncing(false);
+      toast.show(copy.syncFailedToast, "error");
+      return;
     }
+    toast.show(copy.syncStarted, "info");
+
+    // The sync runs in a background worker (backfill + member provisioning), so
+    // poll the member list and settle once it stops growing — then refresh the
+    // table + switcher and toast completion.
+    let ticks = 0;
+    let lastCount = -1;
+    let stable = 0;
+    pollRef.current = setInterval(() => {
+      ticks += 1;
+      void apiBrowser()
+        .listMembers()
+        .then((members) => {
+          const count = members.length;
+          router.refresh();
+          if (count > 0 && count === lastCount) {
+            stable += 1;
+          } else {
+            stable = 0;
+          }
+          lastCount = count;
+          if ((count > 0 && stable >= SYNC_SETTLE_TICKS) || ticks >= SYNC_POLL_MAX_TICKS) {
+            void finish(count);
+          }
+        })
+        .catch(() => {
+          if (ticks >= SYNC_POLL_MAX_TICKS) {
+            void finish(lastCount > 0 ? lastCount : 0);
+          }
+        });
+    }, SYNC_POLL_INTERVAL_MS);
   }
 
   return (
     <button
       type="button"
       onClick={sync}
-      disabled={state === "syncing"}
+      disabled={syncing}
       className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-white px-2.5 py-1 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-muted)] disabled:opacity-60"
     >
-      {state === "syncing" ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : (
-        <RefreshCw className="h-3.5 w-3.5" />
-      )}
-      {state === "syncing" ? copy.syncing : label}
+      {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+      {syncing ? copy.syncingBackground : copy.sync}
     </button>
   );
 }
@@ -162,31 +191,47 @@ interface DisconnectButtonProps {
 
 function DisconnectButton({ connectorId, label }: DisconnectButtonProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   async function disconnect() {
-    if (!window.confirm(copy.disconnectConfirm(label))) {
-      return;
-    }
     setBusy(true);
     try {
       await apiBrowser().disconnect(connectorId);
+      await queryClient.invalidateQueries({ queryKey: ["members"] });
       router.refresh();
+      toast.show(copy.disconnected(label), "success");
     } finally {
       setBusy(false);
+      setConfirmOpen(false);
     }
   }
 
   return (
-    <button
-      type="button"
-      onClick={disconnect}
-      disabled={busy}
-      aria-label={`Disconnect ${label}`}
-      className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-white px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
-    >
-      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Unplug className="h-3.5 w-3.5" />}
-      {copy.disconnect}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => setConfirmOpen(true)}
+        disabled={busy}
+        aria-label={`Disconnect ${label}`}
+        className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-white px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+      >
+        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Unplug className="h-3.5 w-3.5" />}
+        {copy.disconnect}
+      </button>
+      <ConfirmDialog
+        open={confirmOpen}
+        title={copy.disconnectTitle(label)}
+        message={copy.disconnectConfirm(label)}
+        confirmLabel={copy.disconnect}
+        cancelLabel={messages.common.cancel}
+        destructive
+        busy={busy}
+        onConfirm={disconnect}
+        onCancel={() => setConfirmOpen(false)}
+      />
+    </>
   );
 }

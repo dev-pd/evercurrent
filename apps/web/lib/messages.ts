@@ -7,6 +7,7 @@ export const messages = {
     accountFallback: "Account",
     open: "Open",
     tryAgain: "Try again",
+    cancel: "Cancel",
   },
   meta: {
     title: "EverCurrent",
@@ -65,6 +66,8 @@ export const messages = {
     noDigestHint: "Connect Slack and regenerate to draft the first briefing.",
     regenerate: "Regenerate",
     regenerating: "Regenerating…",
+    regenStarted: "Regenerating your digest…",
+    regenFailed: "Couldn't regenerate the digest. Try again.",
     live: "Live",
     newCount: (n: number) => `${n} new`,
     updatedAt: (time: string) => `updated ${time}`,
@@ -116,6 +119,8 @@ export const messages = {
     eveNothing: "Eve found nothing worth flagging right now. Try again.",
     eveSlow: "Eve is taking longer than usual — it'll appear automatically when ready.",
     eveStartFailed: "Could not start Eve. Try again.",
+    eveStarted: "Eve is investigating…",
+    insightReady: "New insight ready",
     eveAuthor: "Eve",
     detectedPrefix: "detected",
     modalLabel: "Insight",
@@ -179,9 +184,18 @@ export const messages = {
     slackDesc: "Ingest channel messages",
     dropboxDesc: "Ingest spec PDFs",
     channels: (n: number) => `Connected · ${n} channel${n === 1 ? "" : "s"}`,
+    synced: (messages: number, channels: number) =>
+      `${messages} message${messages === 1 ? "" : "s"} · ${channels} channel${channels === 1 ? "" : "s"}`,
+    documents: (n: number) => `${n} document${n === 1 ? "" : "s"}`,
     failed: (kind: string) => `Could not start ${kind} connection (is it configured?).`,
+    disconnectTitle: (label: string) => `Disconnect ${label}?`,
     disconnectConfirm: (label: string) =>
-      `Disconnect ${label}? Ingested data is kept; re-connect anytime.`,
+      `This removes ${label}'s synced messages and members from this workspace. You can re-connect and sync again anytime.`,
+    syncStarted: "Sync started — pulling messages in the background…",
+    syncComplete: (members: number) =>
+      `Synced ✓ ${members} member${members === 1 ? "" : "s"} provisioned`,
+    syncFailedToast: "Sync failed — please try again.",
+    disconnected: (label: string) => `${label} disconnected`,
   },
   team: {
     heading: "Team",

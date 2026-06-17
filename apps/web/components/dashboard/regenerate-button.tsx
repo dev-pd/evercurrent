@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useRegenerateDigest } from "@/hooks/use-digest";
 import { useRegen } from "@/stores/regen";
+import { useToast } from "@/stores/toast";
 import { messages } from "@/lib/messages";
 
 const copy = messages.dashboard;
@@ -14,6 +15,7 @@ export function RegenerateButton() {
   const pending = useRegen((s) => s.pending);
   const start = useRegen((s) => s.start);
   const done = useRegen((s) => s.done);
+  const toast = useToast();
 
   const busy = mutation.isPending || pending;
 
@@ -21,7 +23,13 @@ export function RegenerateButton() {
     <Button
       onClick={() => {
         start();
-        mutation.mutate(undefined, { onError: () => done() });
+        toast.show(copy.regenStarted, "info");
+        mutation.mutate(undefined, {
+          onError: () => {
+            done();
+            toast.show(copy.regenFailed, "error");
+          },
+        });
       }}
       disabled={busy}
       variant="outline"

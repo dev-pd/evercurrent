@@ -7,11 +7,13 @@ import { apiBrowser } from "@/lib/api";
 import { EVE_JOB_TIMEOUT_MS } from "@/lib/constants";
 import { messages } from "@/lib/messages";
 import { useEvents } from "@/hooks/use-events";
+import { useToast } from "@/stores/toast";
 
 const copy = messages.insights;
 
 export function GenerateInsightButton({ projectId }: { projectId: string | null }) {
   const router = useRouter();
+  const toast = useToast();
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -32,9 +34,11 @@ export function GenerateInsightButton({ projectId }: { projectId: string | null 
         stop();
         setError(null);
         router.refresh();
+        toast.show(copy.insightReady, "success");
       } else if (e.type === "insight_failed") {
         stop();
         setError(running ? copy.eveNothing : null);
+        if (running) toast.show(copy.eveNothing, "info");
       }
     },
   });
@@ -50,9 +54,11 @@ export function GenerateInsightButton({ projectId }: { projectId: string | null 
     }, EVE_JOB_TIMEOUT_MS);
     try {
       await apiBrowser().generateInsight();
+      toast.show(copy.eveStarted, "info");
     } catch {
       stop();
       setError(copy.eveStartFailed);
+      toast.show(copy.eveStartFailed, "error");
     }
   }
 
