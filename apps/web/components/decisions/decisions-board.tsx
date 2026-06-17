@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUpRight, GitBranch, MessageSquare } from "lucide-react";
+import { ArrowUpRight, MessageSquare } from "lucide-react";
 import { messages } from "@/lib/messages";
 import type { CardListItem } from "@/lib/types";
 import { useDecisionModal } from "@/stores/decision-modal";
@@ -119,10 +119,6 @@ export function DecisionsBoard({
                     <span className="inline-flex items-center gap-1">
                       <MessageSquare className="h-3 w-3" aria-hidden="true" />
                       {card.sources_count}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <GitBranch className="h-3 w-3" aria-hidden="true" />
-                      {card.edges_count}
                     </span>
                   </div>
                 </div>
