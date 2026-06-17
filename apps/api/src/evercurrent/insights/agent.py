@@ -9,11 +9,11 @@ from typing import Any
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from evercurrent.agent_tools.client import InProcessToolClient
 from evercurrent.insights.serialization import to_jsonable
 from evercurrent.insights.tools import EMIT_TOOL, READ_TOOLS
 from evercurrent.llm.client import LLMProvider, get_provider
 from evercurrent.llm.tiering import ModelTier
-from evercurrent.mcp.client import InProcessMCPClient
 
 log = structlog.get_logger(__name__)
 
@@ -78,10 +78,10 @@ async def run_eve(
     project_id: uuid.UUID,
     seed: str | None = None,
     llm: LLMProvider | None = None,
-    mcp: InProcessMCPClient | None = None,
+    mcp: InProcessToolClient | None = None,
 ) -> EveRun:
     provider = llm or get_provider()
-    client = mcp or InProcessMCPClient()
+    client = mcp or InProcessToolClient()
     tools = [*READ_TOOLS, EMIT_TOOL]
     system = _system_prompt()
 

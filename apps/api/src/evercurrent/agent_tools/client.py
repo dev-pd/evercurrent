@@ -6,7 +6,7 @@ from typing import Any
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from evercurrent.mcp.tools import (
+from evercurrent.agent_tools.tools import (
     get_thread_context,
     get_user_context,
     query_cards,
@@ -34,7 +34,7 @@ def _build_dispatch() -> dict[str, ToolFn]:
     }
 
 
-class InProcessMCPClient:
+class InProcessToolClient:
     def __init__(self, dispatch: dict[str, ToolFn] | None = None) -> None:
         self._dispatch: dict[str, ToolFn] = dispatch or _build_dispatch()
 

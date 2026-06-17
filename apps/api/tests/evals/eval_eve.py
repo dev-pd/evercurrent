@@ -8,19 +8,19 @@ from typing import Any, cast
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from evercurrent.agent_tools.client import InProcessToolClient
 from evercurrent.config import get_settings
 from evercurrent.insights import run_eve
 from evercurrent.jobs.tasks.eve_insight import _gate
 from evercurrent.llm.client import LLMProvider
 from evercurrent.llm.tiering import ModelTier
-from evercurrent.mcp.client import InProcessMCPClient
 from tests.evals.conftest import emit_metric_table, write_report
 from tests.evals.runner import warn_if_below_baseline
 
 _MAX_TOKENS = 512
 
 
-class _FakeMCP(InProcessMCPClient):
+class _FakeMCP(InProcessToolClient):
     """Serves a scenario's fixed corpus so Eve can be evaluated offline,
     with no database. Each search tool returns its slice of the corpus."""
 

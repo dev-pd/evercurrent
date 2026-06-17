@@ -11,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 
 import evercurrent.cards.card_drafter as builder_mod
 import evercurrent.cards.repository as repo_mod
-from evercurrent.mcp.schemas import MessageRef, ThreadContext
+from evercurrent.agent_tools.schemas import MessageRef, ThreadContext
 
 
 class _FakeLLM:

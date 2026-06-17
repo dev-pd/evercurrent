@@ -8,18 +8,18 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pydantic import ValidationError
 
-from evercurrent.mcp.schemas import (
+from evercurrent.agent_tools.schemas import (
     CardRef,
     ChunkRef,
     MessageRef,
     ThreadContext,
     UserContext,
 )
-from evercurrent.mcp.tools.get_thread_context import get_thread_context
-from evercurrent.mcp.tools.get_user_context import get_user_context
-from evercurrent.mcp.tools.query_cards import query_cards
-from evercurrent.mcp.tools.search_documents import search_documents
-from evercurrent.mcp.tools.search_messages import search_messages
+from evercurrent.agent_tools.tools.get_thread_context import get_thread_context
+from evercurrent.agent_tools.tools.get_user_context import get_user_context
+from evercurrent.agent_tools.tools.query_cards import query_cards
+from evercurrent.agent_tools.tools.search_documents import search_documents
+from evercurrent.agent_tools.tools.search_messages import search_messages
 
 
 def _mappings_result(rows: list[dict[str, Any]]) -> MagicMock:

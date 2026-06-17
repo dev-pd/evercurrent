@@ -7,7 +7,7 @@ import structlog
 from sqlalchemy import bindparam, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from evercurrent.mcp.schemas import MessageRef
+from evercurrent.agent_tools.schemas import MessageRef
 
 log = structlog.get_logger(__name__)
 

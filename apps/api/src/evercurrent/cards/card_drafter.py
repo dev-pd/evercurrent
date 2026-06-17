@@ -11,13 +11,13 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from evercurrent.agent_tools.client import InProcessToolClient
+from evercurrent.agent_tools.schemas import ThreadContext
 from evercurrent.cards import repository as cards_repo
 from evercurrent.cards.schemas import CardDraft
 from evercurrent.db.repositories.messages import MessageRepository
 from evercurrent.llm.client import LLMProvider
 from evercurrent.llm.tiering import ModelTier
-from evercurrent.mcp.client import InProcessMCPClient
-from evercurrent.mcp.schemas import ThreadContext
 
 log = structlog.get_logger(__name__)
 
@@ -167,7 +167,7 @@ async def build_card(
     message_id: uuid.UUID,
     kind: str,
     summary_hint: str,
-    mcp_client: InProcessMCPClient | None = None,
+    mcp_client: InProcessToolClient | None = None,
 ) -> dict[str, Any]:
     existing = await cards_repo.get_existing_card(
         session,
@@ -191,7 +191,7 @@ async def build_card(
     org_id = uuid.UUID(str(meta["org_id"]))
     project_id = uuid.UUID(str(meta["project_id"])) if meta["project_id"] else None
 
-    client = mcp_client or InProcessMCPClient()
+    client = mcp_client or InProcessToolClient()
     thread = await client.call(
         "get_thread_context",
         session,

@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from evercurrent.classification.router_agent import classify
+from evercurrent.classification.message_classifier import classify
 from evercurrent.llm.client import LLMProvider
 from tests.evals.conftest import emit_metric_table, write_report
 from tests.evals.runner import jaccard, warn_if_below_baseline
