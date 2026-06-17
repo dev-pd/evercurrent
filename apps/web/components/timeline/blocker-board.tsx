@@ -43,7 +43,7 @@ const columns: Column<CardListItem>[] = [
     header: "Age",
     sortValue: (c) => c.occurred_at ?? "",
     render: (c) => (
-      <span className="whitespace-nowrap text-xs tabular-nums">{timeAgo(c.occurred_at)}</span>
+      <span className="text-xs whitespace-nowrap tabular-nums">{timeAgo(c.occurred_at)}</span>
     ),
   },
 ];

@@ -52,9 +52,7 @@ export function DataTable<T>({
   const toggleSort = (key: string) => {
     setPage(0);
     setSort((prev) =>
-      prev?.key === key
-        ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
-        : { key, dir: "asc" },
+      prev?.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" },
     );
   };
 

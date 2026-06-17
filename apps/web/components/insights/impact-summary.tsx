@@ -23,8 +23,8 @@ export function ImpactSummary({ impact }: ImpactSummaryProps) {
     { label: copy.impactSchedule, value: impact.schedule },
     { label: copy.impactRevenueAtRisk, value: impact.revenue_at_risk },
   ];
-  const stats = candidates.filter(
-    (stat): stat is { label: string; value: string } => Boolean(stat.value),
+  const stats = candidates.filter((stat): stat is { label: string; value: string } =>
+    Boolean(stat.value),
   );
 
   if (stats.length === 0) return null;

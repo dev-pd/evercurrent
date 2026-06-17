@@ -61,7 +61,7 @@ const columns: Column<ProactiveInsight>[] = [
     header: "Detected",
     sortValue: (i) => i.detected_at,
     render: (i) => (
-      <span className="whitespace-nowrap text-xs">
+      <span className="text-xs whitespace-nowrap">
         {formatTimestamp(i.detected_at) ?? i.detected_at}
       </span>
     ),

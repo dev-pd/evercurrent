@@ -43,9 +43,7 @@ const columns: Column<CardListItem>[] = [
     key: "status",
     header: "Status",
     sortValue: (c) => c.status,
-    render: (c) => (
-      <span className="font-mono text-xs tracking-wider uppercase">{c.status}</span>
-    ),
+    render: (c) => <span className="font-mono text-xs tracking-wider uppercase">{c.status}</span>,
   },
   {
     key: "sources",

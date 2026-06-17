@@ -23,13 +23,17 @@ async def find_drift(conn: AsyncConnection) -> dict[str, list[str]]:
     drift: dict[str, list[str]] = {}
     for table in models.metadata.tables.values():
         rows = (
-            await conn.execute(
-                text(
-                    "SELECT column_name FROM information_schema.columns WHERE table_name = :t",
-                ),
-                {"t": table.name},
+            (
+                await conn.execute(
+                    text(
+                        "SELECT column_name FROM information_schema.columns WHERE table_name = :t",
+                    ),
+                    {"t": table.name},
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         db_cols = set(rows)
         if not db_cols:
             drift[table.name] = ["*MISSING TABLE*"]
