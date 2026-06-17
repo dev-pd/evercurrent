@@ -1,3 +1,6 @@
+"""The classifier's output shape (ClassificationResult) with a card-field
+consistency check, plus a neutral fallback used when the LLM output won't parse."""
+
 from __future__ import annotations
 
 from typing import Literal, Self

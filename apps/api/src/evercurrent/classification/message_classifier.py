@@ -1,3 +1,7 @@
+"""Classifies one Slack message with Haiku: topic, urgency, entities, affected
+roles, and whether it should spawn a decision card. Falls back to a safe neutral
+result after one retry on schema drift."""
+
 from __future__ import annotations
 
 import json
@@ -60,7 +64,7 @@ def _build_user_prompt(
     thread_parent_text: str | None,
     project_phase: str,
 ) -> str:
-    template = _load_prompt("router_user.txt.j2")
+    template = _load_prompt("classify_user.txt.j2")
     return _render(
         template,
         {
@@ -85,7 +89,7 @@ _RETRY_REMINDER = (
 )
 
 
-def _parse_decision(payload: Any) -> ClassificationResult:
+def _parse_classification(payload: Any) -> ClassificationResult:
     if isinstance(payload, list):
         msg = "expected JSON object, got list"
         raise TypeError(msg)
@@ -117,7 +121,7 @@ async def classify(
     thread_parent_text: str | None,
     project_phase: str,
 ) -> ClassificationResult:
-    system = _load_prompt("router_system.txt")
+    system = _load_prompt("classify_system.txt")
     user_prompt = _build_user_prompt(
         message_text=message_text,
         channel=channel,
@@ -129,10 +133,10 @@ async def classify(
 
     try:
         payload = await _complete_json(llm, system=system, prompt=user_prompt)
-        return _parse_decision(payload)
+        return _parse_classification(payload)
     except (ValidationError, json.JSONDecodeError, ValueError, TypeError) as first_exc:
         log.warning(
-            "router.classify.retry",
+            "classify.retry",
             reason="schema_drift",
             error=str(first_exc),
         )
@@ -140,10 +144,10 @@ async def classify(
     retry_prompt = user_prompt + "\n\n" + _RETRY_REMINDER
     try:
         payload = await _complete_json(llm, system=system, prompt=retry_prompt)
-        return _parse_decision(payload)
+        return _parse_classification(payload)
     except (ValidationError, json.JSONDecodeError, ValueError, TypeError) as second_exc:
         log.warning(
-            "router.classify.fallback",
+            "classify.fallback",
             reason="schema_drift_after_retry",
             error=str(second_exc),
         )
