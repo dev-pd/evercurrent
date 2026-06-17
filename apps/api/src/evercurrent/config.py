@@ -28,7 +28,6 @@ class Settings(BaseSettings):
     voyage_embedding_dim: int = 512
 
     log_level: str = "INFO"
-    otel_exporter_otlp_endpoint: str | None = None
 
     next_public_api_url: str = "/api"
     app_base_url: str = "http://localhost:8080"

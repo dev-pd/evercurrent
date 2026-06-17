@@ -27,7 +27,8 @@ docs and conversations. Take-home demonstrating production-grade engineering.
   async, Alembic, Postgres 17 + pgvector 0.8+, Celery 5.4 (Redis broker/backend)
   + Beat, Anthropic SDK (Sonnet 4.6 `claude-sonnet-4-6`, Haiku 4.5
   `claude-haiku-4-5-20251001`), Voyage `voyage-3-lite` (512d), structlog,
-  OpenTelemetry, dependency-injector. ruff (lint+format), ty (types).
+  dependency-injector. ruff (lint+format), ty (types). Observability: Prometheus
+  metrics (`/metrics`) + Loki logs via Grafana — no distributed tracing.
 - **Frontend:** Node 25.x, pnpm 11+, Next.js 16.2 App Router, React 19, TS 5
   strict, Tailwind v4, shadcn/ui, Lucide, TanStack Query v5, Zustand (sparingly),
   Zod at boundaries. ESLint, Prettier.
