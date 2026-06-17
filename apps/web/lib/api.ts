@@ -119,21 +119,11 @@ async function apiFetch<T>(
 export interface ApiClient {
   getMe(): Promise<Me>;
   listMembers(): Promise<MemberSummary[]>;
-  createMember(body: {
-    display_name: string;
-    eng_role?: string | null;
-    owned_subsystems?: string[];
-  }): Promise<MemberSummary>;
-  updateMember(
-    id: string,
-    body: { eng_role?: string | null; owned_subsystems?: string[] },
-  ): Promise<MemberSummary>;
   listConnectors(): Promise<ConnectorSummary[]>;
   startInstall(kind: "slack" | "dropbox"): Promise<InstallResponse>;
   syncSlack(connectorId: string): Promise<{ status: string; connector_id: string }>;
   disconnect(connectorId: string): Promise<{ status: string; kind: string }>;
   getFocus(): Promise<FocusTopic[]>;
-  focusSignal(topic: string, delta: number): Promise<FocusTopic[]>;
   listProjects(): Promise<Project[]>;
   createProject(body: {
     name: string;
@@ -182,18 +172,6 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
     async listMembers() {
       return apiFetch("/api/v1/members", memberListSchema, await getCtx());
     },
-    async createMember(body) {
-      return apiFetch("/api/v1/members", memberSummarySchema, await getCtx(), {
-        method: "POST",
-        body,
-      });
-    },
-    async updateMember(id, body) {
-      return apiFetch(`/api/v1/members/${id}`, memberSummarySchema, await getCtx(), {
-        method: "PATCH",
-        body,
-      });
-    },
     async listConnectors() {
       return apiFetch("/api/v1/connectors", z.array(connectorSummarySchema), await getCtx());
     },
@@ -220,12 +198,6 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
     },
     async getFocus() {
       return apiFetch("/api/v1/focus", focusListSchema, await getCtx());
-    },
-    async focusSignal(topic, delta) {
-      return apiFetch("/api/v1/focus/signal", focusListSchema, await getCtx(), {
-        method: "POST",
-        body: { topic, delta },
-      });
     },
     async listProjects() {
       return apiFetch("/api/v1/projects", projectListSchema, await getCtx());
