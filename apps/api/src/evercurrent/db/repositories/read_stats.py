@@ -1,12 +1,20 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from evercurrent.db.models import User as UserModel
-from evercurrent.domain.stats import MessageActivity
+
+
+class MessageActivity(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    count: int
+    last_at: datetime | None
 
 
 class ReadStatsRepository:

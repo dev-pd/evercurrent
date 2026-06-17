@@ -7,8 +7,7 @@ from pydantic import BaseModel, ConfigDict
 
 from evercurrent.auth.deps import AdminUserDep, CurrentUserDep, SessionDep
 from evercurrent.config import get_settings
-from evercurrent.db.repositories.memberships import MembershipRepository
-from evercurrent.domain.memberships import MemberSummary
+from evercurrent.db.repositories.memberships import MembershipRepository, MemberSummary
 
 router = APIRouter(prefix="/members", tags=["members"])
 
