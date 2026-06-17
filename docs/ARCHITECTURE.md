@@ -51,16 +51,16 @@ inside the docker network.
 │   - DI via Depends() (session,             │
 │     current user id from header)            │
 ├─────────────────────────────────────────────┤
-│ Domain services                             │
-│   ingestion · enrichment · scoring ·        │
-│   digest · decisions · rag · agent          │
+│ Feature services                            │
+│   classification · scoring · digest ·       │
+│   cards · insights · rag · ingestion        │
 │   Pure Python where possible; LLM at edges. │
 ├─────────────────────────────────────────────┤
-│ Repositories (db/repositories/*)            │
-│   - take + return Pydantic domain models    │
+│ Repositories (db/repositories/* + feature)  │
+│   - take a session, return Pydantic schemas │
 │   - never leak SQLAlchemy rows              │
 ├─────────────────────────────────────────────┤
-│ SQLAlchemy 2.0 async ORM (db/models.py)     │
+│ SQLAlchemy 2.0 async ORM (db/models/)       │
 │   - one declarative class per table         │
 │   - explicit eager-load relationships       │
 ├─────────────────────────────────────────────┤

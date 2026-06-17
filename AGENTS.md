@@ -43,18 +43,22 @@ evercurrent/
 ├── apps/
 │   ├── api/                          Python FastAPI backend
 │   │   ├── src/evercurrent/
-│   │   │   ├── domain/               Pure domain models, no I/O
-│   │   │   ├── db/                   SQLAlchemy models, repositories
-│   │   │   ├── ingestion/            Synthetic data generation
-│   │   │   ├── enrichment/           Message tagging
-│   │   │   ├── scoring/              Per-user relevance scoring
-│   │   │   ├── digest/               Digest generation
-│   │   │   ├── decisions/            Decision extraction
+│   │   │   ├── db/                   ORM models (tables) + repositories
+│   │   │   ├── classification/       Message classification (Haiku)
+│   │   │   ├── scoring/              Per-user relevance scoring (pure)
+│   │   │   ├── digest/               Per-member digest generation
+│   │   │   ├── cards/                Decision cards (decision extraction)
+│   │   │   ├── insights/             Eve, the tool-using insight agent
+│   │   │   ├── agent_tools/          Eve's in-process tool implementations
 │   │   │   ├── rag/                  Embeddings, chunking, retrieval
-│   │   │   ├── agent/                Tool-using agent
-│   │   │   ├── jobs/                 Celery tasks (`celery_tasks.py`) + cron via beat
-│   │   │   ├── api/                  FastAPI routers
-│   │   │   └── llm/                  Anthropic client wrapper
+│   │   │   ├── connectors/           Slack/Dropbox ingestion connectors
+│   │   │   ├── ingestion/            Document ingestion + doc classification
+│   │   │   ├── timeline/             Per-member timeline projection
+│   │   │   ├── tenancy/              RLS org-context helpers
+│   │   │   ├── auth/                 Auth0/JWT request deps
+│   │   │   ├── jobs/                 Celery tasks (`celery_tasks.py`) + beat
+│   │   │   ├── api/                  FastAPI routers + shared HTTP schemas
+│   │   │   └── llm/                  Anthropic client wrapper + tiering
 │   │   ├── tests/evals/              Eval harness (NOT unit tests)
 │   │   ├── alembic/versions/
 │   │   ├── seed_data/                Committed synthetic data
@@ -71,14 +75,22 @@ evercurrent/
 
 - **Layered.** Routes → services → repositories → DB. No SQL in routes, no HTTP
   concerns in services, no business logic in repositories.
-- **Pure domain models** in `domain/` (zero I/O); `db/` SQLAlchemy models map
-  to/from them.
+- **Two data shapes, one rule.** A **model** is a SQLAlchemy class = one
+  database table; it lives only in `db/models/`. A **schema** is a Pydantic
+  class = a data shape (HTTP request/response, LLM I/O, or a repository
+  read-model); it lives wherever it is used. *Is it a table? → model. Anything
+  else Pydantic? → schema.* There is no separate "domain" layer.
+- **Repositories** are the only place SQL runs; they take an `AsyncSession`,
+  query tables (models), and **return schemas** — never ORM models. Shared
+  read-models live next to their repository (`api/` may depend on `db/`, never
+  the reverse).
 - **Dependency injection** for side-effecting collaborators (DB, Anthropic,
   embedder, Redis) via `Depends()` or the container. No globals.
 - **Adapter pattern** for external services: `EmbeddingProvider`/`VoyageEmbedder`,
   `LLMProvider`/`AnthropicProvider`. Swappable.
-- **Self-contained service modules:** `enrichment/`, `scoring/`, `digest/`,
-  `decisions/`, `rag/`, `agent/` each own their domain end-to-end.
+- **Feature slices.** `classification/`, `scoring/`, `digest/`, `cards/`,
+  `insights/`, `rag/` each own their schemas + logic; the shared tables they
+  read stay central in `db/models/`.
 
 ## 5. Git workflow
 

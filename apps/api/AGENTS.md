@@ -10,8 +10,10 @@ get wrong. The rest (type hints, `strict`, async I/O, no `import *`) is assumed.
 - Logging is **structlog only** — never `print()`, never bare `logging`.
 - No raw `anthropic.AsyncAnthropic()` — all LLM calls go through
   `src/evercurrent/llm/client.py`.
-- Repositories return **domain models**, never SQLAlchemy models. Repos take an
-  `AsyncSession` param; they don't create their own.
+- Repositories return **schemas** (Pydantic read-models), never SQLAlchemy
+  models. Repos take an `AsyncSession` param; they don't create their own. A
+  shared read-model lives in its repository module (e.g. `MemberSummary` in
+  `db/repositories/memberships.py`).
 - Pydantic v2 `model_config = ConfigDict(strict=True)` on every schema.
 - FastAPI collaborators via `Depends(get_x)` factories — no module globals.
 - Celery tasks in `jobs/tasks/<name>.py`, registered in `celery_tasks.py`, and
