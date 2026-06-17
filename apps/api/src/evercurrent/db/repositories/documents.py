@@ -1,3 +1,6 @@
+"""Document/DocumentChunk read-models (schemas) + SQL to upsert documents and
+replace their chunks during ingestion."""
+
 from __future__ import annotations
 
 import datetime as dt

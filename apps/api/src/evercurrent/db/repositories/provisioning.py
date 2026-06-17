@@ -1,3 +1,6 @@
+"""SQL for provisioning org members from Slack: upsert memberships by Slack user
+id so live webhook messages resolve to a known author."""
+
 from __future__ import annotations
 
 import uuid

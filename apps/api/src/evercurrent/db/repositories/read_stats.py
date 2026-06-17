@@ -1,3 +1,6 @@
+"""The MessageActivity read-model + SQL for dashboard read stats (recent message
+counts/recency)."""
+
 from __future__ import annotations
 
 import uuid

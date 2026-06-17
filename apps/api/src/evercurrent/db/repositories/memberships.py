@@ -1,3 +1,6 @@
+"""Membership read-models (MemberSummary, MeProfile) + SQL for member listing,
+persona lookup, and the current-user profile."""
+
 from __future__ import annotations
 
 import uuid

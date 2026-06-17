@@ -1,3 +1,6 @@
+"""The Project read-model (schema) + SQL to create/read projects and advance
+their current day."""
+
 from __future__ import annotations
 
 import datetime as dt

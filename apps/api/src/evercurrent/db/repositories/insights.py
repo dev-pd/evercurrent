@@ -1,3 +1,6 @@
+"""SQL for Eve's insights: persist a generated insight and read them back
+(paginated) for the insights API."""
+
 from __future__ import annotations
 
 import uuid

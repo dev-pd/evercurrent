@@ -1,3 +1,6 @@
+"""SQL for messages: single-message lookups used by the card and scoring
+pipelines (returns plain row dicts the callers shape further)."""
+
 from __future__ import annotations
 
 import uuid
