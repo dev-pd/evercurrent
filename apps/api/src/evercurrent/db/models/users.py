@@ -11,7 +11,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from evercurrent.db.models.base import Base, _ts_default, _uuid_pk
 
 if TYPE_CHECKING:
-    from evercurrent.db.models.messages import Message
     from evercurrent.db.models.projects import Project
 
 
@@ -19,6 +18,12 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = _uuid_pk()
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("orgs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     project_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("projects.id", ondelete="CASCADE"),
@@ -46,6 +51,5 @@ class User(Base):
     created_at: Mapped[dt.datetime] = _ts_default()
 
     project: Mapped[Project] = relationship(back_populates="users")
-    messages: Mapped[list[Message]] = relationship(back_populates="author")
 
     __table_args__ = (Index("ix_users_project_username", "project_id", "username", unique=True),)

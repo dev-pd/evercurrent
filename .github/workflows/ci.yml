@@ -84,6 +84,10 @@ jobs:
           enable-cache: true
           cache-dependency-glob: apps/api/uv.lock
       - run: uv sync --frozen
+      - name: Apply migrations
+        run: uv run alembic upgrade head
+      - name: ORM/schema drift check
+        run: uv run python -m evercurrent.db.schema_check
       - name: Unit tests (health + ready only by policy)
         run: |
           if [ -d tests/unit ]; then

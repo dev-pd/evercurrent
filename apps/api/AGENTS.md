@@ -28,6 +28,21 @@ get wrong. The rest (type hints, `strict`, async I/O, no `import *`) is assumed.
 - FKs always specify `ON DELETE`. Indexes deliberate, commented with the query
   they serve.
 - pgvector: `vector(512)` for `voyage-3-lite`, HNSW index for ANN.
+- `org_id` is denormalized onto every tenant-scoped table — it's the RLS
+  isolation key (`org_id = current_setting('app.current_org_id')`), so policies
+  filter per-row without a join. Not redundant with `project_id`.
+
+### Repository queries: raw SQL vs `select()` (intentional mix)
+
+- **Parameterized raw `text()` SQL** is the norm in repositories for queries the
+  ORM expresses poorly: jsonb ops (`||`, `->>`), pgvector (`<=>`), RLS
+  (`set_config`), `ON CONFLICT` upserts, and CTEs. Always bind params (`:x`),
+  never f-string user input.
+- **`select(Model)`** for simple typed reads/filters where it's clearer.
+- **ORM models must match the migrated schema.** They're a query surface, not
+  the DDL source (Alembic owns DDL) — but a model that lies about columns breaks
+  `select()`. The `make check-models` drift check (CI) fails if any model column
+  is absent from its table.
 
 ## LLM & prompts
 

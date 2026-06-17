@@ -12,7 +12,6 @@ from evercurrent.db.models.base import Base, _ts_default, _uuid_pk
 
 if TYPE_CHECKING:
     from evercurrent.db.models.documents import Document
-    from evercurrent.db.models.messages import Message
     from evercurrent.db.models.users import User
 
 
@@ -65,6 +64,12 @@ class Channel(Base):
     __tablename__ = "channels"
 
     id: Mapped[uuid.UUID] = _uuid_pk()
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("orgs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     project_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("projects.id", ondelete="CASCADE"),
@@ -76,9 +81,5 @@ class Channel(Base):
     created_at: Mapped[dt.datetime] = _ts_default()
 
     project: Mapped[Project] = relationship(back_populates="channels")
-    messages: Mapped[list[Message]] = relationship(
-        back_populates="channel",
-        cascade="all, delete-orphan",
-    )
 
     __table_args__ = (Index("ix_channels_project_name", "project_id", "name", unique=True),)

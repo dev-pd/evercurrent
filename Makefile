@@ -60,6 +60,10 @@ migration: ## Create new migration. Usage: make migration name="add foo"
 	@if [ -z "$(name)" ]; then echo "Usage: make migration name=\"<short description>\""; exit 1; fi
 	$(API_EXEC) alembic revision --autogenerate -m "$(name)"
 
+.PHONY: check-models
+check-models: ## Fail if any ORM model column is absent from its migrated table (drift)
+	$(API_EXEC) python -m evercurrent.db.schema_check
+
 .PHONY: psql
 psql: ## Open psql against the dev DB
 	$(COMPOSE) exec postgres psql -U evercurrent -d evercurrent
