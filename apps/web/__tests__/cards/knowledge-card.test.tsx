@@ -36,11 +36,10 @@ const card: CardResponse = {
 };
 
 describe("KnowledgeCard", () => {
-  test("renders summary, body, sources, and edges", () => {
+  test("renders summary, body, and sources", () => {
     render(<KnowledgeCard card={card} />);
     expect(screen.getByText(/switch brk-a1/i)).toBeInTheDocument();
     expect(screen.getByText(/chassis bracket material/i)).toBeInTheDocument();
     expect(screen.getByText(/#mech-design/)).toBeInTheDocument();
-    expect(screen.getByText(/dvt exit/i)).toBeInTheDocument();
   });
 });

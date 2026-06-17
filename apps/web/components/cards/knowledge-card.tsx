@@ -1,5 +1,4 @@
 import { CardSourceList } from "@/components/cards/card-source-list";
-import { CardEdgesList } from "@/components/cards/card-edges-list";
 import { formatTimestamp } from "@/lib/format-date";
 import { messages } from "@/lib/messages";
 import type { CardResponse } from "@/lib/types";
@@ -59,13 +58,6 @@ export function KnowledgeCard({ card }: KnowledgeCardProps) {
           {copy.sources}
         </h2>
         <CardSourceList sources={card.sources} />
-      </section>
-
-      <section>
-        <h2 className="mb-2 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
-          {copy.impact}
-        </h2>
-        <CardEdgesList edges={card.edges} />
       </section>
 
       {card.activity.length > 0 && (

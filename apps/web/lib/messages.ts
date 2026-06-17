@@ -114,10 +114,8 @@ export const messages = {
     updatedPrefix: "updated:",
     detail: "Detail",
     sources: "Sources",
-    impact: "Impact",
     activity: "Activity",
     noSources: "No sources linked yet.",
-    noEdges: "No linked cards.",
     openInSlack: "Open in Slack",
   },
   insights: {
