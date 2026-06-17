@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MessageSquare } from "lucide-react";
+import { DataTable, type Column } from "@/components/ui/data-table";
 import { messages } from "@/lib/messages";
 import type { CardListItem } from "@/lib/types";
 import { useDecisionModal } from "@/stores/decision-modal";
@@ -17,6 +18,47 @@ const KIND_STYLES: Record<string, string> = {
 function kindStyle(kind: string): string {
   return KIND_STYLES[kind] ?? "border-zinc-200 bg-zinc-50 text-zinc-700";
 }
+
+const columns: Column<CardListItem>[] = [
+  {
+    key: "kind",
+    header: "Kind",
+    sortValue: (c) => c.kind,
+    render: (c) => (
+      <span
+        className={`inline-block rounded-md border px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase ${kindStyle(c.kind)}`}
+      >
+        {c.kind}
+      </span>
+    ),
+  },
+  {
+    key: "summary",
+    header: "Summary",
+    className: "w-[55%]",
+    sortValue: (c) => c.summary.toLowerCase(),
+    render: (c) => <span className="font-medium text-[var(--text-primary)]">{c.summary}</span>,
+  },
+  {
+    key: "status",
+    header: "Status",
+    sortValue: (c) => c.status,
+    render: (c) => (
+      <span className="font-mono text-xs tracking-wider uppercase">{c.status}</span>
+    ),
+  },
+  {
+    key: "sources",
+    header: "Sources",
+    sortValue: (c) => c.sources_count,
+    render: (c) => (
+      <span className="inline-flex items-center gap-1 text-xs">
+        <MessageSquare className="h-3 w-3" aria-hidden="true" />
+        {c.sources_count}
+      </span>
+    ),
+  },
+];
 
 type Filter =
   | { key: "mine" }
@@ -92,38 +134,13 @@ export function DecisionsBoard({
         </span>
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-white p-8 text-center">
-          <p className="text-sm font-medium text-[var(--text-primary)]">{copy.noMatch}</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((card) => (
-            <button
-              key={card.id}
-              type="button"
-              onClick={() => open(card.id)}
-              className="group flex flex-col gap-2 rounded-xl border border-[var(--border-default)] bg-white p-4 text-left transition-colors hover:border-[var(--color-accent-300)] hover:shadow-sm"
-            >
-              <span
-                className={`w-[72px] rounded-md border py-0.5 text-center text-[10px] font-semibold tracking-wider uppercase ${kindStyle(card.kind)}`}
-              >
-                {card.kind}
-              </span>
-              <span className="line-clamp-3 text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--color-accent-700)]">
-                {card.summary}
-              </span>
-              <div className="mt-auto flex flex-wrap items-center gap-3 pt-1 text-[11px] text-[var(--text-muted)]">
-                <span className="font-mono tracking-wider uppercase">{card.status}</span>
-                <span className="inline-flex items-center gap-1">
-                  <MessageSquare className="h-3 w-3" aria-hidden="true" />
-                  {card.sources_count}
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        rows={filtered}
+        rowKey={(c) => c.id}
+        onRowClick={(c) => open(c.id)}
+        emptyLabel={copy.noMatch}
+      />
     </div>
   );
 }

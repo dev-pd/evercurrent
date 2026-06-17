@@ -66,7 +66,7 @@ class ProactiveInsight(BaseModel):
 async def list_insights(
     session: SessionDep,
     user: CurrentUserDep,
-    limit: Annotated[int, Query(ge=1, le=20)] = 5,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 50,
 ) -> list[ProactiveInsight]:
     payloads = await InsightRepository(session).list_payloads(org_id=user.org_id, limit=limit)
     return [ProactiveInsight(**payload) for payload in payloads]

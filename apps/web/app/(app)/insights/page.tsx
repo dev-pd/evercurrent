@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { apiServer } from "@/lib/api";
 import { PageContainer, PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { InsightsGrid } from "@/components/insights/insights-grid";
+import { InsightsTable } from "@/components/insights/insights-table";
 import { GenerateInsightButton } from "@/components/insights/generate-insight-button";
 import { messages } from "@/lib/messages";
 import type { ProactiveInsight, Project } from "@/lib/types";
@@ -24,7 +24,7 @@ async function safeFetch<T>(fn: () => Promise<T>): Promise<T | null> {
 export default async function InsightsPage() {
   const client = await apiServer();
   const [insights, projects] = await Promise.all([
-    safeFetch<ProactiveInsight[]>(() => client.getInsights(10)),
+    safeFetch<ProactiveInsight[]>(() => client.getInsights(1000)),
     safeFetch<Project[]>(() => client.listProjects()),
   ]);
   const insightList = insights ?? [];
@@ -43,7 +43,7 @@ export default async function InsightsPage() {
       {insightList.length === 0 ? (
         <EmptyState title={copy.emptyTitle} hint={copy.emptyHint} />
       ) : (
-        <InsightsGrid insights={insightList} />
+        <InsightsTable insights={insightList} />
       )}
     </PageContainer>
   );
