@@ -1,3 +1,5 @@
+"""Current-user route: the authenticated member's profile and org branding."""
+
 from __future__ import annotations
 
 import uuid

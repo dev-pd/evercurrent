@@ -1,3 +1,5 @@
+"""Timeline route: the project's phase-ladder projection for the timeline view."""
+
 from __future__ import annotations
 
 import uuid

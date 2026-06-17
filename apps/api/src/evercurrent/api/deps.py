@@ -1,3 +1,5 @@
+"""FastAPI dependency providers: request-scoped DB session, current-user id, and settings."""
+
 from __future__ import annotations
 
 import uuid

@@ -1,3 +1,5 @@
+"""Project routes: list and create a project, and fetch one by id."""
+
 from __future__ import annotations
 
 import datetime as dt

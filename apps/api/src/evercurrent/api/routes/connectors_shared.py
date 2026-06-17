@@ -1,3 +1,5 @@
+"""Shared connector route helpers: the TokenVault instance and the common InstallResponse shape."""
+
 from __future__ import annotations
 
 from fastapi import HTTPException, status

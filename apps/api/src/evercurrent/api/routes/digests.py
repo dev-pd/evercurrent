@@ -1,3 +1,5 @@
+"""Routes for the per-member digest: fetch today's digest and trigger regeneration."""
+
 from __future__ import annotations
 
 import uuid

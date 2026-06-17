@@ -1,3 +1,5 @@
+"""Dashboard 'today' route: the per-member landing summary."""
+
 from __future__ import annotations
 
 import uuid

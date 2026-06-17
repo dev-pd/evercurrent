@@ -1,3 +1,5 @@
+"""Inbound webhooks: the Slack events endpoint that feeds messages into the ingestion pipeline."""
+
 from __future__ import annotations
 
 import hmac

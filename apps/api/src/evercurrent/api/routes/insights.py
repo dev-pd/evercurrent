@@ -1,3 +1,5 @@
+"""Routes for Eve's insights: list insights and trigger an on-demand insight run."""
+
 from __future__ import annotations
 
 import uuid

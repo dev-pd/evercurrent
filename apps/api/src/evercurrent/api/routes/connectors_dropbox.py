@@ -1,3 +1,5 @@
+"""Dropbox connector routes: OAuth install/callback and folder selection + sync."""
+
 from __future__ import annotations
 
 import uuid

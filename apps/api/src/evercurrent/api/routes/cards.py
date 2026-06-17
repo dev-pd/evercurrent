@@ -1,3 +1,5 @@
+"""Routes for decision cards: paginated list, detail with sources, and status updates."""
+
 from __future__ import annotations
 
 import uuid

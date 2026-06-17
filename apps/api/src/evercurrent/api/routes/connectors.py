@@ -1,3 +1,5 @@
+"""Connector routes: Slack install/status plus the aggregated connectors router (mounts Dropbox)."""
+
 from __future__ import annotations
 
 import uuid

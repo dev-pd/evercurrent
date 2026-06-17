@@ -1,3 +1,5 @@
+"""Member routes: list, create, and update project members."""
+
 from __future__ import annotations
 
 import uuid
