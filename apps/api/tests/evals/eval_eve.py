@@ -98,7 +98,7 @@ async def _run_scenario(
         cast("AsyncSession", None),
         project_id=uuid.uuid4(),
         llm=llm,
-        mcp=_FakeMCP(scenario["corpus"]),
+        tool_client=_FakeMCP(scenario["corpus"]),
     )
     emitted = run.insight
     accepted = False

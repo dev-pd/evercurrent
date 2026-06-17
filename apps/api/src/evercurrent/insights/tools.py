@@ -1,3 +1,6 @@
+"""Eve's tool catalogue: the read tools she may call (search/query) and the
+single emit_insight tool that ends a run with a structured insight."""
+
 from __future__ import annotations
 
 from evercurrent.llm.client import ToolSpec

@@ -1,3 +1,6 @@
+"""Eve, the proactive insight agent: a native tool-use loop (<=8 turns) that
+searches messages/docs/cards, then emits one grounded cross-functional insight."""
+
 from __future__ import annotations
 
 import json
@@ -78,10 +81,10 @@ async def run_eve(
     project_id: uuid.UUID,
     seed: str | None = None,
     llm: LLMProvider | None = None,
-    mcp: InProcessToolClient | None = None,
+    tool_client: InProcessToolClient | None = None,
 ) -> EveRun:
     provider = llm or get_provider()
-    client = mcp or InProcessToolClient()
+    client = tool_client or InProcessToolClient()
     tools = [*READ_TOOLS, EMIT_TOOL]
     system = _system_prompt()
 

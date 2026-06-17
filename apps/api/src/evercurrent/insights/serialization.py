@@ -1,3 +1,6 @@
+"""Recursively convert tool outputs (dataclasses, Pydantic models, UUIDs) into
+JSON-serializable values for the tool_result content Eve feeds back to the LLM."""
+
 from __future__ import annotations
 
 import dataclasses
