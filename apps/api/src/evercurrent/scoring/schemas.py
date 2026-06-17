@@ -1,3 +1,6 @@
+"""Scoring I/O contracts: the signal bundle for one (member, message) pair
+and the resulting score plus its per-signal breakdown."""
+
 from __future__ import annotations
 
 from typing import Literal

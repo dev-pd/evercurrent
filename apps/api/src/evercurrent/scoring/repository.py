@@ -1,3 +1,6 @@
+"""Persistence for computed scores: idempotent upserts keyed on
+(project_member_id, message_id) so re-scoring a message overwrites in place."""
+
 from __future__ import annotations
 
 import uuid

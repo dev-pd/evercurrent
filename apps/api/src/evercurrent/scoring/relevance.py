@@ -1,3 +1,6 @@
+"""Per-user relevance scoring: weighs role, owned-subsystem, urgency,
+phase-concern, topic, and cross-functional signals into a single [0, 1] score."""
+
 from __future__ import annotations
 
 from evercurrent.scoring.schemas import ScoreInput, ScoreResult

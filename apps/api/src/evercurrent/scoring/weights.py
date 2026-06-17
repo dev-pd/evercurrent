@@ -1,3 +1,6 @@
+"""Relevance-scoring weights: the per-signal coefficients, constrained to be
+non-negative and to sum to 1.0 so a score stays in [0, 1]."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -41,9 +44,3 @@ class Weights:
 
 
 DEFAULT_WEIGHTS: Weights = Weights()
-
-WEIGHTS: dict[str, float] = DEFAULT_WEIGHTS.as_dict()
-
-
-def default_weights() -> Weights:
-    return DEFAULT_WEIGHTS

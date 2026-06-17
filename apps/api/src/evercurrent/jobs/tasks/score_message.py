@@ -9,7 +9,7 @@ from sqlalchemy import select, text
 from evercurrent.db import models
 from evercurrent.db.repositories.messages import MessageRepository
 from evercurrent.db.session import session_scope
-from evercurrent.scoring.engine import score
+from evercurrent.scoring.relevance import score
 from evercurrent.scoring.repository import bulk_upsert_scores
 from evercurrent.scoring.schemas import ScoreInput
 from evercurrent.tenancy.rls import set_org_context

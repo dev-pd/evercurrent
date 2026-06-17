@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from evercurrent.scoring import WEIGHTS, ScoreInput, ScoreResult, score
+from evercurrent.scoring import ScoreInput, ScoreResult, score
 from evercurrent.scoring.weights import Weights
 
 
@@ -132,7 +132,7 @@ def test_phase_concern_match_uses_current_phase() -> None:
 
 
 def test_weights_sum_to_one_invariant() -> None:
-    total = sum(WEIGHTS.values())
+    total = sum(Weights().as_dict().values())
 
     assert total == pytest.approx(1.0)
 

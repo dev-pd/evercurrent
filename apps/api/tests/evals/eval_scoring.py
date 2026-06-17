@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from evercurrent.scoring.engine import score
+from evercurrent.scoring.relevance import score
 from evercurrent.scoring.schemas import ScoreInput
 from tests.evals.conftest import emit_metric_table, write_report
 from tests.evals.runner import spearman_rho, warn_if_below_baseline
