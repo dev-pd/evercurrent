@@ -6,7 +6,6 @@ from evercurrent.db.models.connectors import Connector, ConnectorChannel, RawEve
 from evercurrent.db.models.digests import Digest
 from evercurrent.db.models.documents import Document, DocumentChunk
 from evercurrent.db.models.messages import Message, MessageTag
-from evercurrent.db.models.notifications import Notification, Subscription
 from evercurrent.db.models.orgs import Org, OrgMembership
 from evercurrent.db.models.projects import Channel, Project
 from evercurrent.db.models.scoring import Score
@@ -26,13 +25,11 @@ __all__ = [
     "DocumentChunk",
     "Message",
     "MessageTag",
-    "Notification",
     "Org",
     "OrgMembership",
     "Project",
     "RawEvent",
     "Score",
-    "Subscription",
     "User",
     "metadata",
 ]

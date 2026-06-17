@@ -6,7 +6,6 @@ import uuid
 from fastapi import APIRouter, HTTPException, status
 
 from evercurrent.api.schemas import (
-    ChangePhaseRequest,
     CreateProjectRequest,
     ProjectResponse,
 )
@@ -62,23 +61,4 @@ async def get_project(
     project = await ProjectRepository(session).get_by_id(project_id)
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="project not found")
-    return ProjectResponse.model_validate(project.model_dump())
-
-
-@router.post("/{project_id}/phase", response_model=ProjectResponse)
-async def change_phase(
-    project_id: uuid.UUID,
-    payload: ChangePhaseRequest,
-    session: SessionDep,
-    user: AdminUserDep,
-) -> ProjectResponse:
-    _ = user
-    from evercurrent.sse_publisher import publish_event
-
-    repo = ProjectRepository(session)
-    project = await repo.set_phase(project_id, payload.phase)
-    if project is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="project not found")
-    await session.commit()
-    publish_event(project_id, "phase.changed", {"phase": payload.phase})
     return ProjectResponse.model_validate(project.model_dump())

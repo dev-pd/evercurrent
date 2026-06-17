@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import uuid as _uuid
 from typing import Any
 
 import structlog
@@ -105,53 +104,3 @@ def sync_dropbox_connector(connector_id: str) -> dict[str, Any]:
     from evercurrent.jobs.tasks.sync_dropbox import sync_dropbox_connector as impl
 
     return _run(impl({}, connector_id))
-
-
-def _new_task_id() -> str:
-    return str(_uuid.uuid4())
-
-
-@celery_app.task(
-    name="evercurrent.deliver_digest_dm",
-    bind=True,
-    autoretry_for=(Exception,),
-    retry_backoff=True,
-    retry_backoff_max=300,
-    retry_jitter=True,
-    max_retries=5,
-)
-def deliver_digest_dm(
-    self: Any,
-    digest_id: str,
-    force_quiet: bool = False,
-) -> dict[str, Any]:
-    from evercurrent.jobs.tasks.deliver_digest import deliver_digest_dm_task as impl
-    from evercurrent.notify.slack_deliver import SlackRateLimitedError
-
-    try:
-        return _run(impl({}, digest_id, force_quiet))
-    except SlackRateLimitedError as exc:
-        raise self.retry(exc=exc) from exc
-
-
-@celery_app.task(
-    name="evercurrent.deliver_urgent_dm",
-    bind=True,
-    autoretry_for=(Exception,),
-    retry_backoff=True,
-    retry_backoff_max=300,
-    retry_jitter=True,
-    max_retries=5,
-)
-def deliver_urgent_dm(
-    self: Any,
-    card_id: str,
-    membership_id: str,
-) -> dict[str, Any]:
-    from evercurrent.jobs.tasks.deliver_urgent import deliver_urgent_dm_task as impl
-    from evercurrent.notify.slack_deliver import SlackRateLimitedError
-
-    try:
-        return _run(impl({}, card_id, membership_id))
-    except SlackRateLimitedError as exc:
-        raise self.retry(exc=exc) from exc

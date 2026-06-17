@@ -77,12 +77,6 @@ class GenerateDigestsResponse(BaseModel):
     day: int
 
 
-class ChangePhaseRequest(BaseModel):
-    model_config = ConfigDict(strict=True)
-
-    phase: Annotated[str, Field(min_length=1, max_length=32)]
-
-
 class CreateProjectRequest(BaseModel):
     model_config = ConfigDict(strict=True)
 

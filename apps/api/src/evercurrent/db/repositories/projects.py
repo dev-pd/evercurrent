@@ -84,15 +84,6 @@ class ProjectRepository:
         await self._s.refresh(row)
         return Project.model_validate(row)
 
-    async def set_phase(self, project_id: uuid.UUID, phase: str) -> Project | None:
-        row = await self._s.get(ProjectModel, project_id)
-        if row is None:
-            return None
-        row.current_phase = phase
-        await self._s.flush()
-        await self._s.refresh(row)
-        return Project.model_validate(row)
-
     async def set_current_day(self, project_id: uuid.UUID, day: int) -> Project | None:
         row = await self._s.get(ProjectModel, project_id)
         if row is None:
