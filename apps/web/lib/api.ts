@@ -122,12 +122,6 @@ export interface ApiClient {
   syncSlack(connectorId: string): Promise<{ status: string; connector_id: string }>;
   disconnect(connectorId: string): Promise<{ status: string; kind: string }>;
   listProjects(): Promise<Project[]>;
-  createProject(body: {
-    name: string;
-    current_phase: string;
-    start_date: string;
-    phase_concerns?: Record<string, string[]>;
-  }): Promise<Project>;
   getToday(projectId: string): Promise<TodayV2>;
   getDigestToday(): Promise<DigestV2>;
   regenerateDigest(): Promise<RegenerateResponse>;
@@ -195,12 +189,6 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
     },
     async listProjects() {
       return apiFetch("/api/v1/projects", projectListSchema, await getCtx());
-    },
-    async createProject(body) {
-      return apiFetch("/api/v1/projects", projectSchema, await getCtx(), {
-        method: "POST",
-        body,
-      });
     },
     async getToday(projectId) {
       return apiFetch(
