@@ -15,10 +15,10 @@ from evercurrent.digest import repository as digest_repo
 from evercurrent.digest.schemas import (
     DigestContext,
     DigestDraft,
+    DigestRecord,
     MemberProfile,
     ProjectSnapshot,
 )
-from evercurrent.domain.digests import Digest
 from evercurrent.llm.client import LLMProvider
 from evercurrent.llm.tiering import ModelTier
 
@@ -241,7 +241,7 @@ async def generate_digest(
     day_index: int,
     phase: str,
     force: bool = False,
-) -> Digest:
+) -> DigestRecord:
     if not force:
         existing = await digest_repo.get_for_member_day(
             session,

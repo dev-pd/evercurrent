@@ -11,8 +11,7 @@ from freezegun import freeze_time
 import evercurrent.digest.digest_generator as agent_mod
 import evercurrent.digest.repository as repo_mod
 from evercurrent.digest.scheduler import members_due_at
-from evercurrent.digest.schemas import MemberProfile, ProjectSnapshot
-from evercurrent.domain.digests import Digest
+from evercurrent.digest.schemas import DigestRecord, MemberProfile, ProjectSnapshot
 
 
 def _make_membership(tz_name: str) -> dict[str, Any]:
@@ -73,7 +72,7 @@ async def test_digest_idempotent_on_same_member_day(
 ) -> None:
     member_id = uuid.uuid4()
     org_id = uuid.uuid4()
-    existing = Digest(
+    existing = DigestRecord(
         id=uuid.uuid4(),
         org_id=org_id,
         project_member_id=member_id,
@@ -92,7 +91,7 @@ async def test_digest_idempotent_on_same_member_day(
         *,
         project_member_id: uuid.UUID,
         day_index: int,
-    ) -> Digest | None:
+    ) -> DigestRecord | None:
         get_calls["n"] += 1
         assert project_member_id == member_id
         assert day_index == 3
@@ -121,7 +120,7 @@ async def test_force_regen_replaces_existing(
 ) -> None:
     member_id = uuid.uuid4()
     org_id = uuid.uuid4()
-    new_digest = Digest(
+    new_digest = DigestRecord(
         id=uuid.uuid4(),
         org_id=org_id,
         project_member_id=member_id,
@@ -133,7 +132,7 @@ async def test_force_regen_replaces_existing(
         generated_at=dt.datetime(2026, 6, 7, 8, 4, tzinfo=dt.UTC),
     )
 
-    async def fake_get(*_args: Any, **_kwargs: Any) -> Digest | None:
+    async def fake_get(*_args: Any, **_kwargs: Any) -> DigestRecord | None:
         msg = "force=True must skip idempotency check"
         raise AssertionError(msg)
 
@@ -173,7 +172,7 @@ async def test_force_regen_replaces_existing(
     async def fake_recent(*_args: Any, **_kwargs: Any) -> list[Any]:
         return []
 
-    async def fake_upsert(*_args: Any, **kwargs: Any) -> Digest:
+    async def fake_upsert(*_args: Any, **kwargs: Any) -> DigestRecord:
         return new_digest.model_copy(update={"content_md": kwargs["content_md"]})
 
     monkeypatch.setattr(repo_mod, "get_for_member_day", fake_get)

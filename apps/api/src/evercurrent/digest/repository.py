@@ -11,10 +11,10 @@ from evercurrent.db.models import Digest as DigestModel
 from evercurrent.digest.schemas import (
     CardSummary,
     DigestMessageRow,
+    DigestRecord,
     PriorDigest,
     ScoredItem,
 )
-from evercurrent.domain.digests import Digest
 
 log = structlog.get_logger(__name__)
 
@@ -24,7 +24,7 @@ async def get_for_member_day(
     *,
     project_member_id: uuid.UUID,
     day_index: int,
-) -> Digest | None:
+) -> DigestRecord | None:
     row = (
         (
             await session.execute(
@@ -42,14 +42,14 @@ async def get_for_member_day(
     )
     if row is None:
         return None
-    return Digest.model_validate(dict(row))
+    return DigestRecord.model_validate(dict(row))
 
 
 async def get_latest_for_member(
     session: AsyncSession,
     *,
     project_member_id: uuid.UUID,
-) -> Digest | None:
+) -> DigestRecord | None:
     row = (
         (
             await session.execute(
@@ -68,7 +68,7 @@ async def get_latest_for_member(
     )
     if row is None:
         return None
-    return Digest.model_validate(dict(row))
+    return DigestRecord.model_validate(dict(row))
 
 
 async def list_recent_for_member(
@@ -111,7 +111,7 @@ async def upsert_digest(
     content_md: str,
     card_ids: list[uuid.UUID],
     message_ids: list[uuid.UUID],
-) -> Digest:
+) -> DigestRecord:
     stmt = (
         pg_insert(DigestModel)
         .values(
@@ -137,7 +137,7 @@ async def upsert_digest(
     )
     result = await session.execute(stmt)
     row = result.scalar_one()
-    return Digest.model_validate(row)
+    return DigestRecord.model_validate(row)
 
 
 async def top_scored_items_for_member(

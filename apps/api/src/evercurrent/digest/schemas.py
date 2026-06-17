@@ -7,6 +7,22 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 
+class DigestRecord(BaseModel):
+    """A persisted digest as read back from the database."""
+
+    model_config = ConfigDict(strict=True, from_attributes=True)
+
+    id: uuid.UUID
+    org_id: uuid.UUID
+    project_member_id: uuid.UUID
+    day_index: Annotated[int, Field(ge=0)]
+    phase: Annotated[str, Field(min_length=1, max_length=64)]
+    content_md: str
+    card_ids: list[uuid.UUID] = Field(default_factory=list)
+    message_ids: list[uuid.UUID] = Field(default_factory=list)
+    generated_at: dt.datetime
+
+
 class DigestMessageRow(BaseModel):
     model_config = ConfigDict(strict=True)
 

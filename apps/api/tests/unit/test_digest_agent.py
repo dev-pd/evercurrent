@@ -11,11 +11,11 @@ import evercurrent.digest.digest_generator as agent_mod
 import evercurrent.digest.repository as repo_mod
 from evercurrent.digest.schemas import (
     CardSummary,
+    DigestRecord,
     MemberProfile,
     ProjectSnapshot,
     ScoredItem,
 )
-from evercurrent.domain.digests import Digest
 
 
 def _scored_item(message_id: uuid.UUID, score: float) -> ScoredItem:
@@ -93,7 +93,7 @@ async def _patch_agent_context(
     async def fake_recent(*_args: Any, **_kwargs: Any) -> list[Any]:
         return []
 
-    async def fake_get_for_member_day(*_args: Any, **_kwargs: Any) -> Digest | None:
+    async def fake_get_for_member_day(*_args: Any, **_kwargs: Any) -> DigestRecord | None:
         return None
 
     monkeypatch.setattr(agent_mod, "_load_member_profile", fake_load_profile)
@@ -137,7 +137,7 @@ async def test_persisted_row_has_citations(
         content_md: str,
         card_ids: list[uuid.UUID],
         message_ids: list[uuid.UUID],
-    ) -> Digest:
+    ) -> DigestRecord:
         captured_upsert.update(
             {
                 "org_id": org_id,
@@ -149,7 +149,7 @@ async def test_persisted_row_has_citations(
                 "message_ids": message_ids,
             },
         )
-        return Digest(
+        return DigestRecord(
             id=uuid.uuid4(),
             org_id=org_id,
             project_member_id=project_member_id,
@@ -215,9 +215,9 @@ async def test_hallucinated_citations_dropped(
 
     captured: dict[str, Any] = {}
 
-    async def fake_upsert(_session: Any, **kwargs: Any) -> Digest:
+    async def fake_upsert(_session: Any, **kwargs: Any) -> DigestRecord:
         captured.update(kwargs)
-        return Digest(
+        return DigestRecord(
             id=uuid.uuid4(),
             org_id=kwargs["org_id"],
             project_member_id=kwargs["project_member_id"],

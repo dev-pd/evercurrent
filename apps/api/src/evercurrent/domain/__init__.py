@@ -1,4 +1,3 @@
-from evercurrent.domain.digests import Digest
 from evercurrent.domain.documents import Document, DocumentChunk, DocumentKind
 from evercurrent.domain.messages import (
     EnrichedMessage,
@@ -11,7 +10,6 @@ from evercurrent.domain.users import Role, User
 
 __all__ = [
     "Channel",
-    "Digest",
     "Document",
     "DocumentChunk",
     "DocumentKind",
