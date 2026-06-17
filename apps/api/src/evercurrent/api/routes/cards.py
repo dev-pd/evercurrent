@@ -8,28 +8,30 @@ from fastapi import APIRouter, HTTPException, Query, status
 from evercurrent.auth.deps import CurrentUserDep, SessionDep
 from evercurrent.cards import repository as cards_repo
 from evercurrent.cards.schemas import (
-    CardListItem,
+    CardPage,
     CardResponse,
 )
 
 router = APIRouter(prefix="/cards", tags=["cards"])
 
 
-@router.get("", response_model=list[CardListItem])
+@router.get("", response_model=CardPage)
 async def list_cards(
     session: SessionDep,
     _user: CurrentUserDep,
     project_id: Annotated[uuid.UUID | None, Query()] = None,
     kind: Annotated[str | None, Query()] = None,
     status_filter: Annotated[str | None, Query(alias="status")] = None,
-    limit: Annotated[int, Query(ge=1, le=2000)] = 50,
-) -> list[CardListItem]:
+    limit: Annotated[int, Query(ge=1, le=1000)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> CardPage:
     return await cards_repo.list_cards(
         session,
         project_id=project_id,
         kind=kind,
         status=status_filter,
         limit=limit,
+        offset=offset,
     )
 
 

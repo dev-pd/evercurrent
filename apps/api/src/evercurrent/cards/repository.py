@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from evercurrent.cards.schemas import (
     CardKindT,
     CardListItem,
+    CardPage,
     CardResponse,
     CardSourceDetail,
     CardStatusT,
@@ -116,9 +117,10 @@ async def list_cards(
     kind: str | None = None,
     status: str | None = None,
     limit: int = 50,
-) -> list[CardListItem]:
+    offset: int = 0,
+) -> CardPage:
     clauses = ["TRUE"]
-    params: dict[str, Any] = {"limit": limit}
+    params: dict[str, Any] = {"limit": limit, "offset": offset}
     if project_id is not None:
         clauses.append("project_id = :project_id")
         params["project_id"] = str(project_id)
@@ -129,6 +131,14 @@ async def list_cards(
         clauses.append("status = :status")
         params["status"] = status
     where = " AND ".join(clauses)
+
+    total = (
+        await session.execute(
+            text(f"SELECT COUNT(*) FROM cards c WHERE {where}"),
+            params,
+        )
+    ).scalar_one()
+
     result = await session.execute(
         text(
             f"SELECT c.id, c.kind, c.summary, c.status, c.confidence, "
@@ -138,12 +148,12 @@ async def list_cards(
             f"       (SELECT COUNT(*) FROM card_sources cs "
             f"        WHERE cs.card_id = c.id) AS sources_count "
             f"FROM cards c WHERE {where} "
-            f"ORDER BY c.updated_at DESC LIMIT :limit",
+            f"ORDER BY c.updated_at DESC LIMIT :limit OFFSET :offset",
         ),
         params,
     )
     rows = result.mappings().all()
-    return [
+    items = [
         CardListItem(
             id=uuid.UUID(str(r["id"])),
             kind=_cast_kind(str(r["kind"])),
@@ -158,6 +168,7 @@ async def list_cards(
         )
         for r in rows
     ]
+    return CardPage(items=items, total=int(total), limit=limit, offset=offset)
 
 
 async def get_card(

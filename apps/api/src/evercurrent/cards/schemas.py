@@ -44,6 +44,15 @@ class CardListItem(BaseModel):
     updated_at: dt.datetime
 
 
+class CardPage(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    items: list[CardListItem]
+    total: int
+    limit: int
+    offset: int
+
+
 class CardSourceDetail(BaseModel):
     model_config = ConfigDict(strict=True)
 

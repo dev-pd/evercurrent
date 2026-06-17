@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { GanttChart } from "@/components/timeline/gantt-chart";
 import { BlockerBoard } from "@/components/timeline/blocker-board";
 import { messages } from "@/lib/messages";
-import type { CardListItem, Timeline } from "@/lib/types";
+import type { CardPage, Timeline } from "@/lib/types";
 
 const copy = messages.timeline;
 
@@ -38,10 +38,10 @@ export default async function TimelinePage({ searchParams }: TimelinePageProps) 
   const [timeline, cards] = projectId
     ? await Promise.all([
         safeFetch<Timeline>(() => client.getTimeline(projectId)),
-        safeFetch<CardListItem[]>(() => client.listCards({ limit: 1000 })),
+        safeFetch<CardPage>(() => client.listCards({ limit: 1000 })),
       ])
     : [null, null];
-  const cardList = cards ?? [];
+  const cardList = cards?.items ?? [];
 
   return (
     <PageContainer header={<PageHeader title={copy.title} subtitle={copy.subtitle} />}>

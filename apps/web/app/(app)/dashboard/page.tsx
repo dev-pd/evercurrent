@@ -37,11 +37,11 @@ export default async function DashboardPage() {
     memberList.find((member) => member.id === asMember) ?? memberList[0] ?? null;
   const projectId = projects?.[0]?.id ?? null;
 
-  const [today, timeline, cards] = await Promise.all([
+  const [today, timeline, openCardPage] = await Promise.all([
     projectId ? safeFetch(() => client.getToday(projectId)) : Promise.resolve(null),
     projectId ? safeFetch(() => client.getTimeline(projectId)) : Promise.resolve(null),
     projectId
-      ? safeFetch(() => client.listCards({ projectId, limit: 1000 }))
+      ? safeFetch(() => client.listCards({ projectId, status: "open", limit: 1 }))
       : Promise.resolve(null),
   ]);
 
@@ -50,7 +50,7 @@ export default async function DashboardPage() {
   const phase = today?.phase ?? digest?.phase ?? "—";
   const dayIndex = today?.live_day ?? digest?.day_index ?? 0;
 
-  const openCards = (cards ?? []).filter((card) => card.status === "open").length;
+  const openCards = openCardPage?.total ?? 0;
   const fcsTarget = timeline?.fcs_label?.split(" FCS")[0] ?? "—";
 
   const kpis = [

@@ -5,7 +5,7 @@ import { apiServer, VIEW_AS_COOKIE } from "@/lib/api";
 import { PageContainer, PageHeader } from "@/components/layout/page-header";
 import { DecisionsBoard } from "@/components/decisions/decisions-board";
 import { messages } from "@/lib/messages";
-import type { CardListItem, MemberSummary } from "@/lib/types";
+import type { CardPage, MemberSummary } from "@/lib/types";
 
 const copy = messages.decisions;
 
@@ -22,10 +22,11 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 export default async function DecisionsPage() {
   const client = await apiServer();
-  const [cards, members] = await Promise.all([
-    safe<CardListItem[]>(() => client.listCards({ limit: 1000 }), []),
+  const [cardPage, members] = await Promise.all([
+    safe<CardPage | null>(() => client.listCards({ limit: 1000 }), null),
     safe<MemberSummary[]>(() => client.listMembers(), []),
   ]);
+  const cards = cardPage?.items ?? [];
 
   const viewedId = (await cookies()).get(VIEW_AS_COOKIE)?.value ?? null;
   const viewed = members.find((member) => member.id === viewedId) ?? members[0] ?? null;

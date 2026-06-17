@@ -70,6 +70,14 @@ export const cardListItemSchema = z.object({
 });
 export type CardListItem = z.infer<typeof cardListItemSchema>;
 
+export const cardPageSchema = z.object({
+  items: z.array(cardListItemSchema),
+  total: z.number().int(),
+  limit: z.number().int(),
+  offset: z.number().int(),
+});
+export type CardPage = z.infer<typeof cardPageSchema>;
+
 export const cardResponseSchema = z.object({
   id: z.string().uuid(),
   kind: z.string(),

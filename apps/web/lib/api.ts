@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-  cardListItemSchema,
+  cardPageSchema,
   cardResponseSchema,
   digestV2Schema,
   meSchema,
@@ -12,7 +12,7 @@ import {
   proactiveInsightSchema,
   timelineSchema,
   todayV2Schema,
-  type CardListItem,
+  type CardPage,
   type CardResponse,
   type DigestV2,
   type Me,
@@ -131,7 +131,7 @@ export interface ApiClient {
   getToday(projectId: string): Promise<TodayV2>;
   getDigestToday(): Promise<DigestV2>;
   regenerateDigest(): Promise<RegenerateResponse>;
-  listCards(filters?: CardFilters): Promise<CardListItem[]>;
+  listCards(filters?: CardFilters): Promise<CardPage>;
   getCard(id: string): Promise<CardResponse>;
   getInsights(limit?: number): Promise<ProactiveInsight[]>;
   generateInsight(): Promise<{ status: string; project_id: string }>;
@@ -143,6 +143,7 @@ export interface CardFilters {
   kind?: string;
   status?: string;
   limit?: number;
+  offset?: number;
 }
 
 function buildCardQuery(filters?: CardFilters): string {
@@ -152,12 +153,12 @@ function buildCardQuery(filters?: CardFilters): string {
   if (filters.kind) params.set("kind", filters.kind);
   if (filters.status) params.set("status", filters.status);
   if (filters.limit) params.set("limit", String(filters.limit));
+  if (filters.offset) params.set("offset", String(filters.offset));
   const query = params.toString();
   return query ? `?${query}` : "";
 }
 
 function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
-  const cardListSchema = z.array(cardListItemSchema);
   const insightListSchema = z.array(proactiveInsightSchema);
   const projectListSchema = z.array(projectSchema);
   const memberListSchema = z.array(memberSummarySchema);
@@ -218,7 +219,7 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
       });
     },
     async listCards(filters) {
-      return apiFetch(`/api/v1/cards${buildCardQuery(filters)}`, cardListSchema, await getCtx());
+      return apiFetch(`/api/v1/cards${buildCardQuery(filters)}`, cardPageSchema, await getCtx());
     },
     async getCard(id) {
       return apiFetch(`/api/v1/cards/${id}`, cardResponseSchema, await getCtx());
