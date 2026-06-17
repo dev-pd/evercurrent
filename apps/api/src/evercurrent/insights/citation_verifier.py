@@ -29,7 +29,7 @@ def _is_grounded(snippet: str, evidence_tokens: list[set[str]]) -> bool:
     return False
 
 
-def ground_sources(
+def verify_source_grounding(
     sources: list[dict[str, Any]],
     evidence: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:

@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-import evercurrent.cards.builder as builder_mod
+import evercurrent.cards.card_drafter as builder_mod
 import evercurrent.cards.repository as repo_mod
 from evercurrent.mcp.schemas import MessageRef, ThreadContext
 

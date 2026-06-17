@@ -73,7 +73,7 @@ async def change_phase(
     user: AdminUserDep,
 ) -> ProjectResponse:
     _ = user
-    from evercurrent.realtime import publish_event
+    from evercurrent.sse_publisher import publish_event
 
     repo = ProjectRepository(session)
     project = await repo.set_phase(project_id, payload.phase)

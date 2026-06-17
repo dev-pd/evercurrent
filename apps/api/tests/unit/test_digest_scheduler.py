@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 from freezegun import freeze_time
 
-import evercurrent.digest.agent as agent_mod
+import evercurrent.digest.digest_generator as agent_mod
 import evercurrent.digest.repository as repo_mod
 from evercurrent.digest.scheduler import members_due_at
 from evercurrent.digest.schemas import MemberProfile, ProjectSnapshot

@@ -13,7 +13,7 @@ from evercurrent.digest.scheduler import (
     project_phase_for_member,
 )
 from evercurrent.jobs.celery_tasks import generate_digest_for_member
-from evercurrent.realtime import publish_event
+from evercurrent.sse_publisher import publish_event
 
 log = structlog.get_logger(__name__)
 

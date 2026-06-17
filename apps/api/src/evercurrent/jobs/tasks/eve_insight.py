@@ -19,9 +19,9 @@ from sqlalchemy import text
 from evercurrent.config import Settings, get_settings
 from evercurrent.db.session import session_scope
 from evercurrent.insights import EveRun, run_eve
-from evercurrent.insights.grounding import ground_sources
+from evercurrent.insights.citation_verifier import verify_source_grounding
 from evercurrent.rag.embedder import get_embedder
-from evercurrent.realtime import publish_event
+from evercurrent.sse_publisher import publish_event
 from evercurrent.tenancy.rls import set_org_context
 
 log = structlog.get_logger(__name__)
@@ -34,7 +34,7 @@ def _gate(
 ) -> tuple[str | None, list[dict[str, Any]]]:
     """Deterministic acceptance gate. Returns (rejection_reason or None,
     grounded_sources). Order matters: cheapest/strongest checks first."""
-    grounded = ground_sources(emitted.get("sources") or [], run.evidence)
+    grounded = verify_source_grounding(emitted.get("sources") or [], run.evidence)
     if not run.searched:
         return "no_search", grounded
     if len(grounded) < settings.eve_min_grounded_sources:
