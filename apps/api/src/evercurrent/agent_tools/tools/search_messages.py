@@ -49,7 +49,7 @@ async def search_messages(
     cleaned = query.strip()
     if not cleaned:
         log.info(
-            "mcp.tool_call",
+            "tool.call",
             tool_name="search_messages",
             project_id=str(project_id),
             query_len=0,
@@ -83,7 +83,7 @@ async def search_messages(
 
     duration_ms = int((time.perf_counter() - start) * 1000)
     log.info(
-        "mcp.tool_call",
+        "tool.call",
         tool_name="search_messages",
         project_id=str(project_id),
         query_len=len(cleaned),

@@ -62,7 +62,7 @@ async def get_user_context(
 
     if row is None:
         log.info(
-            "mcp.tool_call",
+            "tool.call",
             tool_name="get_user_context",
             membership_id=str(membership_id),
             result_count=0,
@@ -84,7 +84,7 @@ async def get_user_context(
 
     duration_ms = int((time.perf_counter() - start) * 1000)
     log.info(
-        "mcp.tool_call",
+        "tool.call",
         tool_name="get_user_context",
         membership_id=str(membership_id),
         result_count=1,

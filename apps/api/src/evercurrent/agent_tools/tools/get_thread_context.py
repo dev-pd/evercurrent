@@ -54,7 +54,7 @@ async def get_thread_context(
     initial = (await session.execute(_LOOKUP_SQL, {"message_id": message_id})).mappings().first()
     if initial is None:
         log.info(
-            "mcp.tool_call",
+            "tool.call",
             tool_name="get_thread_context",
             message_id=str(message_id),
             result_count=0,
@@ -98,7 +98,7 @@ async def get_thread_context(
 
     duration_ms = int((time.perf_counter() - start) * 1000)
     log.info(
-        "mcp.tool_call",
+        "tool.call",
         tool_name="get_thread_context",
         message_id=str(message_id),
         root_id=str(root_id),

@@ -66,7 +66,7 @@ async def query_cards(
 
     duration_ms = int((time.perf_counter() - start) * 1000)
     log.info(
-        "mcp.tool_call",
+        "tool.call",
         tool_name="query_cards",
         kind=kind,
         status=status,

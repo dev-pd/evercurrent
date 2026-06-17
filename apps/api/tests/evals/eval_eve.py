@@ -20,7 +20,7 @@ from tests.evals.runner import warn_if_below_baseline
 _MAX_TOKENS = 512
 
 
-class _FakeMCP(InProcessToolClient):
+class _FakeToolClient(InProcessToolClient):
     """Serves a scenario's fixed corpus so Eve can be evaluated offline,
     with no database. Each search tool returns its slice of the corpus."""
 
@@ -98,7 +98,7 @@ async def _run_scenario(
         cast("AsyncSession", None),
         project_id=uuid.uuid4(),
         llm=llm,
-        tool_client=_FakeMCP(scenario["corpus"]),
+        tool_client=_FakeToolClient(scenario["corpus"]),
     )
     emitted = run.insight
     accepted = False

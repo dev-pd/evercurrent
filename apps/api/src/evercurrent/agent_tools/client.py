@@ -53,7 +53,7 @@ class InProcessToolClient:
     ) -> Any:
         fn = self._dispatch.get(tool_name)
         if fn is None:
-            log.warning("mcp.unknown_tool", tool_name=tool_name)
+            log.warning("tool.unknown", tool_name=tool_name)
             raise UnknownToolError(tool_name)
         kwargs = args or {}
         return await fn(session, **kwargs)
