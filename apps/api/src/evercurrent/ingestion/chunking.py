@@ -1,3 +1,6 @@
+"""Groups extracted PDF text blocks into overlapping, heading-aware BlockChunks
+sized for embedding (the PDF counterpart to rag.chunker's markdown chunker)."""
+
 from __future__ import annotations
 
 import re
@@ -11,7 +14,7 @@ HEADING_MAX_CHARS = 80
 
 
 @dataclass(frozen=True)
-class Chunk:
+class BlockChunk:
     ordinal: int
     text: str
     section: str | None
@@ -39,7 +42,7 @@ def chunk_blocks(  # noqa: C901
     *,
     target_chars: int = DEFAULT_TARGET_CHARS,
     overlap_chars: int = DEFAULT_OVERLAP_CHARS,
-) -> list[Chunk]:
+) -> list[BlockChunk]:
     if target_chars <= 0:
         raise ValueError("target_chars must be > 0")
     if overlap_chars < 0:
@@ -47,7 +50,7 @@ def chunk_blocks(  # noqa: C901
     if overlap_chars >= target_chars:
         raise ValueError("overlap_chars must be < target_chars")
 
-    chunks: list[Chunk] = []
+    chunks: list[BlockChunk] = []
     ordinal = 0
     current_section: str | None = None
     buffer_text = ""
@@ -59,7 +62,7 @@ def chunk_blocks(  # noqa: C901
         if not stripped:
             return
         chunks.append(
-            Chunk(
+            BlockChunk(
                 ordinal=ordinal,
                 text=stripped,
                 section=current_section,

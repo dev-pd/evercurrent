@@ -1,3 +1,6 @@
+"""Extracts ordered text Blocks (with page + heading hints) from a PDF via
+PyMuPDF; raises PDFDependencyError if the optional dependency is missing."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

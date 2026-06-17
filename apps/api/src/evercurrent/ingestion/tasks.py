@@ -1,3 +1,6 @@
+"""Document ingestion pipeline: extract PDF blocks, chunk + embed them, classify
+the document, and persist it with its chunks (idempotent on source+external_id)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -10,8 +13,8 @@ from sqlalchemy import select, text
 
 from evercurrent.db import models
 from evercurrent.db.session import session_scope
-from evercurrent.ingestion.chunking import Chunk, chunk_blocks
-from evercurrent.ingestion.classifier import classify_document
+from evercurrent.ingestion.chunking import BlockChunk, chunk_blocks
+from evercurrent.ingestion.doc_classifier import classify_document
 from evercurrent.ingestion.pdf_extract import Block, extract_blocks
 from evercurrent.ingestion.schemas import DocClassification
 from evercurrent.rag.embedder import EmbeddingProvider, get_embedder
@@ -62,7 +65,7 @@ async def _replace_chunks(
     *,
     session: Any,
     document_id: uuid.UUID,
-    chunks: list[Chunk],
+    chunks: list[BlockChunk],
     embeddings: list[list[float]],
 ) -> int:
     if len(chunks) != len(embeddings):

@@ -1,3 +1,6 @@
+"""Classifies an ingested document's kind (PRD/BOM/ECO/test report/...) from its
+title and leading chunks via the LLM."""
+
 from __future__ import annotations
 
 import json
@@ -5,7 +8,7 @@ from pathlib import Path
 
 import structlog
 
-from evercurrent.ingestion.chunking import Chunk
+from evercurrent.ingestion.chunking import BlockChunk
 from evercurrent.ingestion.schemas import DocClassification
 from evercurrent.llm.client import LLMProvider, get_provider
 from evercurrent.llm.tiering import ModelTier
@@ -17,7 +20,7 @@ _SYSTEM = "You are a precise classifier for hardware engineering documents. Outp
 _FIRST_N_CHUNKS = 3
 
 
-def _render_prompt(title: str, chunks: list[Chunk]) -> str:
+def _render_prompt(title: str, chunks: list[BlockChunk]) -> str:
     template = _PROMPT_PATH.read_text()
     chunk_payload = [
         {"ordinal": c.ordinal, "section": c.section, "text": c.text}
@@ -32,7 +35,7 @@ def _render_prompt(title: str, chunks: list[Chunk]) -> str:
 async def classify_document(
     *,
     title: str,
-    chunks: list[Chunk],
+    chunks: list[BlockChunk],
     provider: LLMProvider | None = None,
 ) -> DocClassification:
     if not chunks:
