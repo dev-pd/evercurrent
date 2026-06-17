@@ -8,14 +8,14 @@ from typing import Any
 import structlog
 from pydantic import ValidationError
 
+from evercurrent.classification.schemas import RouterDecision, fallback_decision
 from evercurrent.llm.client import LLMProvider
 from evercurrent.llm.tiering import ModelTier
-from evercurrent.routing.schemas import RouterDecision, fallback_decision
 
 log = structlog.get_logger(__name__)
 
 
-_PROMPT_PKG = "evercurrent.routing.prompts"
+_PROMPT_PKG = "evercurrent.classification.prompts"
 
 
 def _load_prompt(name: str) -> str:

@@ -5,8 +5,8 @@ from typing import Any
 
 import pytest
 
-from evercurrent.routing.router_agent import classify
-from evercurrent.routing.schemas import RouterDecision
+from evercurrent.classification.router_agent import classify
+from evercurrent.classification.schemas import RouterDecision
 
 
 class _FakeLLM:

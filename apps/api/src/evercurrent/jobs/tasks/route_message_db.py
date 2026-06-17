@@ -10,7 +10,7 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from evercurrent.routing.schemas import RouterDecision
+from evercurrent.classification.schemas import RouterDecision
 
 log = structlog.get_logger(__name__)
 

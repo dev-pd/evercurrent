@@ -7,6 +7,8 @@ from typing import Any
 import structlog
 from sqlalchemy.exc import IntegrityError
 
+from evercurrent.classification import classify
+from evercurrent.classification.schemas import RouterDecision
 from evercurrent.db.session import session_scope
 from evercurrent.jobs.tasks.route_message_db import (
     link_author_membership,
@@ -19,8 +21,6 @@ from evercurrent.jobs.tasks.route_message_db import (
 )
 from evercurrent.llm.client import LLMProvider, get_provider
 from evercurrent.realtime import publish_event
-from evercurrent.routing import classify
-from evercurrent.routing.schemas import RouterDecision
 from evercurrent.tenancy.rls import set_org_context
 
 log = structlog.get_logger(__name__)
@@ -164,7 +164,7 @@ async def _route(
             )
             tagged_by_model = "haiku"
         except Exception as exc:  # noqa: BLE001
-            from evercurrent.routing.schemas import fallback_decision
+            from evercurrent.classification.schemas import fallback_decision
 
             decision = fallback_decision()
             tagged_by_model = "fallback"
