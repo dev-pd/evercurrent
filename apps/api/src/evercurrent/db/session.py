@@ -19,9 +19,14 @@ _admin_sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
 
 def _make_engine(url: str) -> AsyncEngine:
+    # No pool_pre_ping: with the asyncpg driver the pre-ping runs the health
+    # check through await_only() during pool checkout, which raises
+    # MissingGreenlet when a pooled connection goes stale (e.g. after the DB
+    # restarts). SQLAlchemy invalidates + reconnects a dead connection on use
+    # anyway, so we rely on that instead of pre-ping.
     return create_async_engine(
         url,
-        pool_pre_ping=True,
+        pool_recycle=300,
         pool_size=10,
         max_overflow=5,
         future=True,
