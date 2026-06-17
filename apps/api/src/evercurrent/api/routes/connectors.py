@@ -259,8 +259,11 @@ async def disconnect_connector(
             ),
         )
     ).scalar_one_or_none()
+    # DELETE is idempotent: a connector that's already gone (a double-click, or a
+    # stale row still shown in the UI) is the desired end state, not an error.
     if connector is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
+        log.info("connector.disconnect.absent", connector_id=str(connector_id))
+        return {"status": "not_connected", "kind": "unknown"}
     kind = connector.kind
     await session.delete(connector)
     await session.commit()
