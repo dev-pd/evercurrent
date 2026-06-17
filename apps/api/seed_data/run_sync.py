@@ -68,7 +68,6 @@ async def main() -> None:
                         session=session,
                         vault=vault,
                         connector_channel_id=cc_id,
-                        days=30,
                         slack_client=client,
                     )
                     raw_total += summary.raw_events_inserted

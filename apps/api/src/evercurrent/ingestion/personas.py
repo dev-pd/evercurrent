@@ -20,6 +20,8 @@ class Persona:
     home_channels: list[str] = field(default_factory=list)
 
 
+# A small cross-functional cast (ee / mech / fw / program / supply) — kept tight
+# so a demo workspace stays legible. Add more here to widen the synthetic chatter.
 PERSONAS: list[Persona] = [
     Persona(
         "Mei Chen",
@@ -30,28 +32,12 @@ PERSONAS: list[Persona] = [
         ["electrical", "general"],
     ),
     Persona(
-        "Dana Wu",
-        "ee",
-        ":battery:",
-        "power electronics; pragmatic, talks regulators, rails, EMI",
-        ["3V3_buck", "1V8_rail", "EMI", "regulator"],
-        ["electrical"],
-    ),
-    Persona(
-        "Lin Zhao",
+        "Prasad",
         "mech",
-        ":wrench:",
-        "chassis + enclosure; references ECOs and drawings, tolerance-minded",
-        ["chassis", "actuator_mount", "BRK-A1", "AL-7075-T6"],
+        ":crown:",
+        "platform admin + mech lead; owns thermal/FCS, asks cross-subsystem impact",
+        ["thermal", "motor_mount", "fcs", "bracket", "chassis", "emc"],
         ["mech-design", "general"],
-    ),
-    Persona(
-        "Nina Petrov",
-        "mech",
-        ":gear:",
-        "thermal + mechanical; worries about heat paths and stack-up",
-        ["thermal", "heatsink", "enclosure", "gasket"],
-        ["mech-design"],
     ),
     Persona(
         "Raj Patel",
@@ -62,46 +48,6 @@ PERSONAS: list[Persona] = [
         ["firmware", "general"],
     ),
     Persona(
-        "Omar Haddad",
-        "fw",
-        ":satellite:",
-        "embedded + radio; terse, talks drivers, duty cycle, timing",
-        ["radio", "driver", "duty_cycle", "ADC"],
-        ["firmware"],
-    ),
-    Persona(
-        "Sara Kim",
-        "qa",
-        ":test_tube:",
-        "test + reliability; gatekeeper tone, blocks on data, cites HTOL/drop",
-        ["thermal", "reliability", "ADC", "HTOL"],
-        ["qa-testing", "general"],
-    ),
-    Persona(
-        "Carlos Reyes",
-        "qa",
-        ":mag:",
-        "reliability engineering; failure-analysis voice, cycles + RMAs",
-        ["reliability", "FA", "cycles", "RMA"],
-        ["qa-testing"],
-    ),
-    Persona(
-        "Tom Alvarez",
-        "supply",
-        ":package:",
-        "supply chain; lead-times, POs, alloy + cell sourcing, vendor quotes",
-        ["AlumWest", "ECO-178", "lead_time", "PO"],
-        ["supply-chain", "manufacturing"],
-    ),
-    Persona(
-        "Yuki Tanaka",
-        "supply",
-        ":truck:",
-        "procurement + logistics; allocation, MOQ, freight, vendor risk",
-        ["MOQ", "allocation", "freight", "vendor"],
-        ["supply-chain"],
-    ),
-    Persona(
         "Priya Nair",
         "em",
         ":dart:",
@@ -110,20 +56,12 @@ PERSONAS: list[Persona] = [
         ["general", "compliance"],
     ),
     Persona(
-        "Ben Foster",
-        "design",
-        ":triangular_ruler:",
-        "industrial design; CMF, ergonomics, asks about fit and finish",
-        ["CMF", "ergonomics", "industrial_design"],
-        ["mech-design", "general"],
-    ),
-    Persona(
-        "Prasad",
-        "mech",
-        ":crown:",
-        "platform admin + mech; owns thermal/FCS, asks cross-subsystem impact",
-        ["thermal", "motor_mount", "fcs", "bracket", "chassis", "emc"],
-        ["mech-design", "general"],
+        "Tom Alvarez",
+        "supply",
+        ":package:",
+        "supply chain; lead-times, POs, alloy + cell sourcing, vendor quotes",
+        ["AlumWest", "ECO-178", "lead_time", "PO"],
+        ["supply-chain", "manufacturing"],
     ),
 ]
 

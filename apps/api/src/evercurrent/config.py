@@ -67,7 +67,6 @@ class Settings(BaseSettings):
 
     digest_hour: int = 8
     digest_window_minutes: int = 5
-    slack_backfill_days: int = 30
 
 
 @lru_cache(maxsize=1)

@@ -4,7 +4,6 @@ raw events."""
 from __future__ import annotations
 
 import json
-import time
 import uuid
 from dataclasses import dataclass
 
@@ -13,7 +12,6 @@ from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from evercurrent.config import get_settings
 from evercurrent.connectors.slack.client import SlackClient
 from evercurrent.connectors.slack.crypto import TokenVault
 from evercurrent.db import models
@@ -33,11 +31,8 @@ async def backfill_channel(
     session: AsyncSession,
     vault: TokenVault,
     connector_channel_id: uuid.UUID,
-    days: int | None = None,
     slack_client: SlackClient | None = None,
 ) -> BackfillSummary:
-    if days is None:
-        days = get_settings().slack_backfill_days
     channel_row = (
         await session.execute(
             select(models.ConnectorChannel).where(
@@ -64,15 +59,16 @@ async def backfill_channel(
 
     raw_inserted = 0
     msg_inserted = 0
-    # Slack's `oldest` rejects 7-decimal float strings; use an integer ts.
-    oldest_ts = f"{int(time.time()) - days * 86400}"
 
+    # Cursor-based batch pagination over the channel's full history: Slack returns
+    # a page (~200) at a time and we page until exhausted. No date/count cap —
+    # prod ingests everything; the demo stays small by keeping the Slack
+    # workspace itself small.
     try:
         cursor: str | None = None
         while True:
             page = await client.conversations_history(
                 channel=channel_row.external_id,
-                oldest=oldest_ts,
                 cursor=cursor,
             )
             for raw_msg in page.get("messages", []):
