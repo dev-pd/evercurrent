@@ -10,7 +10,7 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from evercurrent.classification.schemas import RouterDecision
+from evercurrent.classification.schemas import ClassificationResult
 
 log = structlog.get_logger(__name__)
 
@@ -210,7 +210,7 @@ async def write_tag(
     *,
     org_id: uuid.UUID,
     message_id: uuid.UUID,
-    decision: RouterDecision,
+    decision: ClassificationResult,
     tagged_by_model: str,
 ) -> None:
     await session.execute(

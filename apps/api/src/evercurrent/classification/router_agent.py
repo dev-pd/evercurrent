@@ -8,7 +8,7 @@ from typing import Any
 import structlog
 from pydantic import ValidationError
 
-from evercurrent.classification.schemas import RouterDecision, fallback_decision
+from evercurrent.classification.schemas import ClassificationResult, fallback_classification
 from evercurrent.llm.client import LLMProvider
 from evercurrent.llm.tiering import ModelTier
 
@@ -75,7 +75,7 @@ def _build_user_prompt(
 
 
 _RETRY_REMINDER = (
-    "Your previous response did not match the RouterDecision schema. "
+    "Your previous response did not match the ClassificationResult schema. "
     "Re-emit it as a single JSON object with exactly these fields: "
     "topic (string or null), urgency (one of low|normal|high|critical), "
     "entities (array of strings), affected_roles (array of strings), "
@@ -85,11 +85,11 @@ _RETRY_REMINDER = (
 )
 
 
-def _parse_decision(payload: Any) -> RouterDecision:
+def _parse_decision(payload: Any) -> ClassificationResult:
     if isinstance(payload, list):
         msg = "expected JSON object, got list"
         raise TypeError(msg)
-    return RouterDecision.model_validate(payload)
+    return ClassificationResult.model_validate(payload)
 
 
 async def _complete_json(
@@ -116,7 +116,7 @@ async def classify(
     author_role: str,
     thread_parent_text: str | None,
     project_phase: str,
-) -> RouterDecision:
+) -> ClassificationResult:
     system = _load_prompt("router_system.txt")
     user_prompt = _build_user_prompt(
         message_text=message_text,
@@ -147,4 +147,4 @@ async def classify(
             reason="schema_drift_after_retry",
             error=str(second_exc),
         )
-        return fallback_decision()
+        return fallback_classification()

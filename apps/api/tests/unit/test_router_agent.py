@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 
 from evercurrent.classification.router_agent import classify
-from evercurrent.classification.schemas import RouterDecision
+from evercurrent.classification.schemas import ClassificationResult
 
 
 class _FakeLLM:
@@ -62,7 +62,7 @@ async def test_classify_happy_path_returns_router_decision() -> None:
         project_phase="DVT",
     )
 
-    assert isinstance(decision, RouterDecision)
+    assert isinstance(decision, ClassificationResult)
     assert decision.topic == "thermal_margin"
     assert decision.urgency == "high"
     assert decision.should_create_card is True

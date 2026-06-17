@@ -8,7 +8,7 @@ import structlog
 from sqlalchemy.exc import IntegrityError
 
 from evercurrent.classification import classify
-from evercurrent.classification.schemas import RouterDecision
+from evercurrent.classification.schemas import ClassificationResult
 from evercurrent.db.session import session_scope
 from evercurrent.jobs.tasks.route_message_db import (
     link_author_membership,
@@ -46,7 +46,7 @@ def _extract_slack_event(payload: Any) -> dict[str, Any] | None:
 def _enqueue_followups(
     *,
     message_id: uuid.UUID,
-    decision: RouterDecision,
+    decision: ClassificationResult,
 ) -> None:
     from evercurrent.jobs.celery_app import celery_app
 
@@ -164,9 +164,9 @@ async def _route(
             )
             tagged_by_model = "haiku"
         except Exception as exc:  # noqa: BLE001
-            from evercurrent.classification.schemas import fallback_decision
+            from evercurrent.classification.schemas import fallback_classification
 
-            decision = fallback_decision()
+            decision = fallback_classification()
             tagged_by_model = "fallback"
             log.warning(
                 "router.classify.exception",

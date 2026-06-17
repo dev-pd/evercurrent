@@ -1,6 +1,6 @@
 from __future__ import annotations
 
 from evercurrent.classification.router_agent import classify
-from evercurrent.classification.schemas import RouterDecision
+from evercurrent.classification.schemas import ClassificationResult
 
-__all__ = ["RouterDecision", "classify"]
+__all__ = ["ClassificationResult", "classify"]

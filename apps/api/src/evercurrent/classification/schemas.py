@@ -8,7 +8,7 @@ UrgencyT = Literal["low", "normal", "high", "critical"]
 CardKindT = Literal["decision", "risk", "question"]
 
 
-class RouterDecision(BaseModel):
+class ClassificationResult(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True)
 
     topic: str | None
@@ -35,8 +35,8 @@ class RouterDecision(BaseModel):
         return self
 
 
-def fallback_decision() -> RouterDecision:
-    return RouterDecision(
+def fallback_classification() -> ClassificationResult:
+    return ClassificationResult(
         topic=None,
         urgency="normal",
         entities=[],
