@@ -131,11 +131,6 @@ export const regenerateResponseSchema = z.object({
 });
 export type RegenerateResponse = z.infer<typeof regenerateResponseSchema>;
 
-export const cardFeedbackResponseSchema = z.object({
-  ok: z.boolean(),
-});
-export type CardFeedbackResponse = z.infer<typeof cardFeedbackResponseSchema>;
-
 export const focusTopicSchema = z.object({
   topic: z.string(),
   label: z.string(),

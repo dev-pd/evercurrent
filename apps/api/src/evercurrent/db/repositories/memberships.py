@@ -111,31 +111,6 @@ class MembershipRepository:
         )
         return True
 
-    async def bump_topic_weight(
-        self,
-        membership_id: uuid.UUID,
-        *,
-        topic: str,
-        delta: float,
-    ) -> float | None:
-        result = await self._s.execute(
-            text(
-                "UPDATE org_memberships "
-                "SET topic_weights = COALESCE(topic_weights, '{}'::jsonb) "
-                "  || jsonb_build_object(:topic, "
-                "       COALESCE("
-                "         (topic_weights ->> :topic)::float, 0.0"
-                "       ) + :delta) "
-                "WHERE id = :id "
-                "RETURNING (topic_weights ->> :topic)::float",
-            ),
-            {"id": str(membership_id), "topic": topic, "delta": delta},
-        )
-        row = result.first()
-        if row is None or row[0] is None:
-            return None
-        return float(row[0])
-
     async def get_me_profile(self, membership_id: uuid.UUID) -> MeProfile | None:
         row = (
             await self._s.execute(

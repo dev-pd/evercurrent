@@ -72,18 +72,3 @@ class UserRepository:
         result = await self._s.execute(stmt)
         row = result.scalar_one()
         return User.model_validate(row)
-
-    async def bump_topic_weight(
-        self,
-        user_id: uuid.UUID,
-        topic: str,
-        delta: float,
-    ) -> User | None:
-        row = await self._s.get(UserModel, user_id)
-        if row is None:
-            return None
-        weights = dict(row.topic_weights or {})
-        weights[topic] = float(weights.get(topic, 0.0)) + delta
-        row.topic_weights = weights
-        await self._s.flush()
-        return User.model_validate(row)

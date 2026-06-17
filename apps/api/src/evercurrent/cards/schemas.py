@@ -71,10 +71,3 @@ class CardResponse(BaseModel):
     sources: list[CardSourceDetail]
     created_at: dt.datetime
     updated_at: dt.datetime
-
-
-class CardFeedbackPayload(BaseModel):
-    model_config = ConfigDict(strict=True)
-
-    signal: Literal[-1, 1]
-    topic: str | None = None
