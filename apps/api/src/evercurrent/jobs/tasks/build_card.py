@@ -4,9 +4,9 @@ import uuid
 from typing import Any
 
 import structlog
-from sqlalchemy import text
 
 from evercurrent.cards.builder import build_card as build_card_impl
+from evercurrent.db.repositories.messages import MessageRepository
 from evercurrent.db.session import session_scope
 from evercurrent.llm.client import LLMProvider, get_provider
 from evercurrent.realtime import publish_event
@@ -19,15 +19,8 @@ async def _load_message_org(
     raw_message_id: uuid.UUID,
 ) -> uuid.UUID | None:
     async with session_scope() as session:
-        row = (
-            await session.execute(
-                text("SELECT org_id FROM messages WHERE id = :id"),
-                {"id": str(raw_message_id)},
-            )
-        ).first()
-        if row is None:
-            return None
-        return uuid.UUID(str(row[0]))
+        msg = await MessageRepository(session).get(raw_message_id)
+        return uuid.UUID(str(msg["org_id"])) if msg is not None else None
 
 
 async def build_card(

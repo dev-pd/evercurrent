@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from evercurrent.cards import repository as cards_repo
 from evercurrent.cards.schemas import CardDraft
+from evercurrent.db.repositories.messages import MessageRepository
 from evercurrent.llm.client import LLMProvider
 from evercurrent.llm.tiering import ModelTier
 from evercurrent.mcp.client import InProcessMCPClient
@@ -41,23 +42,7 @@ async def _load_message_meta(
     session: AsyncSession,
     message_id: uuid.UUID,
 ) -> dict[str, Any] | None:
-    row = (
-        (
-            await session.execute(
-                text(
-                    "SELECT id, org_id, project_id, channel, text, "
-                    "       author_display_name, posted_at "
-                    "FROM messages WHERE id = :id",
-                ),
-                {"id": str(message_id)},
-            )
-        )
-        .mappings()
-        .first()
-    )
-    if row is None:
-        return None
-    return dict(row)
+    return await MessageRepository(session).get(message_id)
 
 
 def _format_thread_block(

@@ -7,6 +7,7 @@ import structlog
 from sqlalchemy import select, text
 
 from evercurrent.db import models
+from evercurrent.db.repositories.messages import MessageRepository
 from evercurrent.db.session import session_scope
 from evercurrent.scoring.engine import score
 from evercurrent.scoring.repository import bulk_upsert_scores
@@ -22,19 +23,7 @@ async def score_message_for_members(
 ) -> dict[str, Any]:
     msg_uuid = uuid.UUID(message_id)
     async with session_scope() as session:
-        msg = (
-            (
-                await session.execute(
-                    text(
-                        "SELECT org_id, project_id, author_membership_id "
-                        "FROM messages WHERE id = :id",
-                    ),
-                    {"id": str(msg_uuid)},
-                )
-            )
-            .mappings()
-            .first()
-        )
+        msg = await MessageRepository(session).get(msg_uuid)
         if msg is None:
             log.info("scoring.skipped", reason="message_missing", message_id=message_id)
             return {"scored": 0, "reason": "message_missing"}
