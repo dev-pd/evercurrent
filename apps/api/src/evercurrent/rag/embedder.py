@@ -1,3 +1,6 @@
+"""Embedding port (EmbeddingProvider) + the Voyage adapter that batches text
+into voyage-3-lite vectors. Swap the provider to change embedding backends."""
+
 from __future__ import annotations
 
 import asyncio

@@ -1,3 +1,5 @@
+"""Splits markdown into overlapping, header-aware chunks sized for embedding."""
+
 from __future__ import annotations
 
 import re

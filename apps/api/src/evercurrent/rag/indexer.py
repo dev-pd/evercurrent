@@ -1,3 +1,6 @@
+"""Indexes a document for retrieval: chunk its markdown, embed the chunks, and
+persist them as DocumentChunk rows with their vectors."""
+
 from __future__ import annotations
 
 import uuid

@@ -1,3 +1,6 @@
+"""Semantic search over document chunks: embed the query, rank chunks by vector
+distance (pgvector), and return the closest matches as ChunkResults."""
+
 from __future__ import annotations
 
 import uuid
