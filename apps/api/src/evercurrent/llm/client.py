@@ -1,3 +1,7 @@
+"""The LLM port (LLMProvider) and its Anthropic adapter, plus the contract types
+they speak in (ToolSpec, ToolCall, CompletionResult). All LLM calls go through
+here: retries, token/latency logging, and tool-use are handled in one place."""
+
 from __future__ import annotations
 
 import asyncio

@@ -1,3 +1,6 @@
+"""Maps each task tier to a model: tagging -> Haiku; digest/doc-gen/agent ->
+Sonnet. Keeps model-id choices in one place instead of scattered across callers."""
+
 from __future__ import annotations
 
 from enum import StrEnum

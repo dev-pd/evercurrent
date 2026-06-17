@@ -1,3 +1,6 @@
+"""Generates a member's personalized daily digest: gathers their top-scored
+messages, open cards, and prior digests, then prompts Sonnet for the markdown."""
+
 from __future__ import annotations
 
 import json

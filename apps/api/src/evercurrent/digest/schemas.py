@@ -1,3 +1,6 @@
+"""Digest shapes: the persisted DigestRecord, the context fed to the LLM
+(member/project/scored items/cards), and the parsed DigestDraft it returns."""
+
 from __future__ import annotations
 
 import datetime as dt

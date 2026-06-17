@@ -1,3 +1,6 @@
+"""Decides whose digest is due: maps each member's local digest hour + timezone
+to a day index and enqueues generation for members due in the current window."""
+
 from __future__ import annotations
 
 import datetime as dt

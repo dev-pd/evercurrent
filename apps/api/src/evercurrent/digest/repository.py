@@ -1,3 +1,6 @@
+"""SQL for digests: upsert a generated digest (idempotent per member + day) and
+the read queries that gather a member's scored items, open cards, and history."""
+
 from __future__ import annotations
 
 import uuid
