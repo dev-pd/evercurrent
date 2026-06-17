@@ -71,7 +71,6 @@ export const messages = {
     live: "Live",
     newCount: (n: number) => `${n} new`,
     updatedAt: (time: string) => `updated ${time}`,
-    anomaliesHeading: "You might be missing",
   },
   focus: {
     heading: "What you're tracking now",

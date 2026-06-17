@@ -5,7 +5,6 @@ import { apiServer, VIEW_AS_COOKIE } from "@/lib/api";
 import { ContextBar } from "@/components/dashboard/context-bar";
 import { FocusPanel } from "@/components/dashboard/focus-panel";
 import { DigestColumns } from "@/components/dashboard/digest-columns";
-import { AnomalyBanner } from "@/components/dashboard/anomaly-banner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { parseDigest } from "@/lib/digest-parse";
 import { messages } from "@/lib/messages";
@@ -85,8 +84,6 @@ export default async function DashboardPage() {
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
           <FocusPanel focus={focus ?? []} />
-
-          <AnomalyBanner anomalies={digest?.anomalies ?? []} />
 
           {digest === null ? (
             <EmptyState title={copy.noDigestTitle} hint={copy.noDigestHint} />

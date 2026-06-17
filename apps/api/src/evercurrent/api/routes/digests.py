@@ -41,7 +41,6 @@ class DigestTodayResponse(BaseModel):
     phase: str
     content_md: str
     items: list[DigestItemV2]
-    anomalies: list[dict[str, str]] = []
     card_ids: list[uuid.UUID]
     message_ids: list[uuid.UUID]
     generated_at: str
@@ -105,7 +104,6 @@ async def get_today(
         phase=latest.phase,
         content_md=latest.content_md,
         items=items,
-        anomalies=[],
         card_ids=latest.card_ids,
         message_ids=latest.message_ids,
         generated_at=latest.generated_at.isoformat(),

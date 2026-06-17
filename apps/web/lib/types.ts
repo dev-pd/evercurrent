@@ -106,20 +106,12 @@ export const digestItemV2Schema = z.object({
 });
 export type DigestItemV2 = z.infer<typeof digestItemV2Schema>;
 
-export const digestAnomalySchema = z.object({
-  id: z.string().uuid(),
-  summary: z.string(),
-  card_id: z.string().uuid().nullable().optional(),
-});
-export type DigestAnomaly = z.infer<typeof digestAnomalySchema>;
-
 export const digestV2Schema = z.object({
   id: z.string().uuid(),
   day_index: z.number().int(),
   phase: z.string(),
   content_md: z.string(),
   items: z.array(digestItemV2Schema),
-  anomalies: z.array(digestAnomalySchema).default([]),
   generated_at: z.string(),
   card_ids: z.array(z.string().uuid()).default([]),
   message_ids: z.array(z.string().uuid()).default([]),
