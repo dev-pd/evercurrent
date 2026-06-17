@@ -3,6 +3,7 @@ user/org/membership, and provide the request-scoped DB session."""
 
 from __future__ import annotations
 
+import datetime as dt
 import uuid
 from collections.abc import AsyncIterator
 from typing import Annotated
@@ -15,7 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from evercurrent.auth.auth0 import Auth0Claims, Auth0Verifier, InvalidTokenError
-from evercurrent.db.models import Org, OrgMembership
+from evercurrent.db.models import Org, OrgMembership, Project
 from evercurrent.db.session import admin_session_scope, get_sessionmaker
 from evercurrent.tenancy.rls import set_org_context
 
@@ -75,6 +76,36 @@ async def _get_or_create_org(admin: AsyncSession, claims: Auth0Claims) -> Org:
     await admin.refresh(org)
     log.info("auth.org.provisioned", org_id=str(org.id), auth0_org_id=org.auth0_org_id)
     return org
+
+
+async def _ensure_default_project(admin: AsyncSession, org: Org) -> None:
+    """Every org needs exactly one project so ingested messages have somewhere to
+    land (the pipeline assigns each message to the org's first project). Users
+    don't create projects, so we provision a default the first time we see the org.
+    """
+    existing = (
+        await admin.execute(select(Project.id).where(Project.org_id == org.id).limit(1))
+    ).first()
+    if existing is not None:
+        return
+    today = dt.datetime.now(dt.UTC).date()
+    start = today - dt.timedelta(days=30)
+    project = Project(
+        org_id=org.id,
+        name=org.name or f"project-{org.id}",
+        current_phase="dvt",
+        current_day=max(1, (today - start).days),
+        start_date=start,
+        phase_concerns={},
+        milestones=[],
+    )
+    admin.add(project)
+    try:
+        await admin.commit()
+    except IntegrityError:
+        await admin.rollback()
+        return
+    log.info("auth.project.provisioned", org_id=str(org.id), project_id=str(project.id))
 
 
 async def _provision_membership(
@@ -165,6 +196,7 @@ async def require_user(
     impersonate = request.headers.get("x-impersonate-user")
     async with admin_session_scope() as admin:
         org = await _get_or_create_org(admin, claims)
+        await _ensure_default_project(admin, org)
         membership = await _provision_membership(admin, org, claims, role)
         scoped_id = membership.id
         scoped_name = membership.display_name
