@@ -1,3 +1,6 @@
+"""Shapes returned by the agent tools (thread context, user context, etc.) that
+the agent loop serializes back into tool_result content."""
+
 from __future__ import annotations
 
 import datetime as dt

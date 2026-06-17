@@ -1,3 +1,6 @@
+"""Tool: semantic search over spec/BOM/requirement document chunks (the formal
+source of truth) via pgvector."""
+
 from __future__ import annotations
 
 import time

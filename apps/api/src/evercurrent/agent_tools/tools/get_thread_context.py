@@ -1,3 +1,6 @@
+"""Tool: fetch a message's thread (root + replies) so the agent can reason over
+the full conversation, not just the triggering message."""
+
 from __future__ import annotations
 
 import time

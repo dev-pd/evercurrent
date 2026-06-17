@@ -1,3 +1,6 @@
+"""Tool: list extracted decision/risk cards, optionally filtered by kind/status,
+so the agent can ground insights in already-captured decisions."""
+
 from __future__ import annotations
 
 import time

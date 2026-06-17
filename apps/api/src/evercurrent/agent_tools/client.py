@@ -1,3 +1,6 @@
+"""In-process tool dispatch for the agents: maps a tool name to its handler and
+calls it with the session + args. Not a network MCP server, just a local router."""
+
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable

@@ -1,3 +1,6 @@
+"""Tool: fetch a member's role, owned subsystems, and topic weights so the agent
+can tailor relevance to who is asking."""
+
 from __future__ import annotations
 
 import time

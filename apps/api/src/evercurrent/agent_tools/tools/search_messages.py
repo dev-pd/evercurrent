@@ -1,3 +1,6 @@
+"""Tool: semantic search over Slack messages, returning relevant snippets the
+agent can cite as evidence."""
+
 from __future__ import annotations
 
 import time
