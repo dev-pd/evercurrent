@@ -1,3 +1,6 @@
+"""Auth0 JWT verification: fetches + caches the JWKS and validates bearer-token
+claims (audience, issuer, signature), returning typed Auth0Claims."""
+
 from __future__ import annotations
 
 import time

@@ -1,3 +1,6 @@
+"""ASGI middleware that binds the request's org id into the structlog context so
+every log line in a request is tenant-tagged."""
+
 from __future__ import annotations
 
 import uuid

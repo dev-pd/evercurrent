@@ -1,3 +1,6 @@
+"""Projects a project's start date + current phase onto the fixed phase ladder,
+producing the dated phase blocks and lane segments the timeline view renders."""
+
 from __future__ import annotations
 
 import datetime as dt

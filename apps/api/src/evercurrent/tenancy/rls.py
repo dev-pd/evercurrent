@@ -1,3 +1,6 @@
+"""Row-level-security tenant context: sets `app.current_org_id` for the
+transaction so Postgres RLS policies filter every query to the current org."""
+
 from __future__ import annotations
 
 import uuid

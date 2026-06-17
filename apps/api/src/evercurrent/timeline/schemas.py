@@ -1,3 +1,6 @@
+"""Shapes for the project timeline view: phase blocks and the lane segments
+that render the gantt-style projection."""
+
 from __future__ import annotations
 
 import uuid

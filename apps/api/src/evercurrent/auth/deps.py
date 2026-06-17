@@ -1,3 +1,6 @@
+"""FastAPI auth dependencies: verify the bearer token, resolve the current
+user/org/membership, and provide the request-scoped DB session."""
+
 from __future__ import annotations
 
 import uuid
