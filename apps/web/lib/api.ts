@@ -3,7 +3,6 @@ import {
   cardListItemSchema,
   cardResponseSchema,
   digestV2Schema,
-  focusTopicSchema,
   meSchema,
   memberSummarySchema,
   connectorSummarySchema,
@@ -16,7 +15,6 @@ import {
   type CardListItem,
   type CardResponse,
   type DigestV2,
-  type FocusTopic,
   type Me,
   type MemberSummary,
   type ConnectorSummary,
@@ -123,7 +121,6 @@ export interface ApiClient {
   startInstall(kind: "slack" | "dropbox"): Promise<InstallResponse>;
   syncSlack(connectorId: string): Promise<{ status: string; connector_id: string }>;
   disconnect(connectorId: string): Promise<{ status: string; kind: string }>;
-  getFocus(): Promise<FocusTopic[]>;
   listProjects(): Promise<Project[]>;
   createProject(body: {
     name: string;
@@ -164,7 +161,6 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
   const insightListSchema = z.array(proactiveInsightSchema);
   const projectListSchema = z.array(projectSchema);
   const memberListSchema = z.array(memberSummarySchema);
-  const focusListSchema = z.array(focusTopicSchema);
   return {
     async getMe() {
       return apiFetch("/api/v1/me", meSchema, await getCtx());
@@ -195,9 +191,6 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
         await getCtx(),
         { method: "DELETE" },
       );
-    },
-    async getFocus() {
-      return apiFetch("/api/v1/focus", focusListSchema, await getCtx());
     },
     async listProjects() {
       return apiFetch("/api/v1/projects", projectListSchema, await getCtx());

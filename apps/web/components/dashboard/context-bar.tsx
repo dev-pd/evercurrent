@@ -33,7 +33,6 @@ interface ContextBarProps {
   currentMember: MemberSummary | null;
   phase: string;
   dayIndex: number;
-  summary: string;
   projectId: string | null;
   generatedAt: string | null;
   kpis: Kpi[];
@@ -43,7 +42,6 @@ export function ContextBar({
   currentMember,
   phase,
   dayIndex,
-  summary,
   projectId,
   generatedAt,
   kpis,
@@ -76,8 +74,6 @@ export function ContextBar({
           <RegenerateButton />
         </div>
       </div>
-
-      <p className="text-sm text-[var(--text-secondary)]">{summary}</p>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {kpis.map((kpi) => (

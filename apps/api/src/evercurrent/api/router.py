@@ -11,7 +11,6 @@ from evercurrent.api.routes.connectors import router as connectors_router
 from evercurrent.api.routes.digests import router as digests_router
 from evercurrent.api.routes.documents import router as documents_router
 from evercurrent.api.routes.events import router as events_router
-from evercurrent.api.routes.focus import router as focus_router
 from evercurrent.api.routes.insights import router as insights_router
 from evercurrent.api.routes.jobs import router as jobs_router
 from evercurrent.api.routes.me import router as me_router
@@ -25,7 +24,6 @@ from evercurrent.api.routes.webhooks import router as webhooks_router
 _V1_ROUTERS = (
     me_router,
     members_router,
-    focus_router,
     webhooks_router,
     projects_router,
     digests_router,

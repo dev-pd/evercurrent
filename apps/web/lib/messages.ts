@@ -55,15 +55,12 @@ export const messages = {
   dashboard: {
     yourDigest: "Your digest",
     memberFallback: "Member",
-    caughtUp: (firstName: string) => `You're caught up, ${firstName}. Nothing needs you today.`,
-    needsYou: (count: number) =>
-      `${count} ${count === 1 ? "thing needs" : "things need"} you today.`,
     phaseDay: (phase: string, day: number) => `Phase ${phase} · Day ${day}`,
     owns: (subsystems: string) => `owns ${subsystems}`,
-    kpiSignalsToday: "Signals today",
+    kpiMessagesToday: "Messages today",
     kpiProgramProgress: "Program progress",
     kpiFcsTarget: "FCS target",
-    kpiOpenDecisions: "Open decisions",
+    kpiOpenCards: "Open cards",
     noDigestTitle: "No digest yet.",
     noDigestHint: "Connect Slack and regenerate to draft the first briefing.",
     regenerate: "Regenerate",
@@ -71,15 +68,6 @@ export const messages = {
     live: "Live",
     newCount: (n: number) => `${n} new`,
     updatedAt: (time: string) => `updated ${time}`,
-  },
-  focus: {
-    heading: "What you're tracking now",
-    subhead: "built from your role, the project phase, and what you engage with",
-    sources: {
-      role: "your role",
-      phase: "this phase",
-      learned: "your activity",
-    },
   },
   digest: {
     topPriorityLabel: "Top priority",

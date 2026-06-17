@@ -114,15 +114,6 @@ export const regenerateResponseSchema = z.object({
 });
 export type RegenerateResponse = z.infer<typeof regenerateResponseSchema>;
 
-export const focusTopicSchema = z.object({
-  topic: z.string(),
-  label: z.string(),
-  weight: z.number(),
-  sources: z.array(z.enum(["role", "phase", "learned"])),
-  trend: z.enum(["up", "flat", "down"]),
-});
-export type FocusTopic = z.infer<typeof focusTopicSchema>;
-
 export const memberSummarySchema = z.object({
   id: z.string().uuid(),
   display_name: z.string(),
