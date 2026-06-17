@@ -8,7 +8,7 @@ from typing import Annotated
 import structlog
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from starlette.responses import RedirectResponse
 
 from evercurrent.api.routes.connectors_dropbox import router as dropbox_router
@@ -71,6 +71,26 @@ async def list_connectors(
                 ),
             )
         ).scalar_one()
+        # What this source has actually ingested into the workspace: Slack -> messages,
+        # Dropbox -> documents. Shown in the UI so users see the synced volume.
+        if row.kind == "dropbox":
+            item_count = (
+                await session.execute(
+                    text(
+                        "SELECT count(*) FROM documents WHERE org_id = :org AND source = 'dropbox'"
+                    ),
+                    {"org": str(current_user.org_id)},
+                )
+            ).scalar_one()
+        else:
+            item_count = (
+                await session.execute(
+                    text(
+                        "SELECT count(*) FROM messages WHERE org_id = :org AND source = :src",
+                    ),
+                    {"org": str(current_user.org_id), "src": row.kind},
+                )
+            ).scalar_one()
         out.append(
             ConnectorSummary(
                 id=row.id,
@@ -78,7 +98,7 @@ async def list_connectors(
                 status=row.status,
                 external_team_id=row.external_team_id,
                 channels_count=int(channel_count),
-                message_count=0,
+                message_count=int(item_count),
             ),
         )
     return out
@@ -266,11 +286,62 @@ async def disconnect_connector(
         return {"status": "not_connected", "kind": "unknown"}
     kind = connector.kind
     await session.delete(connector)
+    purged = await _purge_source_data(session, org_id=current_user.org_id, kind=kind)
     await session.commit()
     log.info(
         "connector.disconnect",
         connector_id=str(connector_id),
         kind=kind,
         membership_id=str(current_user.membership_id),
+        **purged,
     )
     return {"status": "disconnected", "kind": kind}
+
+
+async def _purge_source_data(
+    session: SessionDep,
+    *,
+    org_id: uuid.UUID,
+    kind: str,
+) -> dict[str, str]:
+    """On disconnect, leave a clean workspace: remove the data this source brought
+    in (and its provisioned members), keeping the org, project, and real users.
+
+    Slack feeds messages -> tags/scores/cards/digests/insights + persona members.
+    Dropbox feeds documents -> chunks. Org-scoped + (for members) source-scoped so
+    the Auth0 admin/real users survive.
+    """
+    params = {"org": str(org_id)}
+    if kind == "slack":
+        # Cards SET NULL on message delete (won't cascade), so delete them first;
+        # messages then cascade their tags + scores.
+        for table in ("cards", "digests", "insights"):
+            await session.execute(text(f"DELETE FROM {table} WHERE org_id = :org"), params)
+        await session.execute(
+            text("DELETE FROM messages WHERE org_id = :org AND source = 'slack'"),
+            params,
+        )
+        await session.execute(
+            text("DELETE FROM raw_events WHERE org_id = :org AND source = 'slack'"),
+            params,
+        )
+        await session.execute(text("DELETE FROM channels WHERE org_id = :org"), params)
+        # Persona members came from Slack (slack_user_id set); the Auth0 admin/real
+        # users have it NULL and must survive the disconnect.
+        await session.execute(
+            text("DELETE FROM org_memberships WHERE org_id = :org AND slack_user_id IS NOT NULL"),
+            params,
+        )
+        return {"purged": "slack"}
+    if kind == "dropbox":
+        # document_chunks cascade on document delete.
+        await session.execute(
+            text("DELETE FROM documents WHERE org_id = :org AND source = 'dropbox'"),
+            params,
+        )
+        await session.execute(
+            text("DELETE FROM raw_events WHERE org_id = :org AND source = 'dropbox'"),
+            params,
+        )
+        return {"purged": "dropbox"}
+    return {"purged": "none"}
