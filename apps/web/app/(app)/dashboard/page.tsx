@@ -55,7 +55,7 @@ export default async function DashboardPage() {
 
   const kpis = [
     { label: copy.kpiMessagesToday, value: today?.message_count ?? 0 },
-    { label: copy.kpiProgramProgress, value: `${timeline?.progress_pct ?? 0}%`, hint: phase },
+    { label: copy.kpiProgramProgress, value: `${timeline?.progress_pct ?? 0}%` },
     { label: copy.kpiFcsTarget, value: fcsTarget },
     { label: copy.kpiOpenCards, value: openCards },
   ];
