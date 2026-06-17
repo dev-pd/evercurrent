@@ -56,14 +56,6 @@ export const cardActivitySchema = z.object({
 });
 export type CardActivity = z.infer<typeof cardActivitySchema>;
 
-export const cardEdgeSchema = z.object({
-  id: z.string().uuid(),
-  kind: z.string(),
-  target_card_id: z.string().uuid().nullable().optional(),
-  target_label: z.string(),
-});
-export type CardEdge = z.infer<typeof cardEdgeSchema>;
-
 export const cardListItemSchema = z.object({
   id: z.string().uuid(),
   kind: z.string(),
@@ -89,7 +81,6 @@ export const cardResponseSchema = z.object({
   decided_at: z.string().nullable().optional(),
   updated_at: z.string(),
   sources: z.array(cardSourceSchema),
-  edges: z.array(cardEdgeSchema).default([]),
   activity: z.array(cardActivitySchema).default([]),
 });
 export type CardResponse = z.infer<typeof cardResponseSchema>;

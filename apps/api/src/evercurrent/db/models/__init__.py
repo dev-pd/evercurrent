@@ -3,7 +3,7 @@ from __future__ import annotations
 from evercurrent.db.models.base import Base
 from evercurrent.db.models.cards import Card, CardSource
 from evercurrent.db.models.connectors import Connector, ConnectorChannel, RawEvent
-from evercurrent.db.models.digests import Digest, Feedback
+from evercurrent.db.models.digests import Digest
 from evercurrent.db.models.documents import Document, DocumentChunk
 from evercurrent.db.models.messages import Message, MessageTag
 from evercurrent.db.models.notifications import Notification, Subscription
@@ -24,7 +24,6 @@ __all__ = [
     "Digest",
     "Document",
     "DocumentChunk",
-    "Feedback",
     "Message",
     "MessageTag",
     "Notification",

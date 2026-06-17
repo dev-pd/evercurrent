@@ -2,26 +2,9 @@ from __future__ import annotations
 
 import datetime as dt
 import uuid
-from enum import IntEnum
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
-
-
-class FeedbackSignal(IntEnum):
-    THUMBS_DOWN = -1
-    THUMBS_UP = 1
-
-
-def _coerce_signal(v: object) -> FeedbackSignal:
-    if isinstance(v, FeedbackSignal):
-        return v
-    if isinstance(v, int):
-        return FeedbackSignal(v)
-    raise TypeError(f"cannot coerce {type(v).__name__} to FeedbackSignal")
-
-
-FeedbackSignalField = Annotated[FeedbackSignal, BeforeValidator(_coerce_signal)]
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Digest(BaseModel):
@@ -36,13 +19,3 @@ class Digest(BaseModel):
     card_ids: list[uuid.UUID] = Field(default_factory=list)
     message_ids: list[uuid.UUID] = Field(default_factory=list)
     generated_at: dt.datetime
-
-
-class Feedback(BaseModel):
-    model_config = ConfigDict(strict=True, from_attributes=True)
-
-    id: uuid.UUID
-    user_id: uuid.UUID
-    message_id: uuid.UUID
-    signal: FeedbackSignalField
-    created_at: dt.datetime

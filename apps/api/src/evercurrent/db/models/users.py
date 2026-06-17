@@ -11,7 +11,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from evercurrent.db.models.base import Base, _ts_default, _uuid_pk
 
 if TYPE_CHECKING:
-    from evercurrent.db.models.digests import Feedback
     from evercurrent.db.models.messages import Message
     from evercurrent.db.models.projects import Project
 
@@ -48,9 +47,5 @@ class User(Base):
 
     project: Mapped[Project] = relationship(back_populates="users")
     messages: Mapped[list[Message]] = relationship(back_populates="author")
-    feedback: Mapped[list[Feedback]] = relationship(
-        back_populates="user",
-        cascade="all, delete-orphan",
-    )
 
     __table_args__ = (Index("ix_users_project_username", "project_id", "username", unique=True),)

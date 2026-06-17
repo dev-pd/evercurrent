@@ -1,4 +1,4 @@
-from evercurrent.domain.digests import Digest, Feedback, FeedbackSignal
+from evercurrent.domain.digests import Digest
 from evercurrent.domain.documents import Document, DocumentChunk, DocumentKind
 from evercurrent.domain.messages import (
     EnrichedMessage,
@@ -16,8 +16,6 @@ __all__ = [
     "DocumentChunk",
     "DocumentKind",
     "EnrichedMessage",
-    "Feedback",
-    "FeedbackSignal",
     "Message",
     "MessageTag",
     "PhasePolicy",
