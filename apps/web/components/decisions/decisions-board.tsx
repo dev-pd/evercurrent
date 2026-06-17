@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUpRight, MessageSquare } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { messages } from "@/lib/messages";
 import type { CardListItem } from "@/lib/types";
 import { useDecisionModal } from "@/stores/decision-modal";
@@ -97,39 +97,32 @@ export function DecisionsBoard({
           <p className="text-sm font-medium text-[var(--text-primary)]">{copy.noMatch}</p>
         </div>
       ) : (
-        <ul className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-white">
-          {filtered.map((card, idx) => (
-            <li key={card.id} className={idx > 0 ? "border-t border-[var(--border-default)]" : ""}>
-              <button
-                type="button"
-                onClick={() => open(card.id)}
-                className="group flex w-full items-start gap-4 p-4 text-left hover:bg-[var(--surface-muted)]"
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((card) => (
+            <button
+              key={card.id}
+              type="button"
+              onClick={() => open(card.id)}
+              className="group flex flex-col gap-2 rounded-xl border border-[var(--border-default)] bg-white p-4 text-left transition-colors hover:border-[var(--color-accent-300)] hover:shadow-sm"
+            >
+              <span
+                className={`w-[72px] rounded-md border py-0.5 text-center text-[10px] font-semibold tracking-wider uppercase ${kindStyle(card.kind)}`}
               >
-                <span
-                  className={`mt-0.5 w-[72px] shrink-0 rounded-md border py-0.5 text-center text-[10px] font-semibold tracking-wider uppercase ${kindStyle(card.kind)}`}
-                >
-                  {card.kind}
+                {card.kind}
+              </span>
+              <span className="line-clamp-3 text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--color-accent-700)]">
+                {card.summary}
+              </span>
+              <div className="mt-auto flex flex-wrap items-center gap-3 pt-1 text-[11px] text-[var(--text-muted)]">
+                <span className="font-mono tracking-wider uppercase">{card.status}</span>
+                <span className="inline-flex items-center gap-1">
+                  <MessageSquare className="h-3 w-3" aria-hidden="true" />
+                  {card.sources_count}
                 </span>
-                <div className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--color-accent-700)]">
-                    {card.summary}
-                  </span>
-                  <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-[var(--text-muted)]">
-                    <span className="font-mono tracking-wider uppercase">{card.status}</span>
-                    <span className="inline-flex items-center gap-1">
-                      <MessageSquare className="h-3 w-3" aria-hidden="true" />
-                      {card.sources_count}
-                    </span>
-                  </div>
-                </div>
-                <ArrowUpRight
-                  className="h-4 w-4 text-[var(--text-muted)] opacity-0 transition-opacity group-hover:opacity-100"
-                  aria-hidden="true"
-                />
-              </button>
-            </li>
+              </div>
+            </button>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

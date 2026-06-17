@@ -29,35 +29,34 @@ export function BlockerBoard({ cards, limit = 8 }: { cards: CardListItem[]; limi
       {blockers.length === 0 ? (
         <p className="text-sm text-[var(--text-muted)]">{copy.blockersEmpty}</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {blockers.map((blocker) => (
-            <li key={blocker.id}>
-              <button
-                type="button"
-                onClick={() => open(blocker.id)}
-                className="group flex w-full items-start gap-3 rounded-md border border-[var(--border-default)] p-3 text-left hover:bg-[var(--surface-muted)]"
-              >
+            <button
+              key={blocker.id}
+              type="button"
+              onClick={() => open(blocker.id)}
+              className="group flex flex-col gap-2 rounded-md border border-[var(--border-default)] p-3 text-left transition-colors hover:border-[var(--color-accent-300)] hover:bg-[var(--surface-muted)]"
+            >
+              <div className="flex items-start gap-2">
                 <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-500" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--color-accent-700)]">
-                    {blocker.summary}
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
-                    {blocker.affected_subsystems.slice(0, 4).map((subsystem) => (
-                      <span
-                        key={subsystem}
-                        className="rounded bg-[var(--surface-muted)] px-1.5 py-0.5 text-[var(--text-secondary)]"
-                      >
-                        {subsystem}
-                      </span>
-                    ))}
-                    <span className="ml-auto tabular-nums">{timeAgo(blocker.occurred_at)}</span>
-                  </div>
-                </div>
-              </button>
-            </li>
+                <p className="line-clamp-3 text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--color-accent-700)]">
+                  {blocker.summary}
+                </p>
+              </div>
+              <div className="mt-auto flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+                {blocker.affected_subsystems.slice(0, 3).map((subsystem) => (
+                  <span
+                    key={subsystem}
+                    className="rounded bg-[var(--surface-muted)] px-1.5 py-0.5 text-[var(--text-secondary)]"
+                  >
+                    {subsystem}
+                  </span>
+                ))}
+                <span className="ml-auto tabular-nums">{timeAgo(blocker.occurred_at)}</span>
+              </div>
+            </button>
           ))}
-        </ul>
+        </div>
       )}
     </section>
   );

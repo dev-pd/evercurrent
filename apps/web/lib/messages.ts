@@ -118,6 +118,7 @@ export const messages = {
     eveStartFailed: "Could not start Eve. Try again.",
     eveAuthor: "Eve",
     detectedPrefix: "detected",
+    modalLabel: "Insight",
     before: "Before",
     after: "After",
     conflictsHeading: "Potential conflicts",

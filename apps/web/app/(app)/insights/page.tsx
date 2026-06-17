@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { apiServer } from "@/lib/api";
 import { PageContainer, PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { InsightCard } from "@/components/insights/insight-card";
+import { InsightsGrid } from "@/components/insights/insights-grid";
 import { GenerateInsightButton } from "@/components/insights/generate-insight-button";
 import { messages } from "@/lib/messages";
 import type { ProactiveInsight, Project } from "@/lib/types";
@@ -43,11 +43,7 @@ export default async function InsightsPage() {
       {insightList.length === 0 ? (
         <EmptyState title={copy.emptyTitle} hint={copy.emptyHint} />
       ) : (
-        <div className="flex flex-col gap-6">
-          {insightList.map((insight) => (
-            <InsightCard key={insight.id} insight={insight} />
-          ))}
-        </div>
+        <InsightsGrid insights={insightList} />
       )}
     </PageContainer>
   );
