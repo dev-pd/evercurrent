@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from evercurrent.eve.grounding import ground_sources
+from evercurrent.insights.grounding import ground_sources
 
 
 def _evidence(*snippets: str) -> list[dict[str, str]]:

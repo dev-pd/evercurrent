@@ -9,8 +9,8 @@ from typing import Any
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from evercurrent.eve.serialization import to_jsonable
-from evercurrent.eve.tools import EMIT_TOOL, READ_TOOLS
+from evercurrent.insights.serialization import to_jsonable
+from evercurrent.insights.tools import EMIT_TOOL, READ_TOOLS
 from evercurrent.llm.client import LLMProvider, get_provider
 from evercurrent.llm.tiering import ModelTier
 from evercurrent.mcp.client import InProcessMCPClient
@@ -34,7 +34,7 @@ class EveRun:
 
 
 _TOOL_RESULT_CHAR_CAP = 6000
-_PROMPT_PKG = "evercurrent.eve.prompts"
+_PROMPT_PKG = "evercurrent.insights.prompts"
 
 
 def _system_prompt() -> str:

@@ -9,7 +9,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from evercurrent.config import get_settings
-from evercurrent.eve import run_eve
+from evercurrent.insights import run_eve
 from evercurrent.jobs.tasks.eve_insight import _gate
 from evercurrent.llm.client import LLMProvider
 from evercurrent.llm.tiering import ModelTier

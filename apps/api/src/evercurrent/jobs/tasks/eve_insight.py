@@ -18,8 +18,8 @@ from sqlalchemy import text
 
 from evercurrent.config import Settings, get_settings
 from evercurrent.db.session import session_scope
-from evercurrent.eve import EveRun, run_eve
-from evercurrent.eve.grounding import ground_sources
+from evercurrent.insights import EveRun, run_eve
+from evercurrent.insights.grounding import ground_sources
 from evercurrent.rag.embedder import get_embedder
 from evercurrent.realtime import publish_event
 from evercurrent.tenancy.rls import set_org_context
