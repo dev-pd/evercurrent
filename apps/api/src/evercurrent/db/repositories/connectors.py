@@ -77,6 +77,18 @@ class ConnectorRepository:
             )
         return out
 
+    async def get_dropbox(self, connector_id: uuid.UUID) -> models.Connector | None:
+        # Returns the ORM row (not a schema): the caller passes it to the token
+        # refresh service, which reads + mutates its credential fields in place.
+        return (
+            await self._s.execute(
+                select(models.Connector).where(
+                    models.Connector.id == connector_id,
+                    models.Connector.kind == "dropbox",
+                ),
+            )
+        ).scalar_one_or_none()
+
     async def dropbox_connector_ids_for_account(self, account: str) -> list[uuid.UUID]:
         rows = (
             (

@@ -8,7 +8,6 @@ from typing import Annotated
 import structlog
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select
 from starlette.responses import RedirectResponse
 
 from evercurrent.api.routes.connectors_shared import InstallResponse, vault
@@ -22,7 +21,7 @@ from evercurrent.connectors.dropbox.sync import (
 from evercurrent.connectors.dropbox.sync import (
     sync_folder as dropbox_sync_folder,
 )
-from evercurrent.db import models
+from evercurrent.db.repositories.connectors import ConnectorRepository
 from evercurrent.db.session import admin_session_scope
 
 log = structlog.get_logger(__name__)
@@ -102,14 +101,7 @@ async def list_dropbox_folders(
     connector_id: uuid.UUID,
 ) -> list[DropboxFolderSummary]:
     _ = current_user
-    connector = (
-        await session.execute(
-            select(models.Connector).where(
-                models.Connector.id == connector_id,
-                models.Connector.kind == "dropbox",
-            ),
-        )
-    ).scalar_one_or_none()
+    connector = await ConnectorRepository(session).get_dropbox(connector_id)
     if connector is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
 
