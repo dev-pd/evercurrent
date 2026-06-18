@@ -94,6 +94,10 @@ async def _provision_authors(session: SessionDep, client: SlackClient, org_id: u
         persona = BY_NAME.get(name)
         member_id = await repo.find_member_by_slack_uid(org_id=org_id, slack_uid=slack_uid)
         if member_id is None:
+            # Same person can arrive under two Slack identifiers (real uid vs a
+            # persona username); dedup on the resolved name before creating.
+            member_id = await repo.find_member_by_display_name(org_id=org_id, name=name)
+        if member_id is None:
             member_id = await repo.create_slack_member(
                 org_id=org_id,
                 slack_uid=slack_uid,

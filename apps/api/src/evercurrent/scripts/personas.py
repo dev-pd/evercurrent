@@ -32,14 +32,6 @@ PERSONAS: list[Persona] = [
         ["electrical", "general"],
     ),
     Persona(
-        "Prasad",
-        "mech",
-        ":crown:",
-        "platform admin + mech lead; owns thermal/FCS, asks cross-subsystem impact",
-        ["thermal", "motor_mount", "fcs", "bracket", "chassis", "emc"],
-        ["mech-design", "general"],
-    ),
-    Persona(
         "Raj Patel",
         "fw",
         ":computer:",

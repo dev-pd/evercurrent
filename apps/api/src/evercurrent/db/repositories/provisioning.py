@@ -48,6 +48,27 @@ class ProvisioningRepository:
         ).scalar_one_or_none()
         return uuid.UUID(str(row)) if row is not None else None
 
+    async def find_member_by_display_name(
+        self,
+        *,
+        org_id: uuid.UUID,
+        name: str,
+    ) -> uuid.UUID | None:
+        """Fallback dedup: the same person can show up under two Slack
+        identifiers (a real uid vs a persona username), which would otherwise
+        create two memberships with the same resolved name."""
+        row = (
+            await self._s.execute(
+                text(
+                    "SELECT id FROM org_memberships "
+                    "WHERE org_id = :o AND display_name = :n "
+                    "ORDER BY created_at LIMIT 1",
+                ),
+                {"o": str(org_id), "n": name},
+            )
+        ).scalar_one_or_none()
+        return uuid.UUID(str(row)) if row is not None else None
+
     async def create_slack_member(
         self,
         *,
