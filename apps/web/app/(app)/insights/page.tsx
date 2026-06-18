@@ -40,7 +40,7 @@ export default async function InsightsPage() {
         <PageHeader
           title={copy.title}
           subtitle={copy.subtitle}
-          action={<GenerateInsightButton projectId={projectId} hasData={hasData} />}
+          action={<GenerateInsightButton hasData={hasData} />}
         />
       }
     >

@@ -4,6 +4,7 @@ import { CircuitBoard, FileText, GanttChartSquare, Home, Settings, Sparkles } fr
 import { UserBadge } from "@/components/auth/user-badge";
 import { ViewAsSwitcher } from "@/components/layout/view-as-switcher";
 import { DecisionModal } from "@/components/decisions/decision-modal";
+import { EveStreamListener } from "@/components/insights/eve-stream-listener";
 import { messages } from "@/lib/messages";
 
 interface NavItem {
@@ -100,6 +101,7 @@ export function AppShell({
         <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
       </div>
       <DecisionModal />
+      <EveStreamListener />
     </div>
   );
 }
