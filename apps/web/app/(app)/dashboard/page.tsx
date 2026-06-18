@@ -67,6 +67,7 @@ export default async function DashboardPage() {
             projectId={projectId}
             generatedAt={digest?.generated_at ?? null}
             kpis={kpis}
+            hasData={today?.last_message_at != null}
           />
         </div>
       </div>

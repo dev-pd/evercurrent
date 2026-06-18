@@ -66,6 +66,7 @@ export const messages = {
     regenerating: "Regenerating…",
     regenStarted: "Regenerating your digest…",
     regenFailed: "Couldn't regenerate the digest. Try again.",
+    regenNeedsData: "Connect Slack and sync first",
     live: "Live",
     newCount: (n: number) => `${n} new`,
     updatedAt: (time: string) => `updated ${time}`,
@@ -122,6 +123,7 @@ export const messages = {
     emptyHint:
       "Eve surfaces requirement changes and cross-subsystem conflicts here as they appear.",
     runEve: "Run Eve",
+    eveNeedsData: "Connect Slack and sync first",
     eveInvestigating: "Eve is investigating…",
     eveNothing: "Eve found nothing worth flagging right now. Try again.",
     eveSlow: "Eve is taking longer than usual — it'll appear automatically when ready.",

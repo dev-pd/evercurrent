@@ -36,6 +36,7 @@ interface ContextBarProps {
   projectId: string | null;
   generatedAt: string | null;
   kpis: Kpi[];
+  hasData?: boolean;
 }
 
 export function ContextBar({
@@ -45,6 +46,7 @@ export function ContextBar({
   projectId,
   generatedAt,
   kpis,
+  hasData = false,
 }: ContextBarProps) {
   return (
     <div className="glass glass-sheen flex flex-col gap-3 rounded-xl border border-[var(--glass-border)] px-5 py-4">
@@ -71,7 +73,7 @@ export function ContextBar({
 
         <div className="flex items-center gap-2">
           <LiveUpdatesBadge projectId={projectId} generatedAt={generatedAt} />
-          <RegenerateButton />
+          <RegenerateButton disabled={!hasData} />
         </div>
       </div>
 

@@ -11,7 +11,13 @@ import { useToast } from "@/stores/toast";
 
 const copy = messages.insights;
 
-export function GenerateInsightButton({ projectId }: { projectId: string | null }) {
+export function GenerateInsightButton({
+  projectId,
+  hasData = false,
+}: {
+  projectId: string | null;
+  hasData?: boolean;
+}) {
   const router = useRouter();
   const toast = useToast();
   const [running, setRunning] = useState(false);
@@ -67,7 +73,8 @@ export function GenerateInsightButton({ projectId }: { projectId: string | null 
       <button
         type="button"
         onClick={run}
-        disabled={running}
+        disabled={running || !hasData}
+        title={!hasData ? copy.eveNeedsData : undefined}
         className="inline-flex items-center gap-2 rounded-md bg-[var(--color-accent-600)] px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-accent-700)] disabled:opacity-60"
       >
         {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}

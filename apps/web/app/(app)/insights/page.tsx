@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { InsightsTable } from "@/components/insights/insights-table";
 import { GenerateInsightButton } from "@/components/insights/generate-insight-button";
 import { messages } from "@/lib/messages";
-import type { ProactiveInsight, Project } from "@/lib/types";
+import type { ProactiveInsight, Project, TodayV2 } from "@/lib/types";
 
 const copy = messages.insights;
 
@@ -29,6 +29,10 @@ export default async function InsightsPage() {
   ]);
   const insightList = insights ?? [];
   const projectId = projects?.[0]?.id ?? null;
+  const today = projectId
+    ? await safeFetch<TodayV2>(() => client.getToday(projectId))
+    : null;
+  const hasData = today?.last_message_at != null;
 
   return (
     <PageContainer
@@ -36,7 +40,7 @@ export default async function InsightsPage() {
         <PageHeader
           title={copy.title}
           subtitle={copy.subtitle}
-          action={<GenerateInsightButton projectId={projectId} />}
+          action={<GenerateInsightButton projectId={projectId} hasData={hasData} />}
         />
       }
     >

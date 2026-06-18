@@ -10,7 +10,7 @@ import { messages } from "@/lib/messages";
 
 const copy = messages.dashboard;
 
-export function RegenerateButton() {
+export function RegenerateButton({ disabled = false }: { disabled?: boolean }) {
   const mutation = useRegenerateDigest();
   const pending = useRegen((s) => s.pending);
   const start = useRegen((s) => s.start);
@@ -31,7 +31,8 @@ export function RegenerateButton() {
           },
         });
       }}
-      disabled={busy}
+      disabled={busy || disabled}
+      title={disabled ? copy.regenNeedsData : undefined}
       variant="outline"
       size="sm"
     >
