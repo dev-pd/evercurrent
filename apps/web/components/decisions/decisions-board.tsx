@@ -96,9 +96,9 @@ type Filter =
   | { key: "resolved" }
   | { key: "kind"; kind: "decision" | "risk" | "question" };
 
-function buildFilters(hasSubs: boolean): { label: string; filter: Filter }[] {
+function buildFilters(hasScope: boolean): { label: string; filter: Filter }[] {
   return [
-    ...(hasSubs ? [{ label: copy.filterMine, filter: { key: "mine" } as Filter }] : []),
+    ...(hasScope ? [{ label: copy.filterMine, filter: { key: "mine" } as Filter }] : []),
     { label: copy.filterAllOpen, filter: { key: "open" } },
     { label: copy.filterDecisions, filter: { key: "kind", kind: "decision" } },
     { label: copy.filterRisks, filter: { key: "kind", kind: "risk" } },
@@ -108,18 +108,26 @@ function buildFilters(hasSubs: boolean): { label: string; filter: Filter }[] {
   ];
 }
 
-function inMyScope(signal: SignalListItem, mySubs: string[]): boolean {
+function inMyScope(signal: SignalListItem, mySubs: string[], myRole: string | null): boolean {
   if (signal.status !== "open") return false;
-  if (mySubs.length === 0) return true;
-  return signal.affected_subsystems.some((subsystem) => mySubs.includes(subsystem));
+  if (mySubs.length === 0 && !myRole) return true;
+  // Subsystem overlap OR the signal is addressed to my role (role = hard include).
+  const subMatch = signal.affected_subsystems.some((subsystem) => mySubs.includes(subsystem));
+  const roleMatch = !!myRole && signal.affected_roles.includes(myRole);
+  return subMatch || roleMatch;
 }
 
-function matches(signal: SignalListItem, f: Filter, mySubs: string[]): boolean {
+function matches(
+  signal: SignalListItem,
+  f: Filter,
+  mySubs: string[],
+  myRole: string | null,
+): boolean {
   if (f.key === "all") return true;
   if (f.key === "open") return signal.status === "open";
   if (f.key === "resolved") return signal.status === "resolved";
   if (f.key === "kind") return signal.status === "open" && signal.kind === f.kind;
-  return inMyScope(signal, mySubs);
+  return inMyScope(signal, mySubs, myRole);
 }
 
 function isActive(a: Filter, b: Filter): boolean {
@@ -131,19 +139,21 @@ function isActive(a: Filter, b: Filter): boolean {
 export function DecisionsBoard({
   signals,
   mySubsystems = [],
+  myRole = null,
   projectId = null,
 }: {
   signals: SignalListItem[];
   mySubsystems?: string[];
+  myRole?: string | null;
   projectId?: string | null;
 }) {
   // Live updates: signal_created / signal_resolved refresh the server tree so
   // the board fills in as signals generate (handled in the use-events switch).
   useEvents({ projectId, enabled: !!projectId });
-  const hasSubs = mySubsystems.length > 0;
-  const filters = buildFilters(hasSubs);
-  const [filter, setFilter] = useState<Filter>(hasSubs ? { key: "mine" } : { key: "open" });
-  const filtered = signals.filter((signal) => matches(signal, filter, mySubsystems));
+  const hasScope = mySubsystems.length > 0 || !!myRole;
+  const filters = buildFilters(hasScope);
+  const [filter, setFilter] = useState<Filter>(hasScope ? { key: "mine" } : { key: "open" });
+  const filtered = signals.filter((signal) => matches(signal, filter, mySubsystems, myRole));
   const open = useDecisionModal((s) => s.open);
   const columns = filter.key === "resolved" ? resolvedColumns : openColumns;
 

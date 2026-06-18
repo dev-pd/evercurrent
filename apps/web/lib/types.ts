@@ -67,6 +67,7 @@ export const signalListItemSchema = z.object({
   occurred_at: z.string().nullable().optional(),
   resolved_at: z.string().nullable().optional(),
   affected_subsystems: z.array(z.string()).default([]),
+  affected_roles: z.array(z.string()).default([]),
   updated_at: z.string(),
 });
 export type SignalListItem = z.infer<typeof signalListItemSchema>;

@@ -33,12 +33,18 @@ export default async function DecisionsPage() {
   const viewedId = (await cookies()).get(VIEW_AS_COOKIE)?.value ?? null;
   const viewed = members.find((member) => member.id === viewedId) ?? members[0] ?? null;
   const mySubsystems = viewed?.owned_subsystems ?? [];
+  const myRole = viewed?.eng_role ?? null;
 
   const subtitle = viewed ? copy.subtitleScoped(viewed.display_name) : copy.subtitleDefault;
 
   return (
     <PageContainer header={<PageHeader title={copy.title} subtitle={subtitle} />}>
-      <DecisionsBoard signals={signals} mySubsystems={mySubsystems} projectId={projectId} />
+      <DecisionsBoard
+        signals={signals}
+        mySubsystems={mySubsystems}
+        myRole={myRole}
+        projectId={projectId}
+      />
     </PageContainer>
   );
 }

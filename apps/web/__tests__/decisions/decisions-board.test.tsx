@@ -25,6 +25,7 @@ function makeSignal(overrides: Partial<SignalListItem>): SignalListItem {
     status: "open",
     sources_count: 1,
     affected_subsystems: [],
+    affected_roles: [],
     updated_at: "2026-06-10T10:00:00Z",
     ...overrides,
   };

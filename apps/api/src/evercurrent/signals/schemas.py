@@ -68,6 +68,7 @@ class SignalListItem(BaseModel):
     occurred_at: dt.datetime | None = None
     sources_count: int
     affected_subsystems: list[str] = []
+    affected_roles: list[str] = []
     updated_at: dt.datetime
 
 
