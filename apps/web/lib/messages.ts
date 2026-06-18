@@ -15,7 +15,7 @@ export const messages = {
   },
   nav: {
     digest: "Digest",
-    decisions: "Decisions",
+    decisions: "Signals",
     insights: "Insights",
     timeline: "Timeline",
     settings: "Settings",
@@ -88,7 +88,7 @@ export const messages = {
     regenerating: "Regenerating…",
   },
   decisions: {
-    title: "Decisions",
+    title: "Signals",
     subtitleScoped: (name: string) =>
       `Open decisions, risks, and questions for ${name}'s subsystems — switch the full log below.`,
     subtitleDefault:
@@ -102,8 +102,8 @@ export const messages = {
     filterAll: "All",
     noMatch: "No signals match this filter.",
     resolvedSince: (date: string) => `resolved since ${date}`,
-    modalLabel: "Decision",
-    backToDecisions: "Back to Decisions",
+    modalLabel: "Signal",
+    backToDecisions: "Back to Signals",
   },
   signal: {
     statusPrefix: "status:",
