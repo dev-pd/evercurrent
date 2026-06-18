@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import structlog
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from evercurrent.config import get_settings
@@ -59,27 +58,12 @@ async def day_index_for_member(
     elif now_utc.tzinfo is None:
         now_utc = now_utc.replace(tzinfo=dt.UTC)
 
-    tz_row = (
-        await session.execute(
-            text("SELECT timezone FROM org_memberships WHERE id = :id"),
-            {"id": str(project_member_id)},
-        )
-    ).first()
-    tz_name = str(tz_row[0]) if tz_row and tz_row[0] else "UTC"
+    tz_name = await digest_repo.member_timezone(session, project_member_id)
     local_today = now_utc.astimezone(_safe_zone(tz_name)).date()
 
-    proj_row = (
-        await session.execute(
-            text(
-                "SELECT start_date FROM projects WHERE org_id = :oid "
-                "ORDER BY created_at DESC LIMIT 1",
-            ),
-            {"oid": str(org_id)},
-        )
-    ).first()
-    if proj_row is None or proj_row[0] is None:
+    start_date = await digest_repo.project_start_date(session, org_id=org_id)
+    if start_date is None:
         return 0
-    start_date: dt.date = proj_row[0]
     return max(0, (local_today - start_date).days)
 
 
@@ -88,18 +72,7 @@ async def project_phase_for_member(
     *,
     org_id: uuid.UUID,
 ) -> str:
-    row = (
-        await session.execute(
-            text(
-                "SELECT current_phase FROM projects WHERE org_id = :oid "
-                "ORDER BY created_at DESC LIMIT 1",
-            ),
-            {"oid": str(org_id)},
-        )
-    ).first()
-    if row is None or row[0] is None:
-        return "DVT"
-    return str(row[0])
+    return await digest_repo.project_current_phase(session, org_id=org_id) or "DVT"
 
 
 async def enqueue_due_digests_now(

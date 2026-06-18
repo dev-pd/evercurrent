@@ -11,7 +11,6 @@ from typing import Any
 import structlog
 from jinja2 import Environment, StrictUndefined
 from pydantic import ValidationError
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from evercurrent.digest import repository as digest_repo
@@ -19,8 +18,6 @@ from evercurrent.digest.schemas import (
     DigestContext,
     DigestDraft,
     DigestRecord,
-    MemberProfile,
-    ProjectSnapshot,
 )
 from evercurrent.llm.client import LLMProvider
 from evercurrent.llm.tiering import ModelTier
@@ -60,105 +57,6 @@ def _render_user_prompt(ctx: DigestContext) -> str:
         open_cards=ctx.open_cards,
         prior_digests=ctx.prior_digests,
     )
-
-
-async def _load_member_profile(
-    session: AsyncSession,
-    project_member_id: uuid.UUID,
-) -> tuple[MemberProfile, uuid.UUID] | None:
-    row = (
-        (
-            await session.execute(
-                text(
-                    "SELECT id, org_id, display_name, role, eng_role, "
-                    "owned_subsystems, topic_weights, timezone "
-                    "FROM org_memberships WHERE id = :id",
-                ),
-                {"id": str(project_member_id)},
-            )
-        )
-        .mappings()
-        .first()
-    )
-    if row is None:
-        return None
-    org_id = uuid.UUID(str(row["org_id"]))
-
-    topic_weights: dict[str, float] = dict(row["topic_weights"] or {})
-    subsystems: list[str] = list(row["owned_subsystems"] or [])
-    eng_role = row["eng_role"] or row["role"]
-
-    profile = MemberProfile(
-        project_member_id=uuid.UUID(str(row["id"])),
-        display_name=str(row["display_name"] or ""),
-        role=str(eng_role or "member"),
-        timezone=str(row["timezone"] or "UTC"),
-        owned_subsystems=subsystems,
-        topic_weights=topic_weights,
-    )
-    return profile, org_id
-
-
-async def _load_project_snapshot(
-    session: AsyncSession,
-    *,
-    phase: str,
-    project_id: uuid.UUID | None,
-) -> ProjectSnapshot:
-    if project_id is None:
-        return ProjectSnapshot(
-            project_id=uuid.UUID(int=0),
-            name="(unknown)",
-            current_phase=phase,
-            phase_concerns=[],
-        )
-    row = (
-        (
-            await session.execute(
-                text(
-                    "SELECT id, name, current_phase, phase_concerns FROM projects WHERE id = :id",
-                ),
-                {"id": str(project_id)},
-            )
-        )
-        .mappings()
-        .first()
-    )
-    if row is None:
-        return ProjectSnapshot(
-            project_id=project_id,
-            name="(unknown)",
-            current_phase=phase,
-            phase_concerns=[],
-        )
-    concerns_raw = row["phase_concerns"] or {}
-    concerns_list = list(concerns_raw.get(phase, [])) if isinstance(concerns_raw, dict) else []
-    return ProjectSnapshot(
-        project_id=uuid.UUID(str(row["id"])),
-        name=str(row["name"] or "(unknown)"),
-        current_phase=str(row["current_phase"] or phase),
-        phase_concerns=[str(c) for c in concerns_list],
-    )
-
-
-async def _resolve_project_id_for_member(
-    session: AsyncSession,
-    *,
-    project_member_id: uuid.UUID,
-    org_id: uuid.UUID,
-) -> uuid.UUID | None:
-    _ = project_member_id
-    row = (
-        await session.execute(
-            text(
-                "SELECT id FROM projects WHERE org_id = :oid ORDER BY created_at DESC LIMIT 1",
-            ),
-            {"oid": str(org_id)},
-        )
-    ).first()
-    if row is None:
-        return None
-    return uuid.UUID(str(row[0]))
 
 
 def _filter_cited_ids(
@@ -259,18 +157,14 @@ async def generate_digest(
             )
             return existing
 
-    loaded = await _load_member_profile(session, project_member_id)
+    loaded = await digest_repo.load_member_profile(session, project_member_id)
     if loaded is None:
         msg = f"membership {project_member_id} not found"
         raise RuntimeError(msg)
     member, org_id = loaded
 
-    project_id = await _resolve_project_id_for_member(
-        session,
-        project_member_id=project_member_id,
-        org_id=org_id,
-    )
-    project = await _load_project_snapshot(
+    project_id = await digest_repo.latest_project_id_for_org(session, org_id=org_id)
+    project = await digest_repo.load_project_snapshot(
         session,
         phase=phase,
         project_id=project_id,

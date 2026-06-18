@@ -3,6 +3,7 @@ the read queries that gather a member's scored items, open cards, and history.""
 
 from __future__ import annotations
 
+import datetime as dt
 import uuid
 
 import structlog
@@ -15,7 +16,9 @@ from evercurrent.digest.schemas import (
     CardSummary,
     DigestMessageRow,
     DigestRecord,
+    MemberProfile,
     PriorDigest,
+    ProjectSnapshot,
     ScoredItem,
 )
 
@@ -283,3 +286,138 @@ async def load_message_items(
         )
         for r in rows
     ]
+
+
+async def load_member_profile(
+    session: AsyncSession,
+    project_member_id: uuid.UUID,
+) -> tuple[MemberProfile, uuid.UUID] | None:
+    row = (
+        (
+            await session.execute(
+                text(
+                    "SELECT id, org_id, display_name, role, eng_role, "
+                    "owned_subsystems, topic_weights, timezone "
+                    "FROM org_memberships WHERE id = :id",
+                ),
+                {"id": str(project_member_id)},
+            )
+        )
+        .mappings()
+        .first()
+    )
+    if row is None:
+        return None
+    org_id = uuid.UUID(str(row["org_id"]))
+    topic_weights: dict[str, float] = dict(row["topic_weights"] or {})
+    subsystems: list[str] = list(row["owned_subsystems"] or [])
+    eng_role = row["eng_role"] or row["role"]
+    profile = MemberProfile(
+        project_member_id=uuid.UUID(str(row["id"])),
+        display_name=str(row["display_name"] or ""),
+        role=str(eng_role or "member"),
+        timezone=str(row["timezone"] or "UTC"),
+        owned_subsystems=subsystems,
+        topic_weights=topic_weights,
+    )
+    return profile, org_id
+
+
+async def load_project_snapshot(
+    session: AsyncSession,
+    *,
+    phase: str,
+    project_id: uuid.UUID | None,
+) -> ProjectSnapshot:
+    if project_id is None:
+        return ProjectSnapshot(
+            project_id=uuid.UUID(int=0),
+            name="(unknown)",
+            current_phase=phase,
+            phase_concerns=[],
+        )
+    row = (
+        (
+            await session.execute(
+                text(
+                    "SELECT id, name, current_phase, phase_concerns FROM projects WHERE id = :id",
+                ),
+                {"id": str(project_id)},
+            )
+        )
+        .mappings()
+        .first()
+    )
+    if row is None:
+        return ProjectSnapshot(
+            project_id=project_id,
+            name="(unknown)",
+            current_phase=phase,
+            phase_concerns=[],
+        )
+    concerns_raw = row["phase_concerns"] or {}
+    concerns_list = list(concerns_raw.get(phase, [])) if isinstance(concerns_raw, dict) else []
+    return ProjectSnapshot(
+        project_id=uuid.UUID(str(row["id"])),
+        name=str(row["name"] or "(unknown)"),
+        current_phase=str(row["current_phase"] or phase),
+        phase_concerns=[str(c) for c in concerns_list],
+    )
+
+
+async def latest_project_id_for_org(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+) -> uuid.UUID | None:
+    row = (
+        await session.execute(
+            text(
+                "SELECT id FROM projects WHERE org_id = :oid ORDER BY created_at DESC LIMIT 1",
+            ),
+            {"oid": str(org_id)},
+        )
+    ).first()
+    if row is None:
+        return None
+    return uuid.UUID(str(row[0]))
+
+
+async def member_timezone(session: AsyncSession, project_member_id: uuid.UUID) -> str:
+    row = (
+        await session.execute(
+            text("SELECT timezone FROM org_memberships WHERE id = :id"),
+            {"id": str(project_member_id)},
+        )
+    ).first()
+    return str(row[0]) if row and row[0] else "UTC"
+
+
+async def project_start_date(session: AsyncSession, *, org_id: uuid.UUID) -> dt.date | None:
+    row = (
+        await session.execute(
+            text(
+                "SELECT start_date FROM projects WHERE org_id = :oid "
+                "ORDER BY created_at DESC LIMIT 1",
+            ),
+            {"oid": str(org_id)},
+        )
+    ).first()
+    if row is None or row[0] is None:
+        return None
+    return row[0]
+
+
+async def project_current_phase(session: AsyncSession, *, org_id: uuid.UUID) -> str | None:
+    row = (
+        await session.execute(
+            text(
+                "SELECT current_phase FROM projects WHERE org_id = :oid "
+                "ORDER BY created_at DESC LIMIT 1",
+            ),
+            {"oid": str(org_id)},
+        )
+    ).first()
+    if row is None or row[0] is None:
+        return None
+    return str(row[0])

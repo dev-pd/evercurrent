@@ -96,13 +96,9 @@ async def _patch_agent_context(
     async def fake_get_for_member_day(*_args: Any, **_kwargs: Any) -> DigestRecord | None:
         return None
 
-    monkeypatch.setattr(agent_mod, "_load_member_profile", fake_load_profile)
-    monkeypatch.setattr(
-        agent_mod,
-        "_resolve_project_id_for_member",
-        fake_resolve_project_id,
-    )
-    monkeypatch.setattr(agent_mod, "_load_project_snapshot", fake_load_project)
+    monkeypatch.setattr(repo_mod, "load_member_profile", fake_load_profile)
+    monkeypatch.setattr(repo_mod, "latest_project_id_for_org", fake_resolve_project_id)
+    monkeypatch.setattr(repo_mod, "load_project_snapshot", fake_load_project)
     monkeypatch.setattr(repo_mod, "top_scored_items_for_member", fake_top)
     monkeypatch.setattr(repo_mod, "open_cards_for_member_subsystems", fake_open_cards)
     monkeypatch.setattr(repo_mod, "list_recent_for_member", fake_recent)
