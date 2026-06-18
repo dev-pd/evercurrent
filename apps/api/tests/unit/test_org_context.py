@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from evercurrent.tenancy.rls import clear_org_context, set_org_context
+from evercurrent.tenancy.org_context import clear_org_context, set_org_context
 
 
 @pytest.mark.asyncio

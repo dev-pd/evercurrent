@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from evercurrent.auth.auth0 import Auth0Claims, Auth0Verifier, InvalidTokenError
 from evercurrent.db.models import Org, OrgMembership, Project
 from evercurrent.db.session import admin_session_scope, get_sessionmaker
-from evercurrent.tenancy.rls import set_org_context
+from evercurrent.tenancy.org_context import set_org_context
 
 log = structlog.get_logger(__name__)
 

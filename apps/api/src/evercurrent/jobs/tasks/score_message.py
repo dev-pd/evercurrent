@@ -13,7 +13,7 @@ from evercurrent.db.session import session_scope
 from evercurrent.scoring import repository as scoring_repo
 from evercurrent.scoring.relevance import score
 from evercurrent.scoring.schemas import ScoreInput
-from evercurrent.tenancy.rls import set_org_context
+from evercurrent.tenancy.org_context import set_org_context
 
 log = structlog.get_logger(__name__)
 

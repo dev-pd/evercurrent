@@ -19,7 +19,7 @@ from evercurrent.ingestion.pdf_extract import Block, extract_blocks
 from evercurrent.ingestion.schemas import DocClassification
 from evercurrent.rag.embedder import EmbeddingProvider, get_embedder
 from evercurrent.sse_publisher import publish_event
-from evercurrent.tenancy.rls import set_org_context
+from evercurrent.tenancy.org_context import set_org_context
 
 log = structlog.get_logger(__name__)
 

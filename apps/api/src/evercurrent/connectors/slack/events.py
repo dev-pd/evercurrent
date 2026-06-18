@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from evercurrent.config import Settings
 from evercurrent.connectors.slack.schemas import SlackEventEnvelope
 from evercurrent.db import models
-from evercurrent.tenancy.rls import set_org_context
+from evercurrent.tenancy.org_context import set_org_context
 
 log = structlog.get_logger(__name__)
 

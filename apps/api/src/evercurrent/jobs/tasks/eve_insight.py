@@ -21,7 +21,7 @@ from evercurrent.insights import EveRun, run_eve
 from evercurrent.insights.citation_verifier import verify_source_grounding
 from evercurrent.rag.embedder import get_embedder
 from evercurrent.sse_publisher import publish_event
-from evercurrent.tenancy.rls import set_org_context
+from evercurrent.tenancy.org_context import set_org_context
 
 log = structlog.get_logger(__name__)
 

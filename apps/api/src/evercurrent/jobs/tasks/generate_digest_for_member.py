@@ -14,7 +14,7 @@ from evercurrent.digest import repository as digest_repo
 from evercurrent.digest.digest_generator import generate_digest
 from evercurrent.llm.client import LLMProvider, get_provider
 from evercurrent.sse_publisher import publish_event
-from evercurrent.tenancy.rls import set_org_context
+from evercurrent.tenancy.org_context import set_org_context
 
 log = structlog.get_logger(__name__)
 
