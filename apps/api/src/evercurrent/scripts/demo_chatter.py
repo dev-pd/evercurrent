@@ -10,7 +10,6 @@ during a demo. Not a scheduled task — run it when you want a fresh batch.
 from __future__ import annotations
 
 import asyncio
-import datetime as dt
 import os
 from typing import Any
 
@@ -40,42 +39,54 @@ async def emit_chatter() -> dict[str, Any]:
         return {"status": "no_token"}
 
     channels = list(CHANNEL_TOPICS)
-    channel = channels[dt.datetime.now(dt.UTC).minute % len(channels)]
     phase = _phase_for(settings.demo_chatter_phase)
-    # Total bot messages to post (BOT_MSGS_COUNT env, else the config default).
+    # Total bot messages to post (BOT_MSGS_COUNT env, else the config default),
+    # spread across channels so signals span subsystems — not one channel.
     count = int(os.environ.get("BOT_MSGS_COUNT", str(settings.demo_chatter_batch)))
 
     client = SlackClient(bot_token=token)
     posted = 0
+    used: list[str] = []
     try:
         live = await client.list_all_channels()
-        cid = next((c.id for c in live if c.name == channel), None)
-        if cid is None:
-            return {"status": "channel_missing", "channel": channel}
-        msgs = await generate_batch(
-            channel=channel,
-            phase=phase,
-            count=count,
-            threads=1,
-            tier=ModelTier.DIGEST,
-        )
-        # generate_batch can overshoot (thread expansion); cap to the request.
-        for m in msgs[:count]:
-            persona = BY_NAME.get(m.author)
-            try:
-                await client.chat_post_message(
-                    channel=cid,
-                    text=m.text,
-                    username=m.author,
-                    icon_emoji=persona.emoji if persona else None,
-                )
-                posted += 1
-            except SlackAPIError as exc:
-                log.warning("demo_chatter.post_failed", author=m.author, error=exc.error)
+        name_to_id = {c.name: c.id for c in live}
+        targets = [name for name in channels if name in name_to_id]
+        if not targets:
+            return {"status": "no_channels"}
+
+        per_channel = max(1, count // len(targets))
+        for name in targets:
+            remaining = count - posted
+            if remaining <= 0:
+                break
+            want = min(per_channel, remaining)
+            msgs = await generate_batch(
+                channel=name,
+                phase=phase,
+                count=want,
+                threads=1,
+                tier=ModelTier.DIGEST,
+            )
+            channel_posted = 0
+            for m in msgs[:want]:
+                persona = BY_NAME.get(m.author)
+                try:
+                    await client.chat_post_message(
+                        channel=name_to_id[name],
+                        text=m.text,
+                        username=m.author,
+                        icon_emoji=persona.emoji if persona else None,
+                    )
+                    posted += 1
+                    channel_posted += 1
+                except SlackAPIError as exc:
+                    log.warning("demo_chatter.post_failed", author=m.author, error=exc.error)
+            if channel_posted:
+                used.append(name)
     finally:
         await client.aclose()
-    log.info("demo_chatter.emitted", channel=channel, phase=phase.key, posted=posted)
-    return {"status": "ok", "channel": channel, "posted": posted}
+    log.info("demo_chatter.emitted", channels=used, phase=phase.key, posted=posted)
+    return {"status": "ok", "channels": used, "posted": posted}
 
 
 async def main() -> None:
