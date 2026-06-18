@@ -119,7 +119,7 @@ async def set_status(
             "  status = :status, "
             "  resolved_at = CASE WHEN :status = 'resolved' THEN now() ELSE NULL END, "
             "  resolving_message_id = "
-            "    CASE WHEN :status = 'resolved' THEN :rmid ELSE NULL END "
+            "    CASE WHEN :status = 'resolved' THEN CAST(:rmid AS uuid) ELSE NULL END "
             "WHERE id = :id "
             "RETURNING id",
         ),
