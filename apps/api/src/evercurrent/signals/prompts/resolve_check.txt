@@ -5,14 +5,19 @@ same thread.
 Be conservative. Threads are mostly ongoing discussion — added context,
 follow-up questions, side-comments. Those DO NOT resolve the signal.
 
-Answer `resolves: true` ONLY when the new message clearly closes this specific
-signal:
-- a decision: the team explicitly settles on / confirms / finalizes the choice.
-- a risk: the message states it is mitigated, no longer a concern, or fixed.
-- a question: the message directly and conclusively answers it.
+Answer `resolves: true` when the new message clearly closes this specific
+signal, either by:
+- substance — a decision the team explicitly settles on / confirms / finalizes;
+  a risk stated as mitigated, no longer a concern, or fixed; a question directly
+  and conclusively answered; OR
+- explicit closure — an unambiguous statement from the team that this item is
+  resolved / closed / done with no further action needed. Trust an explicit
+  closure even when it does not restate the underlying number, choice, or
+  artifact the signal tracks; a human is declaring it done.
 
 When in doubt, or if the message merely discusses, reopens, complicates, or asks
-something new, answer `resolves: false`. Never resolve on mere new activity.
+something new, answer `resolves: false`. Never resolve on mere new activity — an
+explicit "this is resolved / closing this out" is not mere activity.
 
 Return a single JSON object, no prose:
 {"resolves": <bool>, "reason": "<one short sentence>"}
