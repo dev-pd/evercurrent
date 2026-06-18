@@ -44,6 +44,22 @@ def _system_prompt() -> str:
     return resources.files(_PROMPT_PKG).joinpath("system.txt").read_text(encoding="utf-8")
 
 
+def _ensure_doc_source(
+    sources: list[dict[str, Any]],
+    evidence: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Eve often grounds in a spec doc but emits only chatter sources. If it
+    retrieved document evidence, make sure at least one doc source is cited so
+    the PDF shows in the insight's sources panel."""
+    has_doc = any(str(s.get("kind")) in ("doc", "document") for s in sources)
+    if has_doc:
+        return sources
+    doc = next((e for e in evidence if str(e.get("kind")) in ("doc", "document")), None)
+    if doc is None:
+        return sources
+    return [*sources, doc]
+
+
 def _as_evidence(tool_name: str, out: Any) -> list[dict[str, Any]]:
     """Normalize a search tool's output into insight sources, so Eve always has
     grounding even if the model omits `sources` in emit_insight."""
@@ -68,6 +84,7 @@ def _as_evidence(tool_name: str, out: Any) -> list[dict[str, Any]]:
                 "kind": kind,
                 "channel": item.get("channel"),
                 "author": item.get("author") or item.get("author_display_name"),
+                "section": item.get("section"),
                 "snippet": str(snippet)[:300],
                 "ts": item.get("ts") or item.get("external_id") or item.get("posted_at"),
             },
@@ -140,6 +157,10 @@ async def run_eve(
                 emitted = dict(tc.input)
                 if not emitted.get("sources") and evidence:
                     emitted["sources"] = evidence[:3]
+                emitted["sources"] = _ensure_doc_source(
+                    emitted.get("sources") or [],
+                    evidence,
+                )
                 log.info(
                     "eve.emitted",
                     turn=turn,

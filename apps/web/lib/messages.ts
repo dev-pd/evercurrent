@@ -142,6 +142,7 @@ export const messages = {
     impactSchedule: "Schedule",
     impactRevenueAtRisk: "Revenue at risk",
     sourcesHeading: "Sources",
+    specSource: "Specification (PRD)",
   },
   timeline: {
     title: "Timeline",

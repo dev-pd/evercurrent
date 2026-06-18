@@ -24,11 +24,20 @@ export function InsightSources({ sources }: InsightSourcesProps) {
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
-                {source.channel && <span className="font-medium">{source.channel}</span>}
-                {source.author && (
+                {source.kind === "doc" ? (
+                  <span className="font-medium">
+                    {copy.specSource}
+                    {source.section ? ` · ${source.section}` : ""}
+                  </span>
+                ) : (
                   <>
-                    <span aria-hidden="true">·</span>
-                    <span>{source.author}</span>
+                    {source.channel && <span className="font-medium">{source.channel}</span>}
+                    {source.author && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>{source.author}</span>
+                      </>
+                    )}
                   </>
                 )}
               </div>

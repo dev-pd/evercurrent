@@ -181,6 +181,7 @@ export const insightSourceSchema = z.object({
   kind: z.enum(["slack", "doc"]),
   channel: z.string().nullable(),
   author: z.string().nullable(),
+  section: z.string().nullable().optional(),
   snippet: z.string(),
   ts: z.string().nullable(),
 });
