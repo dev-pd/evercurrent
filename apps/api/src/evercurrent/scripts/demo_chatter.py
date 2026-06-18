@@ -46,7 +46,8 @@ async def emit_chatter() -> dict[str, Any]:
 
     client = SlackClient(bot_token=token)
     posted = 0
-    used: list[str] = []
+    used: set[str] = set()
+    _max_rounds = 4
     try:
         live = await client.list_all_channels()
         name_to_id = {c.name: c.id for c in live}
@@ -54,39 +55,43 @@ async def emit_chatter() -> dict[str, Any]:
         if not targets:
             return {"status": "no_channels"}
 
-        per_channel = max(1, count // len(targets))
-        for name in targets:
-            remaining = count - posted
-            if remaining <= 0:
-                break
-            want = min(per_channel, remaining)
-            msgs = await generate_batch(
-                channel=name,
-                phase=phase,
-                count=want,
-                threads=1,
-                tier=ModelTier.DIGEST,
-            )
-            channel_posted = 0
-            for m in msgs[:want]:
-                persona = BY_NAME.get(m.author)
-                try:
-                    await client.chat_post_message(
-                        channel=name_to_id[name],
-                        text=m.text,
-                        username=m.author,
-                        icon_emoji=persona.emoji if persona else None,
-                    )
-                    posted += 1
-                    channel_posted += 1
-                except SlackAPIError as exc:
-                    log.warning("demo_chatter.post_failed", author=m.author, error=exc.error)
-            if channel_posted:
-                used.append(name)
+        # Round-robin the channels: a small batch each, repeating until we hit
+        # the count. Channels the generator returns nothing for (flaky) get
+        # retried next round, so the seed lands diversified, not lumped.
+        per_channel = max(2, count // len(targets))
+        rounds = 0
+        while posted < count and rounds < _max_rounds:
+            rounds += 1
+            for name in targets:
+                if posted >= count:
+                    break
+                want = min(per_channel, count - posted)
+                msgs = await generate_batch(
+                    channel=name,
+                    phase=phase,
+                    count=want,
+                    threads=1,
+                    tier=ModelTier.DIGEST,
+                )
+                for m in msgs[:want]:
+                    if posted >= count:
+                        break
+                    persona = BY_NAME.get(m.author)
+                    try:
+                        await client.chat_post_message(
+                            channel=name_to_id[name],
+                            text=m.text,
+                            username=m.author,
+                            icon_emoji=persona.emoji if persona else None,
+                        )
+                        posted += 1
+                        used.add(name)
+                    except SlackAPIError as exc:
+                        log.warning("demo_chatter.post_failed", author=m.author, error=exc.error)
     finally:
         await client.aclose()
-    log.info("demo_chatter.emitted", channels=used, phase=phase.key, posted=posted)
-    return {"status": "ok", "channels": used, "posted": posted}
+    log.info("demo_chatter.emitted", channels=sorted(used), phase=phase.key, posted=posted)
+    return {"status": "ok", "channels": sorted(used), "posted": posted}
 
 
 async def main() -> None:
