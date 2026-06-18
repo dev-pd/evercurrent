@@ -67,18 +67,22 @@ class VoyageEmbedder:
 
     @staticmethod
     async def _with_retry(coro_factory: Callable[[], Awaitable[Any]]) -> Any:
-        attempts = 4
+        attempts = 6
         for attempt in range(attempts):
             try:
                 return await coro_factory()
             except Exception as exc:
                 if attempt == attempts - 1:
                     raise
-                wait_s = min(0.5 * (2**attempt), 8.0)
+                # Voyage free tier is 3 RPM — a rate-limit needs to wait out the
+                # ~20s window, not a sub-second transient backoff.
+                is_rate = "rate" in str(exc).lower() or "RateLimit" in type(exc).__name__
+                wait_s = 22.0 if is_rate else min(0.5 * (2**attempt), 8.0)
                 log.warning(
                     "voyage.retry",
                     attempt=attempt + 1,
                     wait_s=wait_s,
+                    rate_limited=is_rate,
                     exc_type=type(exc).__name__,
                 )
                 await asyncio.sleep(wait_s)

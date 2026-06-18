@@ -88,14 +88,7 @@ async def dropbox_oauth_callback(
             ) from exc
         await session.commit()
 
-    # Ingest on connect — Dropbox has no separate sync button, so connecting
-    # from the UI is the trigger. Pulls the default folder into documents/chunks.
-    from evercurrent.jobs.celery_app import celery_app
-
-    celery_app.send_task(
-        "evercurrent.sync_dropbox_connector",
-        kwargs={"connector_id": str(connector_id)},
-    )
+    # Connect only authorizes — like Slack, ingestion is the Sync button.
     log.info("dropbox.install.callback_complete", connector_id=str(connector_id))
     return RedirectResponse(
         url=f"{get_settings().app_base_url}/settings",
