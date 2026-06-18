@@ -9,11 +9,16 @@ import uuid
 from typing import Any
 
 import structlog
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from evercurrent.classification import classify
 from evercurrent.classification.schemas import ClassificationResult
+from evercurrent.config import get_settings
+from evercurrent.connectors.slack.client import SlackClient
+from evercurrent.connectors.slack.crypto import TokenVault
+from evercurrent.db.repositories.provisioning import ProvisioningRepository
 from evercurrent.db.session import session_scope
 from evercurrent.jobs.tasks.route_message_db import (
     link_author_membership,
@@ -26,6 +31,7 @@ from evercurrent.jobs.tasks.route_message_db import (
     write_tag,
 )
 from evercurrent.llm.client import LLMProvider, get_provider
+from evercurrent.scripts.personas import BY_NAME
 from evercurrent.signals import repository as signals_repo
 from evercurrent.signals.resolution import message_resolves_signal
 from evercurrent.sse_publisher import publish_event
@@ -169,6 +175,110 @@ async def _resolve_and_publish(
         )
 
 
+async def _provision_webhook_author(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    slack_uid: str,
+) -> bool:
+    """Provision an unknown Slack author seen over the webhook — resolve their
+    real name via Slack, create the member, and relabel their messages. Lets a
+    real user appear live without waiting for the next Sync. Returns True if a
+    new member was created."""
+    repo = ProvisioningRepository(session)
+    if await repo.find_member_by_slack_uid(org_id=org_id, slack_uid=slack_uid):
+        return False
+    settings = get_settings()
+    if not settings.connector_secret_key:
+        return False
+    row = (
+        await session.execute(
+            text(
+                "SELECT credentials_secret FROM connectors "
+                "WHERE org_id = :o AND kind = 'slack' AND status = 'active' "
+                "ORDER BY installed_at DESC LIMIT 1",
+            ),
+            {"o": str(org_id)},
+        )
+    ).first()
+    if row is None:
+        return False
+
+    name = slack_uid
+    client = SlackClient(bot_token=TokenVault(settings.connector_secret_key).decrypt(str(row[0])))
+    try:
+        if slack_uid.startswith("U") and " " not in slack_uid:
+            info = (await client.users_info(user=slack_uid)).get("user", {})
+            name = info.get("real_name") or info.get("name") or slack_uid
+    except Exception as exc:  # noqa: BLE001
+        log.warning("router.author_lookup_failed", uid=slack_uid, error=str(exc))
+    finally:
+        await client.aclose()
+
+    member_id = await repo.find_member_by_display_name(org_id=org_id, name=name)
+    created = member_id is None
+    if member_id is None:
+        persona = BY_NAME.get(name)
+        member_id = await repo.create_slack_member(
+            org_id=org_id,
+            slack_uid=slack_uid,
+            name=name,
+            eng_role=persona.eng_role if persona else None,
+            owned_subsystems=list(persona.owned_subsystems if persona else []),
+        )
+    await repo.link_messages_to_member(
+        org_id=org_id,
+        slack_uid=slack_uid,
+        member_id=member_id,
+        name=name,
+    )
+    return created
+
+
+async def _link_or_provision_author(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    message_id: uuid.UUID,
+    slack_uid: str | None,
+) -> bool:
+    """Link the message to its member; provision the author if unknown. Returns
+    True when a new member was created (so the UI can refresh live)."""
+    linked = await link_author_membership(
+        session,
+        org_id=org_id,
+        message_id=message_id,
+        slack_user_id=slack_uid,
+    )
+    if linked is not None or not slack_uid:
+        return False
+    return await _provision_webhook_author(session, org_id=org_id, slack_uid=slack_uid)
+
+
+def _publish_routed(
+    *,
+    project_id: uuid.UUID | None,
+    decision: ClassificationResult,
+    message_id: uuid.UUID,
+    member_provisioned: bool,
+) -> None:
+    if project_id is None:
+        return
+    publish_event(
+        project_id,
+        "message_tagged",
+        {
+            "message_id": str(message_id),
+            "topic": decision.topic,
+            "urgency": decision.urgency,
+            "should_create_signal": decision.should_create_signal,
+        },
+    )
+    if member_provisioned:
+        # A new member just landed via the webhook — refresh the members UI.
+        publish_event(project_id, "sync_complete", {"source": "webhook"})
+
+
 async def _route(
     raw_event_id: uuid.UUID,
     *,
@@ -222,11 +332,11 @@ async def _route(
             thread_ts=thread_ts,
         )
 
-        await link_author_membership(
+        member_provisioned = await _link_or_provision_author(
             session,
             org_id=org_id,
             message_id=message_id,
-            slack_user_id=slack_user_str,
+            slack_uid=slack_user_str,
         )
 
         thread_parent_text = await resolve_thread_parent_text(
@@ -283,17 +393,12 @@ async def _route(
                 error=str(exc),
             )
 
-    if project_id is not None:
-        publish_event(
-            project_id,
-            "message_tagged",
-            {
-                "message_id": str(message_id),
-                "topic": decision.topic,
-                "urgency": decision.urgency,
-                "should_create_signal": decision.should_create_signal,
-            },
-        )
+    _publish_routed(
+        project_id=project_id,
+        decision=decision,
+        message_id=message_id,
+        member_provisioned=member_provisioned,
+    )
 
     await _resolve_and_publish(
         provider,
