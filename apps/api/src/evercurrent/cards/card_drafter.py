@@ -10,7 +10,6 @@ from typing import Any
 
 import structlog
 from pydantic import ValidationError
-from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -130,28 +129,6 @@ async def _draft_with_retry(
     return _parse_draft(payload)
 
 
-async def _resolve_project_context(
-    session: AsyncSession,
-    project_id: uuid.UUID | None,
-) -> tuple[str, list[str]]:
-    if project_id is None:
-        return "unknown", []
-    row = (
-        await session.execute(
-            text(
-                "SELECT current_phase, phase_concerns FROM projects WHERE id = :id",
-            ),
-            {"id": str(project_id)},
-        )
-    ).first()
-    if row is None:
-        return "unknown", []
-    phase = str(row[0] or "unknown")
-    concerns = row[1] or {}
-    subsystems = list(concerns.get("subsystems") or []) if isinstance(concerns, dict) else []
-    return phase, [str(s) for s in subsystems]
-
-
 def _existing_to_response(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "card_id": uuid.UUID(str(row["id"])),
@@ -206,7 +183,7 @@ async def build_card(
         own_author=str(meta["author_display_name"] or "unknown"),
         thread=thread if isinstance(thread, ThreadContext) else None,
     )
-    project_phase, known_subsystems = await _resolve_project_context(
+    project_phase, known_subsystems = await cards_repo.project_phase_and_subsystems(
         session,
         project_id,
     )

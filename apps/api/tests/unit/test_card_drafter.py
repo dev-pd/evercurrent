@@ -155,8 +155,8 @@ def _patch_meta_and_project(
         fake_load_message_meta,
     )
     monkeypatch.setattr(
-        builder_mod,
-        "_resolve_project_context",
+        repo_mod,
+        "project_phase_and_subsystems",
         fake_resolve_project_context,
     )
 

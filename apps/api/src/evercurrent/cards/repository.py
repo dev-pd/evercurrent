@@ -326,3 +326,25 @@ def _cast_source_kind(value: str) -> SourceKindT:
         msg = f"unexpected source kind: {value!r}"
         raise ValueError(msg)
     return cast("SourceKindT", value)
+
+
+async def project_phase_and_subsystems(
+    session: AsyncSession,
+    project_id: uuid.UUID | None,
+) -> tuple[str, list[str]]:
+    """The project's current phase + its known subsystems (from phase_concerns),
+    used to ground the card draft prompt."""
+    if project_id is None:
+        return "unknown", []
+    row = (
+        await session.execute(
+            text("SELECT current_phase, phase_concerns FROM projects WHERE id = :id"),
+            {"id": str(project_id)},
+        )
+    ).first()
+    if row is None:
+        return "unknown", []
+    phase = str(row[0] or "unknown")
+    concerns = row[1] or {}
+    subsystems = list(concerns.get("subsystems") or []) if isinstance(concerns, dict) else []
+    return phase, [str(s) for s in subsystems]
