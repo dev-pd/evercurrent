@@ -184,6 +184,7 @@ async def test_persisted_row_has_citations(
         force=False,
     )
 
+    assert persisted is not None
     assert persisted.day_index == 2
     assert msg_id in persisted.message_ids
     assert signal_id in persisted.signal_ids

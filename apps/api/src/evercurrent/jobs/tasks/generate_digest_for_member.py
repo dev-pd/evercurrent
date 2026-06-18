@@ -56,6 +56,10 @@ async def generate_digest_for_member(
         )
         await session.commit()
 
+    if digest is None:
+        log.info("digest.task.skipped_empty", project_member_id=project_member_id)
+        return {"project_member_id": project_member_id, "status": "skipped_empty"}
+
     if project_id is not None:
         publish_event(
             project_id,

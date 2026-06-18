@@ -140,7 +140,7 @@ async def generate_digest(
     day_index: int,
     phase: str,
     force: bool = False,
-) -> DigestRecord:
+) -> DigestRecord | None:
     if not force:
         existing = await digest_repo.get_for_member_day(
             session,
@@ -179,6 +179,17 @@ async def generate_digest(
         owned_subsystems=member.owned_subsystems,
         limit=_OPEN_SIGNALS_LIMIT,
     )
+
+    if not scored and not signals:
+        # Nothing synced for this member — don't fabricate a briefing. No digest
+        # row, so the UI shows a clean "no digest yet" empty state.
+        log.info(
+            "digest.skip_empty",
+            project_member_id=str(project_member_id),
+            day_index=day_index,
+        )
+        return None
+
     ctx = DigestContext(
         member=member,
         project=project,

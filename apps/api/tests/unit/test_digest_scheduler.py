@@ -9,7 +9,12 @@ import pytest
 
 import evercurrent.digest.digest_generator as agent_mod
 import evercurrent.digest.repository as repo_mod
-from evercurrent.digest.schemas import DigestRecord, MemberProfile, ProjectSnapshot
+from evercurrent.digest.schemas import (
+    DigestRecord,
+    MemberProfile,
+    ProjectSnapshot,
+    ScoredItem,
+)
 
 
 async def test_digest_idempotent_on_same_member_day(
@@ -109,7 +114,18 @@ async def test_force_regen_replaces_existing(
         )
 
     async def fake_top(*_args: Any, **_kwargs: Any) -> list[Any]:
-        return []
+        return [
+            ScoredItem(
+                message_id=uuid.uuid4(),
+                score=0.9,
+                topic="thermal",
+                urgency="high",
+                channel="mech-design",
+                author="Mei",
+                text="thermal margin slipping",
+                posted_at=dt.datetime(2026, 6, 7, 7, 0, tzinfo=dt.UTC),
+            ),
+        ]
 
     async def fake_open_signals(*_args: Any, **_kwargs: Any) -> list[Any]:
         return []
@@ -148,6 +164,7 @@ async def test_force_regen_replaces_existing(
         force=True,
     )
 
+    assert result is not None
     assert result.day_index == 3
     assert "fresh" in result.content_md
     llm.complete_json.assert_awaited_once()

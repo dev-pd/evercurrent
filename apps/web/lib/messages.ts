@@ -56,7 +56,7 @@ export const messages = {
     memberFallback: "Member",
     phaseDay: (phase: string, day: number) => `Phase ${phase} · Day ${day}`,
     owns: (subsystems: string) => `owns ${subsystems}`,
-    kpiMessagesToday: "Messages today",
+    kpiMessagesToday: "Messages",
     kpiProgramProgress: "Program progress",
     kpiFcsTarget: "FCS target",
     kpiOpenSignals: "Open signals",

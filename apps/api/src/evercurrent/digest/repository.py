@@ -445,8 +445,9 @@ async def count_new_scored_since(
     project_member_id: uuid.UUID,
     since: dt.datetime,
 ) -> int:
-    """New scored messages for the member since the digest was generated — a
-    cheap proxy for 'new activity worth a refresh'."""
+    """New messages scored for the member since the digest was generated. One
+    score row per (member, message) — unique index, upserted — so this is the
+    count of new relevant messages, not score events."""
     return int(
         (
             await session.execute(
