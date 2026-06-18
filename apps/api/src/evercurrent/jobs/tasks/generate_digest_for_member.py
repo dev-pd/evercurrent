@@ -8,7 +8,9 @@ from typing import Any
 
 import structlog
 
+from evercurrent.db.repositories.memberships import MembershipRepository
 from evercurrent.db.session import session_scope
+from evercurrent.digest import repository as digest_repo
 from evercurrent.digest.digest_generator import generate_digest
 from evercurrent.llm.client import LLMProvider, get_provider
 from evercurrent.sse_publisher import publish_event
@@ -30,17 +32,8 @@ async def generate_digest_for_member(
     provider = llm or get_provider()
 
     async with session_scope() as session:
-        from sqlalchemy import text as sql_text
-
-        org_row = (
-            await session.execute(
-                sql_text(
-                    "SELECT org_id FROM org_memberships WHERE id = :id",
-                ),
-                {"id": project_member_id},
-            )
-        ).first()
-        if org_row is None:
+        org_id = await MembershipRepository(session).org_id_for_member(parsed_member_id)
+        if org_id is None:
             log.warning(
                 "digest.task.missing_membership",
                 project_member_id=project_member_id,
@@ -49,16 +42,9 @@ async def generate_digest_for_member(
                 "project_member_id": project_member_id,
                 "status": "missing",
             }
-        org_id = uuid.UUID(str(org_row[0]))
         await set_org_context(session, org_id)
 
-        project_row = (
-            await session.execute(
-                sql_text("SELECT id FROM projects WHERE org_id = :org LIMIT 1"),
-                {"org": str(org_id)},
-            )
-        ).first()
-        project_id = uuid.UUID(str(project_row[0])) if project_row else None
+        project_id = await digest_repo.latest_project_id_for_org(session, org_id=org_id)
 
         digest = await generate_digest(
             session,

@@ -3,11 +3,31 @@ and the resulting score plus its per-signal breakdown."""
 
 from __future__ import annotations
 
+import uuid
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 Urgency = Literal["critical", "high", "normal", "low"]
+
+
+class MessageTag(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True)
+
+    topic: str | None
+    urgency: Urgency | None
+    entities: list[str] = Field(default_factory=list)
+    affected_roles: list[str] = Field(default_factory=list)
+
+
+class ScoringMember(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True)
+
+    id: uuid.UUID
+    role: str
+    eng_role: str | None = None
+    owned_subsystems: list[str] = Field(default_factory=list)
+    topic_weights: dict[str, float] = Field(default_factory=dict)
 
 
 class ScoreInput(BaseModel):

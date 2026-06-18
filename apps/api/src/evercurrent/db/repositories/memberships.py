@@ -32,6 +32,15 @@ class MembershipRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._s = session
 
+    async def org_id_for_member(self, membership_id: uuid.UUID) -> uuid.UUID | None:
+        row = (
+            await self._s.execute(
+                text("SELECT org_id FROM org_memberships WHERE id = :id"),
+                {"id": str(membership_id)},
+            )
+        ).first()
+        return uuid.UUID(str(row[0])) if row else None
+
     async def get_summary(self, membership_id: uuid.UUID) -> MemberSummary | None:
         row = (
             (

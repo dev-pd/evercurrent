@@ -8,15 +8,14 @@ new insight that is too close to an existing one (semantic dedup)."""
 from __future__ import annotations
 
 import datetime as dt
-import json
 import math
 import uuid
 from typing import Any
 
 import structlog
-from sqlalchemy import text
 
 from evercurrent.config import Settings, get_settings
+from evercurrent.db.repositories.insights import InsightRepository
 from evercurrent.db.session import session_scope
 from evercurrent.insights import EveRun, run_eve
 from evercurrent.insights.citation_verifier import verify_source_grounding
@@ -120,28 +119,10 @@ async def generate_eve_insight(
     settings = get_settings()
     async with session_scope() as session:
         await set_org_context(session, oid)
-        recent = [
-            (r[0], r[1])
-            for r in (
-                await session.execute(
-                    text(
-                        "SELECT payload->>'title', payload->>'summary' FROM insights "
-                        "WHERE org_id = :o ORDER BY created_at DESC LIMIT 8",
-                    ),
-                    {"o": str(oid)},
-                )
-            ).all()
-        ]
+        repo = InsightRepository(session)
+        recent = await repo.recent_title_summaries(org_id=oid)
 
-        count_today = (
-            await session.execute(
-                text(
-                    "SELECT count(*) FROM insights WHERE org_id = :o "
-                    "AND created_at >= date_trunc('day', now())",
-                ),
-                {"o": str(oid)},
-            )
-        ).scalar_one()
+        count_today = await repo.count_since_day_start(org_id=oid)
         if count_today >= settings.eve_max_insights_per_day:
             publish_event(pid, "insight_failed", {"reason": "daily_cap"})
             return {"status": "daily_cap", "count": int(count_today)}
@@ -179,10 +160,7 @@ async def generate_eve_insight(
         # txn-scoped) before the RLS-checked INSERT.
         await session.rollback()
         await set_org_context(session, oid)
-        await session.execute(
-            text("INSERT INTO insights (org_id, payload) VALUES (:org, CAST(:p AS jsonb))"),
-            {"org": str(oid), "p": json.dumps(payload)},
-        )
+        await repo.insert_payload(org_id=oid, payload=payload)
         await session.commit()
 
     publish_event(pid, "insight_created", {"id": insight_id, "title": payload["title"]})

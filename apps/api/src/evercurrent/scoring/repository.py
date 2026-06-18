@@ -5,11 +5,69 @@ from __future__ import annotations
 
 import uuid
 
+from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from evercurrent.db.models import Score
-from evercurrent.scoring.schemas import ScoreResult
+from evercurrent.db.models import OrgMembership, Project, Score
+from evercurrent.scoring.schemas import MessageTag, ScoreResult, ScoringMember
+
+
+async def get_message_tag(session: AsyncSession, message_id: uuid.UUID) -> MessageTag | None:
+    row = (
+        (
+            await session.execute(
+                text(
+                    "SELECT topic, urgency, entities, affected_roles "
+                    "FROM message_tags WHERE message_id = :id",
+                ),
+                {"id": str(message_id)},
+            )
+        )
+        .mappings()
+        .first()
+    )
+    if row is None:
+        return None
+    return MessageTag(
+        topic=row["topic"],
+        urgency=row["urgency"],
+        entities=list(row["entities"] or []),
+        affected_roles=list(row["affected_roles"] or []),
+    )
+
+
+async def members_for_org(session: AsyncSession, org_id: uuid.UUID) -> list[ScoringMember]:
+    rows = (
+        (await session.execute(select(OrgMembership).where(OrgMembership.org_id == org_id)))
+        .scalars()
+        .all()
+    )
+    return [
+        ScoringMember(
+            id=m.id,
+            role=m.role,
+            eng_role=m.eng_role,
+            owned_subsystems=list(m.owned_subsystems or []),
+            topic_weights=dict(m.topic_weights or {}),
+        )
+        for m in rows
+    ]
+
+
+async def project_phase_concerns(
+    session: AsyncSession,
+    project_id: uuid.UUID | None,
+) -> list[str]:
+    stmt = (
+        select(Project).where(Project.id == project_id)
+        if project_id is not None
+        else select(Project).limit(1)
+    )
+    project = (await session.execute(stmt)).scalar_one_or_none()
+    if project is None:
+        return []
+    return list((project.phase_concerns or {}).get(project.current_phase, []))
 
 
 async def upsert_score(
