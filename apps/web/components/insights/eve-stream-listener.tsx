@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { apiBrowser } from "@/lib/api";
@@ -19,6 +20,17 @@ export function EveStreamListener() {
   const router = useRouter();
   const toast = useToast();
   const done = useEve((s) => s.done);
+  const [isPending, startTransition] = useTransition();
+  const settling = useRef(false);
+
+  // Clear "investigating" only after the refresh settles, so the insights page
+  // doesn't flash its empty state between done() and the new data arriving.
+  useEffect(() => {
+    if (isPending || !settling.current) return;
+    settling.current = false;
+    done();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPending]);
 
   const { data: projects } = useQuery({
     queryKey: ["projects"],
@@ -32,9 +44,9 @@ export function EveStreamListener() {
     enabled: !!projectId,
     onEvent: (e) => {
       if (e.type === "insight_created") {
-        done();
-        router.refresh();
         toast.show(copy.insightReady, "success");
+        settling.current = true;
+        startTransition(() => router.refresh());
       } else if (e.type === "insight_failed") {
         done();
         toast.show(copy.eveNothing, "info");
