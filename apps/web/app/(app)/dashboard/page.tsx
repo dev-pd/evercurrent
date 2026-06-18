@@ -3,9 +3,7 @@ export const dynamic = "force-dynamic";
 import { cookies } from "next/headers";
 import { apiServer, VIEW_AS_COOKIE } from "@/lib/api";
 import { ContextBar } from "@/components/dashboard/context-bar";
-import { DigestColumns } from "@/components/dashboard/digest-columns";
-import { EmptyState } from "@/components/ui/empty-state";
-import { parseDigest } from "@/lib/digest-parse";
+import { DigestView } from "@/components/dashboard/digest-view";
 import { messages } from "@/lib/messages";
 import type { DigestV2, MemberSummary } from "@/lib/types";
 
@@ -45,8 +43,6 @@ export default async function DashboardPage() {
       : Promise.resolve(null),
   ]);
 
-  const buckets = parseDigest(digest?.content_md);
-
   const phase = today?.phase ?? digest?.phase ?? "—";
   const dayIndex = today?.live_day ?? digest?.day_index ?? 0;
 
@@ -76,11 +72,7 @@ export default async function DashboardPage() {
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
-          {digest === null ? (
-            <EmptyState title={copy.noDigestTitle} hint={copy.noDigestHint} />
-          ) : (
-            <DigestColumns buckets={buckets} />
-          )}
+          <DigestView />
         </div>
       </div>
     </div>

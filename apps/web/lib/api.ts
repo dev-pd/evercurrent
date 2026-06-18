@@ -3,6 +3,7 @@ import {
   signalPageSchema,
   signalResponseSchema,
   digestV2Schema,
+  digestListSchema,
   meSchema,
   memberSummarySchema,
   connectorSummarySchema,
@@ -15,6 +16,7 @@ import {
   type SignalPage,
   type SignalResponse,
   type DigestV2,
+  type DigestList,
   type Me,
   type MemberSummary,
   type ConnectorSummary,
@@ -124,6 +126,8 @@ export interface ApiClient {
   listProjects(): Promise<Project[]>;
   getToday(projectId: string): Promise<TodayV2>;
   getDigestToday(): Promise<DigestV2>;
+  listDigests(): Promise<DigestList>;
+  getDigestByDay(dayIndex: number): Promise<DigestV2>;
   regenerateDigest(): Promise<RegenerateResponse>;
   listSignals(filters?: SignalFilters): Promise<SignalPage>;
   getSignal(id: string): Promise<SignalResponse>;
@@ -199,6 +203,12 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
     },
     async getDigestToday() {
       return apiFetch("/api/v1/digests/today", digestV2Schema, await getCtx());
+    },
+    async listDigests() {
+      return apiFetch("/api/v1/digests", digestListSchema, await getCtx());
+    },
+    async getDigestByDay(dayIndex) {
+      return apiFetch(`/api/v1/digests/${dayIndex}`, digestV2Schema, await getCtx());
     },
     async regenerateDigest() {
       return apiFetch("/api/v1/digests/regenerate", regenerateResponseSchema, await getCtx(), {

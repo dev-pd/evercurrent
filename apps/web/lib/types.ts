@@ -65,6 +65,7 @@ export const signalListItemSchema = z.object({
   confidence: z.number().nullable().optional(),
   decided_at: z.string().nullable().optional(),
   occurred_at: z.string().nullable().optional(),
+  resolved_at: z.string().nullable().optional(),
   affected_subsystems: z.array(z.string()).default([]),
   updated_at: z.string(),
 });
@@ -113,8 +114,24 @@ export const digestV2Schema = z.object({
   generated_at: z.string(),
   signal_ids: z.array(z.string().uuid()).default([]),
   message_ids: z.array(z.string().uuid()).default([]),
+  is_stale: z.boolean().default(false),
+  stale_resolved_signals: z.number().int().default(0),
+  stale_new_messages: z.number().int().default(0),
 });
 export type DigestV2 = z.infer<typeof digestV2Schema>;
+
+export const digestListItemSchema = z.object({
+  day_index: z.number().int(),
+  phase: z.string(),
+  generated_at: z.string(),
+});
+export type DigestListItem = z.infer<typeof digestListItemSchema>;
+
+export const digestListSchema = z.object({
+  items: z.array(digestListItemSchema),
+  today_index: z.number().int(),
+});
+export type DigestList = z.infer<typeof digestListSchema>;
 
 export const regenerateResponseSchema = z.object({
   job_id: z.string(),

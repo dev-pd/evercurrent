@@ -9,6 +9,8 @@ import { useRegen } from "@/stores/regen";
 export type StreamEventType =
   | "message_tagged"
   | "signal_created"
+  | "signal_resolved"
+  | "digest_regen_enqueued"
   | "digest_ready"
   | "insight_created"
   | "insight_failed";
@@ -66,6 +68,14 @@ export function useEvents({ projectId, onEvent, enabled = true }: UseEventsOptio
           // Signals are server-rendered too; debounce a refresh so a burst
           // of new messages collapses into one re-render (~1.5s of quiet).
           queryClient.invalidateQueries({ queryKey: ["signals", projectId] });
+          if (refreshTimer.current) clearTimeout(refreshTimer.current);
+          refreshTimer.current = setTimeout(() => router.refresh(), 1500);
+          break;
+        case "signal_resolved":
+          // A resolved signal leaves the open boards and lands under Resolved;
+          // refresh the digest too so the staleness banner re-evaluates.
+          queryClient.invalidateQueries({ queryKey: ["signals", projectId] });
+          queryClient.invalidateQueries({ queryKey: ["digest"] });
           if (refreshTimer.current) clearTimeout(refreshTimer.current);
           refreshTimer.current = setTimeout(() => router.refresh(), 1500);
           break;
