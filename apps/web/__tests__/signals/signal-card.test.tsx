@@ -12,6 +12,8 @@ const signal: SignalResponse = {
   confidence: 0.95,
   decided_at: "2026-06-06T10:00:00Z",
   updated_at: "2026-06-07T10:00:00Z",
+  affected_subsystems: ["thermal", "chassis"],
+  affected_roles: ["mech"],
   sources: [
     {
       id: "22222222-2222-2222-2222-222222222222",

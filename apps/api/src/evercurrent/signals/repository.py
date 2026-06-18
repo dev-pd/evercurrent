@@ -252,7 +252,8 @@ async def get_signal(
     result = await session.execute(
         text(
             "SELECT id, org_id, kind, summary, body, status, confidence, "
-            "       decided_at, affected_subsystems, created_at, updated_at "
+            "       decided_at, affected_subsystems, affected_roles, "
+            "       created_at, updated_at "
             "FROM signals WHERE id = :id",
         ),
         {"id": str(signal_id)},
@@ -293,6 +294,7 @@ async def get_signal(
         confidence=float(row["confidence"]),
         decided_at=row["decided_at"],
         affected_subsystems=list(row["affected_subsystems"] or []),
+        affected_roles=list(row["affected_roles"] or []),
         sources=sources,
         created_at=row["created_at"],
         updated_at=row["updated_at"],

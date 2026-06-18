@@ -105,6 +105,7 @@ class SignalResponse(BaseModel):
     confidence: float
     decided_at: dt.datetime | None = None
     affected_subsystems: list[str]
+    affected_roles: list[str] = []
     sources: list[SignalSourceDetail]
     created_at: dt.datetime
     updated_at: dt.datetime

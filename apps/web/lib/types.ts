@@ -89,6 +89,8 @@ export const signalResponseSchema = z.object({
   confidence: z.number().nullable().optional(),
   decided_at: z.string().nullable().optional(),
   updated_at: z.string(),
+  affected_subsystems: z.array(z.string()).default([]),
+  affected_roles: z.array(z.string()).default([]),
   sources: z.array(signalSourceSchema),
   activity: z.array(signalActivitySchema).default([]),
 });

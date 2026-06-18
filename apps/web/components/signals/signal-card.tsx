@@ -44,6 +44,37 @@ export function SignalCard({ signal }: SignalCardProps) {
         </div>
       </header>
 
+      {(signal.affected_subsystems.length > 0 || signal.affected_roles.length > 0) && (
+        <section className="flex flex-col gap-2">
+          {signal.affected_subsystems.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs font-medium text-zinc-500">{copy.subsystems}</span>
+              {signal.affected_subsystems.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs text-zinc-700"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+          {signal.affected_roles.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs font-medium text-zinc-500">{copy.roles}</span>
+              {signal.affected_roles.map((role) => (
+                <span
+                  key={role}
+                  className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs text-sky-700"
+                >
+                  {role}
+                </span>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {signal.body && (
         <section>
           <h2 className="mb-2 text-sm font-semibold tracking-wide text-zinc-700 uppercase">

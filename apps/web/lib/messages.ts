@@ -111,6 +111,8 @@ export const messages = {
     detail: "Detail",
     sources: "Sources",
     activity: "Activity",
+    subsystems: "Subsystems",
+    roles: "Affected roles",
     noSources: "No sources linked yet.",
     openInSlack: "Open in Slack",
   },
