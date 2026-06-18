@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     slack_demo_bot_token: str | None = None
     slack_workspace_domain: str | None = None
 
-    demo_chatter_enabled: bool = False
+    # Used by the scripts/demo_chatter.py on-demand generator.
     demo_chatter_batch: int = 2
     demo_chatter_phase: str = "fcs"
 

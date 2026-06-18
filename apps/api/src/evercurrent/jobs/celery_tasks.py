@@ -81,13 +81,6 @@ def enqueue_due_digests_now() -> list[dict[str, Any]]:
     return _run(impl())
 
 
-@celery_app.task(name="evercurrent.emit_demo_chatter")
-def emit_demo_chatter() -> dict[str, Any]:
-    from evercurrent.jobs.tasks.demo_chatter import emit_chatter as impl
-
-    return _run(impl({}))
-
-
 @celery_app.task(name="evercurrent.sync_slack_connector")
 def sync_slack_connector(connector_id: str) -> dict[str, Any]:
     from evercurrent.jobs.tasks.sync_slack import sync_slack_connector as impl

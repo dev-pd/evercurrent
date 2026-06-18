@@ -20,7 +20,7 @@ from evercurrent.connectors.slack.client import SlackClient
 from evercurrent.db import models
 from evercurrent.db.repositories.provisioning import ProvisioningRepository
 from evercurrent.db.session import admin_session_scope
-from evercurrent.ingestion.personas import BY_NAME
+from evercurrent.scripts.personas import BY_NAME
 
 log = structlog.get_logger(__name__)
 

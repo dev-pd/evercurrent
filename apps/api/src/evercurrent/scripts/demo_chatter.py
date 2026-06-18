@@ -1,12 +1,15 @@
-"""Live demo chatter: periodically post a few fresh persona messages to Slack.
+"""Demo chatter script: post a few fresh persona messages to Slack on demand.
 
-Gated behind settings.demo_chatter_enabled. Generates with the DIGEST tier
-(Sonnet) for quality on low volume, posts via the demo bot token, and lets the
-real webhook -> route_message pipeline ingest them. Mimics a live team.
+    python -m evercurrent.scripts.demo_chatter
+
+Generates persona chatter (Sonnet), posts it via the demo bot token, and lets
+the real webhook -> route_message pipeline ingest it. Use to seed live activity
+during a demo. Not a scheduled task — run it when you want a fresh batch.
 """
 
 from __future__ import annotations
 
+import asyncio
 import datetime as dt
 from typing import Any
 
@@ -14,10 +17,10 @@ import structlog
 
 from evercurrent.config import get_settings
 from evercurrent.connectors.slack.client import SlackAPIError, SlackClient
-from evercurrent.ingestion.personas import BY_NAME
-from evercurrent.ingestion.synthetic import CHANNEL_TOPICS, generate_batch
-from evercurrent.ingestion.synthetic_schemas import PHASES
 from evercurrent.llm.tiering import ModelTier
+from evercurrent.scripts.personas import BY_NAME
+from evercurrent.scripts.synthetic import CHANNEL_TOPICS, generate_batch
+from evercurrent.scripts.synthetic_schemas import PHASES
 
 log = structlog.get_logger(__name__)
 
@@ -29,10 +32,8 @@ def _phase_for(key: str) -> Any:
     return PHASES[1]
 
 
-async def emit_chatter(_ctx: dict[str, Any]) -> dict[str, Any]:
+async def emit_chatter() -> dict[str, Any]:
     settings = get_settings()
-    if not settings.demo_chatter_enabled:
-        return {"status": "disabled"}
     token = settings.slack_demo_bot_token
     if not token:
         return {"status": "no_token"}
@@ -71,3 +72,11 @@ async def emit_chatter(_ctx: dict[str, Any]) -> dict[str, Any]:
         await client.aclose()
     log.info("demo_chatter.emitted", channel=channel, phase=phase.key, posted=posted)
     return {"status": "ok", "channel": channel, "posted": posted}
+
+
+async def main() -> None:
+    print(await emit_chatter())
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

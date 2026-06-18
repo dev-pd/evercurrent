@@ -1,7 +1,7 @@
 """Claude-backed generator for realistic Slack chatter, by persona + phase.
 
 Used to seed a rich historical corpus (posted to Slack, then time-shifted in
-the DB) and by the live demo-chatter task. Bulk runs on Haiku; the live task
+the DB) and by the demo_chatter script. Bulk runs on Haiku; the live task
 passes the DIGEST tier for higher quality on low volume.
 """
 
@@ -13,18 +13,18 @@ from typing import Any
 
 import structlog
 
-from evercurrent.ingestion.personas import Persona, personas_for_channel
-from evercurrent.ingestion.synthetic_schemas import (
+from evercurrent.llm.client import LLMProvider, get_provider
+from evercurrent.llm.tiering import ModelTier
+from evercurrent.scripts.personas import Persona, personas_for_channel
+from evercurrent.scripts.synthetic_schemas import (
     GeneratedBatch,
     GeneratedMessage,
     Phase,
 )
-from evercurrent.llm.client import LLMProvider, get_provider
-from evercurrent.llm.tiering import ModelTier
 
 log = structlog.get_logger(__name__)
 
-_PROMPT_PKG = "evercurrent.ingestion.prompts"
+_PROMPT_PKG = "evercurrent.scripts.prompts"
 _VAR = re.compile(r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}")
 
 CHANNEL_TOPICS: dict[str, str] = {

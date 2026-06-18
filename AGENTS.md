@@ -52,7 +52,9 @@ evercurrent/
 │   │   │   ├── agent_tools/          Eve's in-process tool implementations
 │   │   │   ├── rag/                  Embeddings, chunking, retrieval
 │   │   │   ├── connectors/           Slack/Dropbox ingestion connectors
-│   │   │   ├── ingestion/            Document ingestion + doc classification
+│   │   │   ├── ingestion/            Real doc pipeline (PDF->chunk->classify)
+│   │   │   ├── scripts/              Demo tooling: synthetic chatter generator,
+│   │   │   │                         personas, corpus/sync/wipe scripts
 │   │   │   ├── timeline/             Per-member timeline projection
 │   │   │   ├── tenancy/              RLS org-context helpers
 │   │   │   ├── auth/                 Auth0/JWT request deps
@@ -61,7 +63,6 @@ evercurrent/
 │   │   │   └── llm/                  Anthropic client wrapper + tiering
 │   │   ├── tests/evals/              Eval harness (NOT unit tests)
 │   │   ├── alembic/versions/
-│   │   ├── seed_data/                Committed synthetic data
 │   │   └── pyproject.toml
 │   └── web/
 │       ├── app/                      Next.js App Router pages

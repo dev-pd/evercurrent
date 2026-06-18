@@ -18,9 +18,9 @@ import os
 
 from evercurrent.config import get_settings
 from evercurrent.connectors.slack.client import SlackAPIError, SlackClient
-from evercurrent.ingestion.personas import BY_NAME
-from evercurrent.ingestion.synthetic import CHANNEL_TOPICS, generate_batch
-from evercurrent.ingestion.synthetic_schemas import PHASES
+from evercurrent.scripts.personas import BY_NAME
+from evercurrent.scripts.synthetic import CHANNEL_TOPICS, generate_batch
+from evercurrent.scripts.synthetic_schemas import PHASES
 
 
 async def _post(

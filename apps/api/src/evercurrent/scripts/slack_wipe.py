@@ -4,7 +4,7 @@ Uses SLACK_DEMO_BOT_TOKEN directly (not the connector DB row), so it works
 before connecting or after a DB nuke. The bot can only delete messages it
 posted; genuine human messages are left untouched.
 
-Run:  docker compose exec api python -m seed_data.slack_wipe
+Run:  docker compose exec api python -m evercurrent.scripts.slack_wipe
 """
 
 from __future__ import annotations

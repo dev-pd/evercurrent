@@ -156,14 +156,14 @@ logs-pretty: ## Tail api logs and pretty-print structlog JSON
 # ----- Demo / load -----------------------------------------------------------
 
 .PHONY: demo-chatter
-demo-chatter: ## Fire one demo-chatter batch now (personas -> Slack -> webhook -> pipeline). Needs DEMO_CHATTER_ENABLED=true.
-	@$(COMPOSE) exec -T worker python -c "from evercurrent.jobs.celery_app import celery_app; r = celery_app.send_task('evercurrent.emit_demo_chatter'); print('enqueued', r.id)"
+demo-chatter: ## Post one persona-chatter batch to Slack now (personas -> Slack -> webhook -> pipeline). Needs SLACK_DEMO_BOT_TOKEN in .env.
+	@set -a; [ -f .env ] && . ./.env; set +a; cd apps/api && uv run python -m evercurrent.scripts.demo_chatter
 
 .PHONY: webhook-chatter
 webhook-chatter: ## Post a message AS YOUR USER (xoxp) -> live webhook -> pipeline. Needs SLACK_USER_TOKEN in .env. Vars: CHANNEL, COUNT, INTERVAL.
 	@set -a; [ -f .env ] && . ./.env; set +a; cd apps/api && \
 		CHATTER_CHANNEL=$${CHANNEL:-mech-design} CHATTER_COUNT=$${COUNT:-1} CHATTER_INTERVAL=$${INTERVAL:-3} \
-		uv run python seed_data/user_chatter.py
+		uv run python -m evercurrent.scripts.user_chatter
 
 .PHONY: prune
 prune: ## DESTRUCTIVE: nuke containers + volumes + dangling images for this project

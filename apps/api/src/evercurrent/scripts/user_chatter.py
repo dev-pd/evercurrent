@@ -26,9 +26,9 @@ from typing import Any
 
 import httpx
 
-from evercurrent.ingestion.synthetic import generate_batch
-from evercurrent.ingestion.synthetic_schemas import PHASES, Phase
 from evercurrent.llm.tiering import ModelTier
+from evercurrent.scripts.synthetic import generate_batch
+from evercurrent.scripts.synthetic_schemas import PHASES, Phase
 
 CHANNELS = {
     "mech-design": "C0B8ZNVJW8Z",

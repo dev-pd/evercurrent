@@ -33,12 +33,6 @@ celery_app.conf.update(
             "task": "evercurrent.enqueue_due_digests_now",
             "schedule": schedule(run_every=60.0),
         },
-        "emit-demo-chatter": {
-            "task": "evercurrent.emit_demo_chatter",
-            "schedule": schedule(
-                run_every=float(os.environ.get("DEMO_CHATTER_INTERVAL_SECONDS", "600")),
-            ),
-        },
     },
     imports=("evercurrent.jobs.celery_tasks",),
 )
