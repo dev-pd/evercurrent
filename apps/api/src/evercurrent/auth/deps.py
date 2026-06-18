@@ -16,6 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from evercurrent.auth.auth0 import Auth0Claims, Auth0Verifier, InvalidTokenError
+from evercurrent.config import get_settings
 from evercurrent.db.models import Org, OrgMembership, Project
 from evercurrent.db.session import admin_session_scope, get_sessionmaker
 from evercurrent.tenancy.org_context import set_org_context
@@ -92,7 +93,7 @@ async def _ensure_default_project(admin: AsyncSession, org: Org) -> None:
     start = today - dt.timedelta(days=30)
     project = Project(
         org_id=org.id,
-        name=org.name or f"project-{org.id}",
+        name=get_settings().default_project_name or org.name or f"project-{org.id}",
         current_phase="dvt",
         current_day=max(1, (today - start).days),
         start_date=start,

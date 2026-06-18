@@ -68,6 +68,10 @@ class Settings(BaseSettings):
     # Hour-of-day (UTC) the daily digest cron fires.
     digest_hour: int = 8
 
+    # Name given to an org's auto-provisioned default project. Set so it doesn't
+    # inherit the Auth0 org name (which re-syncs every login). Empty -> org name.
+    default_project_name: str = "atlas"
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
