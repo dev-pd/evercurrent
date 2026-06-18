@@ -19,7 +19,9 @@ const SOURCES = [
 ] as const;
 
 // Safety net if the sync_complete SSE never arrives (worker died, lost stream).
-const SYNC_SAFETY_MS = 90_000;
+// Long enough to outlast a rate-limited Dropbox embed run so it doesn't fire
+// mid-sync and flash a partial count.
+const SYNC_SAFETY_MS = 300_000;
 
 interface SourcesCardProps {
   connectors: ConnectorSummary[];
