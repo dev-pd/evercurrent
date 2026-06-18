@@ -21,6 +21,27 @@ log = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/digests", tags=["digests"])
 
+# New scored messages since generation needed before a digest reads as stale.
+_NEW_ACTIVITY_THRESHOLD = 3
+
+
+def _compute_is_stale(
+    *,
+    day_index: int,
+    today_index: int,
+    resolved_cited: int,
+    new_messages: int,
+    new_threshold: int,
+) -> bool:
+    """A digest is stale if it's from a past day, a signal it cited has closed,
+    or enough new activity has landed to be worth a refresh. No LLM — pure SQL
+    counts drive a banner; the user regenerates on demand."""
+    return (
+        day_index < today_index
+        or resolved_cited > 0
+        or new_messages >= new_threshold
+    )
+
 
 class DigestItemV2(BaseModel):
     model_config = ConfigDict(strict=True)
@@ -47,6 +68,8 @@ class DigestTodayResponse(BaseModel):
     message_ids: list[uuid.UUID]
     generated_at: str
     is_stale: bool
+    stale_resolved_signals: int
+    stale_new_messages: int
 
 
 class RegenerateResponse(BaseModel):
@@ -85,14 +108,22 @@ async def get_today(
             detail="digest not yet generated; regen enqueued",
         )
 
-    is_stale = latest.day_index < today_idx
-    if is_stale:
-        generate_digest_for_member.delay(
-            str(user.membership_id),
-            today_idx,
-            phase,
-            force=False,
-        )
+    resolved_cited = await digest_repo.count_resolved_cited_signals(
+        session,
+        signal_ids=latest.signal_ids,
+    )
+    new_messages = await digest_repo.count_new_scored_since(
+        session,
+        project_member_id=user.membership_id,
+        since=latest.generated_at,
+    )
+    is_stale = _compute_is_stale(
+        day_index=latest.day_index,
+        today_index=today_idx,
+        resolved_cited=resolved_cited,
+        new_messages=new_messages,
+        new_threshold=_NEW_ACTIVITY_THRESHOLD,
+    )
 
     items = await _build_items(
         session,
@@ -110,6 +141,8 @@ async def get_today(
         message_ids=latest.message_ids,
         generated_at=latest.generated_at.isoformat(),
         is_stale=is_stale,
+        stale_resolved_signals=resolved_cited,
+        stale_new_messages=new_messages,
     )
 
 

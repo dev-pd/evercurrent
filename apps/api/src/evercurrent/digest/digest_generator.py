@@ -26,7 +26,6 @@ log = structlog.get_logger(__name__)
 
 _PROMPT_PKG = "evercurrent.digest.prompts"
 _TOP_N_SCORED = 20
-_PRIOR_DIGESTS_LIMIT = 3
 _OPEN_SIGNALS_LIMIT = 20
 _MAX_TOKENS = 2048
 _PREVIEW_MAX_CHARS = 220
@@ -55,7 +54,6 @@ def _render_user_prompt(ctx: DigestContext) -> str:
         day_index=ctx.day_index,
         top_scored_items=ctx.top_scored_items,
         open_signals=ctx.open_signals,
-        prior_digests=ctx.prior_digests,
     )
 
 
@@ -181,20 +179,12 @@ async def generate_digest(
         owned_subsystems=member.owned_subsystems,
         limit=_OPEN_SIGNALS_LIMIT,
     )
-    prior = await digest_repo.list_recent_for_member(
-        session,
-        project_member_id=project_member_id,
-        before_day_index=day_index,
-        limit=_PRIOR_DIGESTS_LIMIT,
-    )
-
     ctx = DigestContext(
         member=member,
         project=project,
         day_index=day_index,
         top_scored_items=scored,
         open_signals=signals,
-        prior_digests=prior,
     )
 
     system_prompt = _load_system_prompt()

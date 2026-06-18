@@ -164,6 +164,16 @@ async def top_scored_items_for_member(
                     "JOIN messages m ON m.id = s.message_id "
                     "LEFT JOIN message_tags mt ON mt.message_id = m.id "
                     "WHERE s.project_member_id = :mid "
+                    # Drop chatter whose thread already has a resolved signal —
+                    # resolution, not age, ages a message out. No time window:
+                    # long unresolved threads must keep surfacing.
+                    "  AND NOT EXISTS ( "
+                    "    SELECT 1 FROM signals sig "
+                    "    JOIN messages tm ON tm.id = sig.triggering_message_id "
+                    "    WHERE sig.status = 'resolved' "
+                    "      AND COALESCE(tm.thread_root_id, tm.id) "
+                    "          = COALESCE(m.thread_root_id, m.id) "
+                    "  ) "
                     "ORDER BY s.score DESC, m.posted_at DESC LIMIT :lim",
                 ),
                 {"mid": str(project_member_id), "lim": limit},
@@ -381,6 +391,49 @@ async def latest_project_id_for_org(
     if row is None:
         return None
     return uuid.UUID(str(row[0]))
+
+
+async def count_resolved_cited_signals(
+    session: AsyncSession,
+    *,
+    signal_ids: list[uuid.UUID],
+) -> int:
+    """How many of a digest's cited signals are no longer open — the digest's
+    narrative talks about them as live, so any closure makes it stale."""
+    if not signal_ids:
+        return 0
+    return int(
+        (
+            await session.execute(
+                text(
+                    "SELECT COUNT(*) FROM signals "
+                    "WHERE id = ANY(:ids) AND status <> 'open'",
+                ),
+                {"ids": [str(i) for i in signal_ids]},
+            )
+        ).scalar_one(),
+    )
+
+
+async def count_new_scored_since(
+    session: AsyncSession,
+    *,
+    project_member_id: uuid.UUID,
+    since: dt.datetime,
+) -> int:
+    """New scored messages for the member since the digest was generated — a
+    cheap proxy for 'new activity worth a refresh'."""
+    return int(
+        (
+            await session.execute(
+                text(
+                    "SELECT COUNT(*) FROM scores "
+                    "WHERE project_member_id = :mid AND computed_at > :since",
+                ),
+                {"mid": str(project_member_id), "since": since},
+            )
+        ).scalar_one(),
+    )
 
 
 async def member_timezone(session: AsyncSession, project_member_id: uuid.UUID) -> str:

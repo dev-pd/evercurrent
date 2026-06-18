@@ -48,6 +48,7 @@ class SignalListItem(BaseModel):
     status: SignalStatusT
     confidence: float
     decided_at: dt.datetime | None = None
+    resolved_at: dt.datetime | None = None
     occurred_at: dt.datetime | None = None
     sources_count: int
     affected_subsystems: list[str] = []

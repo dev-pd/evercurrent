@@ -22,13 +22,5 @@ Day index: {{ day_index }}
 (no open signals on your subsystems)
 {% endif %}
 
-==== PRIOR DIGESTS (last few days, for continuity) ====
-{% if prior_digests %}{% for pd in prior_digests %}
---- Day {{ pd.day_index }} ---
-{{ pd.content_md }}
-{% endfor %}{% else %}
-(none)
-{% endif %}
-
 Write today's digest in the exact JSON shape from the system prompt.
 Only cite IDs that appear above. Stay under 400 words.

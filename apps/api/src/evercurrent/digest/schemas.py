@@ -129,7 +129,6 @@ class DigestContext(BaseModel):
     day_index: int
     top_scored_items: list[ScoredItem] = Field(default_factory=list)
     open_signals: list[SignalSummary] = Field(default_factory=list)
-    prior_digests: list[PriorDigest] = Field(default_factory=list)
 
 
 SectionBucketT = Literal["top_priority", "watch_outs", "fyi"]

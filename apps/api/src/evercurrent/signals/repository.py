@@ -196,7 +196,8 @@ async def list_signals(
     result = await session.execute(
         text(
             f"SELECT c.id, c.kind, c.summary, c.status, c.confidence, "
-            f"       c.decided_at, c.updated_at, c.affected_subsystems, "
+            f"       c.decided_at, c.resolved_at, c.updated_at, "
+            f"       c.affected_subsystems, "
             f"       (SELECT m.posted_at FROM messages m "
             f"        WHERE m.id = c.triggering_message_id) AS occurred_at, "
             f"       (SELECT COUNT(*) FROM signal_sources cs "
@@ -215,6 +216,7 @@ async def list_signals(
             status=_cast_status(str(r["status"])),
             confidence=float(r["confidence"]),
             decided_at=r["decided_at"],
+            resolved_at=r["resolved_at"],
             occurred_at=r["occurred_at"],
             sources_count=int(r["sources_count"] or 0),
             affected_subsystems=list(r["affected_subsystems"] or []),

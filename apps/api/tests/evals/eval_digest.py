@@ -88,7 +88,6 @@ def _build_context(scenario: dict[str, Any]) -> DigestContext:
         day_index=int(scenario["day_index"]),
         top_scored_items=scored,
         open_signals=signals,
-        prior_digests=[],
     )
 
 
@@ -100,7 +99,6 @@ def _render_user_prompt(ctx: DigestContext) -> str:
         day_index=ctx.day_index,
         top_scored_items=ctx.top_scored_items,
         open_signals=ctx.open_signals,
-        prior_digests=ctx.prior_digests,
     )
 
 
