@@ -1,7 +1,21 @@
-import { describe, expect, test } from "vitest";
+import type { ReactElement } from "react";
+import { describe, expect, test, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DecisionsBoard } from "@/components/decisions/decisions-board";
 import type { SignalListItem } from "@/lib/types";
+
+// useEvents (mounted by the board) calls useRouter — no app router in jsdom.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+}));
+
+// DecisionsBoard mounts useEvents (needs a QueryClient); projectId defaults to
+// null so no SSE connection opens in tests.
+function renderBoard(ui: ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+}
 
 function makeSignal(overrides: Partial<SignalListItem>): SignalListItem {
   return {
@@ -32,13 +46,13 @@ const resolvedSignal = makeSignal({
 
 describe("DecisionsBoard", () => {
   test("the All open filter hides resolved signals", () => {
-    render(<DecisionsBoard signals={[openSignal, resolvedSignal]} />);
+    renderBoard(<DecisionsBoard signals={[openSignal, resolvedSignal]} />);
     expect(screen.getByText(/open decision about brackets/i)).toBeInTheDocument();
     expect(screen.queryByText(/resolved question about firmware/i)).not.toBeInTheDocument();
   });
 
   test("the Resolved tab shows only resolved signals with a resolved-since line", () => {
-    render(<DecisionsBoard signals={[openSignal, resolvedSignal]} />);
+    renderBoard(<DecisionsBoard signals={[openSignal, resolvedSignal]} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Resolved" }));
 
@@ -48,7 +62,7 @@ describe("DecisionsBoard", () => {
   });
 
   test("a resolved signal appears in All but not in the open Decisions filter", () => {
-    render(<DecisionsBoard signals={[openSignal, resolvedSignal]} />);
+    renderBoard(<DecisionsBoard signals={[openSignal, resolvedSignal]} />);
 
     fireEvent.click(screen.getByRole("button", { name: "All" }));
     const table = screen.getByRole("table");

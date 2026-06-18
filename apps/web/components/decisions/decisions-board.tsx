@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { DataTable, type Column } from "@/components/ui/data-table";
+import { useEvents } from "@/hooks/use-events";
 import { formatTimestamp } from "@/lib/format-date";
 import { messages } from "@/lib/messages";
 import type { SignalListItem } from "@/lib/types";
@@ -130,10 +131,15 @@ function isActive(a: Filter, b: Filter): boolean {
 export function DecisionsBoard({
   signals,
   mySubsystems = [],
+  projectId = null,
 }: {
   signals: SignalListItem[];
   mySubsystems?: string[];
+  projectId?: string | null;
 }) {
+  // Live updates: signal_created / signal_resolved refresh the server tree so
+  // the board fills in as signals generate (handled in the use-events switch).
+  useEvents({ projectId, enabled: !!projectId });
   const hasSubs = mySubsystems.length > 0;
   const filters = buildFilters(hasSubs);
   const [filter, setFilter] = useState<Filter>(hasSubs ? { key: "mine" } : { key: "open" });
