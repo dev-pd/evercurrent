@@ -18,6 +18,7 @@ from evercurrent.cards.schemas import (
     CardStatusT,
     SourceKindT,
 )
+from evercurrent.connectors.slack.links import slack_permalink
 
 
 async def get_existing_card(
@@ -263,7 +264,7 @@ async def _resolve_source_detail(
                 author_display_name=r["author_display_name"],
                 ts=display_ts,
                 text=str(r["text"] or ""),
-                url=_slack_permalink(team_id, channel_id, slack_ts),
+                url=slack_permalink(team_id, channel_id, slack_ts),
             )
     snippet = await _resolve_source_snippet(session, source_kind, source_id)
     return CardSourceDetail(
@@ -271,24 +272,6 @@ async def _resolve_source_detail(
         kind=_cast_source_kind(source_kind),
         text=snippet or "",
     )
-
-
-def _slack_permalink(team_id: str | None, channel: str | None, ts: str | None) -> str | None:
-    """Deep-link straight to the message in the Slack desktop app when we have
-    team + channel + ts; fall back to the web archive permalink (universal), then
-    a channel-level link. None if we can't even open the channel."""
-    if not channel:
-        return None
-    if team_id and ts:
-        return f"slack://channel?team={team_id}&id={channel}&message={ts}"
-    from evercurrent.config import get_settings  # noqa: PLC0415
-
-    domain = get_settings().slack_workspace_domain
-    if domain and ts:
-        return f"https://{domain}.slack.com/archives/{channel}/p{ts.replace('.', '')}"
-    if team_id:
-        return f"https://app.slack.com/client/{team_id}/{channel}"
-    return None
 
 
 async def _resolve_source_snippet(
