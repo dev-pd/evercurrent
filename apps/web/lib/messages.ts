@@ -38,8 +38,6 @@ export const messages = {
       graphTitle: "Document graph",
       graphBody: "Specs, BOMs, FAI reports indexed alongside team chatter.",
     },
-    version: "v0.12.0",
-    buildNote: "take-home build",
   },
   errors: {
     title: "Something went wrong",
