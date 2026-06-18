@@ -211,13 +211,15 @@ async def generate_digest(
         )
         draft = _parse_draft(payload)
     except (ValidationError, json.JSONDecodeError, ValueError, TypeError) as exc:
+        # Malformed Sonnet JSON shouldn't lose the member their digest — fall
+        # back to the deterministic stub built from their scored messages.
         log.warning(
-            "digest.draft_failed",
+            "digest.draft_failed_fallback",
             project_member_id=str(project_member_id),
             day_index=day_index,
             error=str(exc),
         )
-        raise
+        draft = _stub_draft_from_scored(scored)
     except Exception as exc:  # noqa: BLE001  fall back when LLM provider is down
         log.warning(
             "digest.llm_unavailable_fallback",

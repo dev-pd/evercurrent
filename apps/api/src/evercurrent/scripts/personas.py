@@ -18,6 +18,10 @@ class Persona:
     voice: str
     owned_subsystems: list[str] = field(default_factory=list)
     home_channels: list[str] = field(default_factory=list)
+    # Real people (e.g. the admin who logs in + posts via real Slack) are listed
+    # so provisioning can assign their team, but excluded from synthetic chatter
+    # so we don't post AS them and create a duplicate membership.
+    synthetic: bool = True
 
 
 # A small cross-functional cast (ee / mech / fw / program / supply) — kept tight
@@ -30,6 +34,15 @@ PERSONAS: list[Persona] = [
         "battery + power lead; precise, numbers-first, flags margins early",
         ["power", "1V8_rail", "3V3_buck", "4S2P", "BMS"],
         ["electrical", "general"],
+    ),
+    Persona(
+        "Prasad",
+        "mech",
+        ":crown:",
+        "platform admin + mech lead; owns thermal/FCS, asks cross-subsystem impact",
+        ["thermal", "motor_mount", "fcs", "bracket", "chassis", "emc"],
+        ["mech-design", "general"],
+        synthetic=False,
     ),
     Persona(
         "Raj Patel",
@@ -61,6 +74,9 @@ BY_NAME: dict[str, Persona] = {p.name: p for p in PERSONAS}
 
 
 def personas_for_channel(channel_name: str) -> list[Persona]:
+    """Synthetic-chatter authors for a channel. Excludes non-synthetic people
+    (real users) so we never post AS them and spawn a duplicate membership."""
     name = channel_name.lower()
-    matched = [p for p in PERSONAS if any(h in name for h in p.home_channels)]
-    return matched or PERSONAS
+    synthetic = [p for p in PERSONAS if p.synthetic]
+    matched = [p for p in synthetic if any(h in name for h in p.home_channels)]
+    return matched or synthetic

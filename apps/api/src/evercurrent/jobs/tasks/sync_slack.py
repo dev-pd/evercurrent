@@ -85,6 +85,13 @@ async def sync_slack_connector(_ctx: dict[str, Any], connector_id: str) -> dict[
         finally:
             await client.aclose()
 
+    # Draft each member's first digest now that messages are ingested. Delayed so
+    # the per-message scoring/signal tasks enqueued during backfill drain before
+    # the digest reads from them.
+    from evercurrent.jobs.celery_app import celery_app
+
+    celery_app.send_task("evercurrent.enqueue_due_digests_now", countdown=20)
+
     log.info(
         "slack.sync.done",
         connector_id=connector_id,

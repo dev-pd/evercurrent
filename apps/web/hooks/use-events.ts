@@ -80,10 +80,11 @@ export function useEvents({ projectId, onEvent, enabled = true }: UseEventsOptio
           refreshTimer.current = setTimeout(() => router.refresh(), 1500);
           break;
         case "digest_ready":
-          // The digest is server-rendered (page.tsx props), so query
-          // invalidation is a no-op — refresh the server tree to re-fetch it.
+          // Refresh both the digest and its list — the first digest flips the
+          // list from empty (the "no digest yet" state) to populated.
           regenDone();
           queryClient.invalidateQueries({ queryKey: ["digest"] });
+          queryClient.invalidateQueries({ queryKey: ["digests", "list"] });
           router.refresh();
           break;
       }
