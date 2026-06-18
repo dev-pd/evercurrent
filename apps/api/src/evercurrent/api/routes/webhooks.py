@@ -11,13 +11,12 @@ import structlog
 from fastapi import APIRouter, Header, HTTPException, Query, Request, Response, status
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from evercurrent.config import get_settings
 from evercurrent.connectors.slack.events import handle_event as handle_slack_event
 from evercurrent.connectors.slack.tasks import enqueue_route_message
-from evercurrent.db.models import Connector, Org, OrgMembership
+from evercurrent.db.repositories.connectors import ConnectorRepository
+from evercurrent.db.repositories.orgs import OrgDirectoryRepository
 from evercurrent.db.session import admin_session_scope
 
 log = structlog.get_logger(__name__)
@@ -57,75 +56,38 @@ def _verify_signature(body: bytes, signature: str | None) -> None:
         )
 
 
-async def _handle_org_created(session: AsyncSession, payload: Auth0OrgEvent) -> None:
-    existing = (
-        await session.execute(select(Org).where(Org.auth0_org_id == payload.org_id))
-    ).scalar_one_or_none()
-    if existing is None:
-        session.add(Org(auth0_org_id=payload.org_id, name=payload.org_name or payload.org_id))
+async def _handle_org_created(repo: OrgDirectoryRepository, payload: Auth0OrgEvent) -> None:
+    await repo.create_org_if_missing(
+        auth0_org_id=payload.org_id,
+        name=payload.org_name or payload.org_id,
+    )
 
 
-async def _handle_org_deleted(session: AsyncSession, payload: Auth0OrgEvent) -> None:
-    existing = (
-        await session.execute(select(Org).where(Org.auth0_org_id == payload.org_id))
-    ).scalar_one_or_none()
-    if existing is not None:
-        await session.delete(existing)
+async def _handle_org_deleted(repo: OrgDirectoryRepository, payload: Auth0OrgEvent) -> None:
+    await repo.delete_org(auth0_org_id=payload.org_id)
 
 
-async def _handle_member_added(session: AsyncSession, payload: Auth0OrgEvent) -> None:
+async def _handle_member_added(repo: OrgDirectoryRepository, payload: Auth0OrgEvent) -> None:
     if payload.user_id is None or payload.user_email is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="member.added requires user_id and user_email",
         )
-    org_row = (
-        await session.execute(select(Org).where(Org.auth0_org_id == payload.org_id))
-    ).scalar_one_or_none()
-    if org_row is None:
-        org_row = Org(auth0_org_id=payload.org_id, name=payload.org_id)
-        session.add(org_row)
-        await session.flush()
-    existing_membership = (
-        await session.execute(
-            select(OrgMembership).where(
-                OrgMembership.org_id == org_row.id,
-                OrgMembership.auth0_user_id == payload.user_id,
-            ),
-        )
-    ).scalar_one_or_none()
-    if existing_membership is None:
-        session.add(
-            OrgMembership(
-                org_id=org_row.id,
-                auth0_user_id=payload.user_id,
-                display_name=payload.user_name or payload.user_email,
-                email=payload.user_email,
-            ),
-        )
+    await repo.add_member(
+        auth0_org_id=payload.org_id,
+        auth0_user_id=payload.user_id,
+        display_name=payload.user_name or payload.user_email,
+        email=payload.user_email,
+    )
 
 
-async def _handle_member_removed(session: AsyncSession, payload: Auth0OrgEvent) -> None:
+async def _handle_member_removed(repo: OrgDirectoryRepository, payload: Auth0OrgEvent) -> None:
     if payload.user_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="member.removed requires user_id",
         )
-    org_row = (
-        await session.execute(select(Org).where(Org.auth0_org_id == payload.org_id))
-    ).scalar_one_or_none()
-    if org_row is None:
-        return
-    membership = (
-        await session.execute(
-            select(OrgMembership).where(
-                OrgMembership.org_id == org_row.id,
-                OrgMembership.auth0_user_id == payload.user_id,
-            ),
-        )
-    ).scalar_one_or_none()
-    if membership is not None:
-        await session.delete(membership)
+    await repo.remove_member(auth0_org_id=payload.org_id, auth0_user_id=payload.user_id)
 
 
 @router.post("/auth0")
@@ -145,7 +107,7 @@ async def auth0_webhook(
     }
     handler = handlers[payload.type]
     async with admin_session_scope() as session:
-        await handler(session, payload)
+        await handler(OrgDirectoryRepository(session), payload)
         await session.commit()
     return {"ok": True}
 
@@ -211,23 +173,12 @@ async def dropbox_webhook(
 
     enqueued = 0
     async with admin_session_scope() as session:
+        repo = ConnectorRepository(session)
         for account in accounts:
-            connectors = (
-                (
-                    await session.execute(
-                        select(Connector).where(
-                            Connector.kind == "dropbox",
-                            Connector.external_team_id == account,
-                        ),
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            for connector in connectors:
+            for connector_id in await repo.dropbox_connector_ids_for_account(account):
                 celery_app.send_task(
                     "evercurrent.sync_dropbox_connector",
-                    kwargs={"connector_id": str(connector.id)},
+                    kwargs={"connector_id": str(connector_id)},
                 )
                 enqueued += 1
     log.info("dropbox.webhook.received", accounts=len(accounts), enqueued=enqueued)
