@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, Cloud, Loader2, MessageSquare, RefreshCw, Unplug } from "lucide-react";
@@ -128,28 +128,46 @@ function SyncButton({ connectorId, kind, projectId, onSyncingChange }: SyncButto
   const queryClient = useQueryClient();
   const toast = useToast();
   const [syncing, setSyncing] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finishedRef = useRef(true);
+  const refreshingRef = useRef(false);
 
   function setState(value: boolean) {
     setSyncing(value);
     onSyncingChange(value);
   }
 
-  // Settle when the worker finishes (sync_complete SSE) — not on a member-count
-  // poll, which settled before backfill finished and made the counts jump. We
-  // also don't refresh mid-sync, so the count only updates once, to its final
-  // value. A safety timeout covers a missed event.
+  // Clear "Syncing…" only after the refresh transition settles (isPending
+  // true -> false), so the status never flashes the stale pre-sync counts
+  // (0/0/0) between clearing the flag and the new server data arriving.
+  useEffect(() => {
+    if (isPending) return;
+    if (!refreshingRef.current) return;
+    refreshingRef.current = false;
+    if (timer.current) clearTimeout(timer.current);
+    setState(false);
+    toast.show(copy.syncDone, "success");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPending]);
+
+  // Settle when the worker finishes (sync_complete SSE) — not a member-count
+  // poll (settled before backfill finished). A safety timeout covers a missed
+  // event; the refresh itself runs in a transition (see the effect above).
   const finish = useCallback(() => {
     if (finishedRef.current) return;
     finishedRef.current = true;
     if (timer.current) clearTimeout(timer.current);
     void queryClient.invalidateQueries({ queryKey: ["members"] });
-    router.refresh();
-    setState(false);
-    toast.show(copy.syncDone, "success");
+    refreshingRef.current = true;
+    startTransition(() => router.refresh());
+    // Fallback: if the transition never toggles, don't get stuck on Syncing…
+    timer.current = setTimeout(() => {
+      refreshingRef.current = false;
+      setState(false);
+    }, 5000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryClient, router, toast]);
+  }, [queryClient, router]);
 
   useEvents({
     projectId,
