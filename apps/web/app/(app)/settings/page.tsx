@@ -76,7 +76,7 @@ export default async function SettingsPage() {
       {isAdmin ? (
         <>
           <ProjectsCard projects={projects ?? []} />
-          <SourcesCard connectors={connectors ?? []} />
+          <SourcesCard connectors={connectors ?? []} projectId={projects?.[0]?.id ?? null} />
           <TeamCard members={members ?? []} />
         </>
       ) : (

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, Cloud, Loader2, MessageSquare, RefreshCw, Unplug } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
+import { useEvents } from "@/hooks/use-events";
 import { messages } from "@/lib/messages";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/stores/toast";
@@ -17,17 +18,18 @@ const SOURCES = [
   { kind: "dropbox", label: "Dropbox", desc: copy.dropboxDesc, icon: Cloud },
 ] as const;
 
-const SYNC_POLL_INTERVAL_MS = 3_000;
-const SYNC_POLL_MAX_TICKS = 25;
-const SYNC_SETTLE_TICKS = 2;
+// Safety net if the sync_complete SSE never arrives (worker died, lost stream).
+const SYNC_SAFETY_MS = 90_000;
 
 interface SourcesCardProps {
   connectors: ConnectorSummary[];
+  projectId: string | null;
 }
 
-export function SourcesCard({ connectors }: SourcesCardProps) {
+export function SourcesCard({ connectors, projectId }: SourcesCardProps) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   async function connect(kind: "slack" | "dropbox") {
     setBusy(kind);
@@ -67,7 +69,9 @@ export function SourcesCard({ connectors }: SourcesCardProps) {
                   <span className="text-xs text-[var(--text-muted)]">
                     {connected
                       ? source.kind === "slack"
-                        ? copy.synced(connector.message_count, connector.channels_count)
+                        ? syncing
+                          ? copy.syncing
+                          : copy.synced(connector.message_count, connector.channels_count)
                         : copy.documents(connector.message_count)
                       : source.desc}
                   </span>
@@ -75,7 +79,13 @@ export function SourcesCard({ connectors }: SourcesCardProps) {
               </div>
               {connected ? (
                 <div className="flex items-center gap-2">
-                  {source.kind === "slack" && <SyncButton connectorId={connector.id} />}
+                  {source.kind === "slack" && (
+                    <SyncButton
+                      connectorId={connector.id}
+                      projectId={projectId}
+                      onSyncingChange={setSyncing}
+                    />
+                  )}
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
                     <Check className="h-3 w-3" /> {copy.connected}
                   </span>
@@ -103,72 +113,65 @@ export function SourcesCard({ connectors }: SourcesCardProps) {
 
 interface SyncButtonProps {
   connectorId: string;
+  projectId: string | null;
+  onSyncingChange: (syncing: boolean) => void;
 }
 
-function SyncButton({ connectorId }: SyncButtonProps) {
+function SyncButton({ connectorId, projectId, onSyncingChange }: SyncButtonProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const toast = useToast();
   const [syncing, setSyncing] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const finishedRef = useRef(true);
 
-  useEffect(() => () => clearPoll(), []);
-
-  function clearPoll() {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
+  function setState(value: boolean) {
+    setSyncing(value);
+    onSyncingChange(value);
   }
 
-  async function finish(memberCount: number) {
-    clearPoll();
-    await queryClient.invalidateQueries({ queryKey: ["members"] });
-    router.refresh();
-    setSyncing(false);
-    toast.show(copy.syncComplete(memberCount), "success");
-  }
+  // Settle when the worker finishes (sync_complete SSE) — not on a member-count
+  // poll, which settled before backfill finished and made the counts jump. We
+  // also don't refresh mid-sync, so the count only updates once, to its final
+  // value. A safety timeout covers a missed event.
+  const finish = useCallback(
+    async (memberCount: number) => {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      if (timer.current) clearTimeout(timer.current);
+      await queryClient.invalidateQueries({ queryKey: ["members"] });
+      router.refresh();
+      setState(false);
+      toast.show(copy.syncComplete(memberCount), "success");
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queryClient, router, toast],
+  );
+
+  useEvents({
+    projectId,
+    enabled: syncing && !!projectId,
+    onEvent: (event) => {
+      if (event.type === "sync_complete") {
+        const members = typeof event.payload.members === "number" ? event.payload.members : 0;
+        void finish(members);
+      }
+    },
+  });
 
   async function sync() {
-    setSyncing(true);
+    finishedRef.current = false;
+    setState(true);
     try {
       await apiBrowser().syncSlack(connectorId);
     } catch {
-      setSyncing(false);
+      finishedRef.current = true;
+      setState(false);
       toast.show(copy.syncFailedToast, "error");
       return;
     }
     toast.show(copy.syncStarted, "info");
-
-    // The sync runs in a background worker (backfill + member provisioning), so
-    // poll the member list and settle once it stops growing — then refresh the
-    // table + switcher and toast completion.
-    let ticks = 0;
-    let lastCount = -1;
-    let stable = 0;
-    pollRef.current = setInterval(() => {
-      ticks += 1;
-      void apiBrowser()
-        .listMembers()
-        .then((members) => {
-          const count = members.length;
-          router.refresh();
-          if (count > 0 && count === lastCount) {
-            stable += 1;
-          } else {
-            stable = 0;
-          }
-          lastCount = count;
-          if ((count > 0 && stable >= SYNC_SETTLE_TICKS) || ticks >= SYNC_POLL_MAX_TICKS) {
-            void finish(count);
-          }
-        })
-        .catch(() => {
-          if (ticks >= SYNC_POLL_MAX_TICKS) {
-            void finish(lastCount > 0 ? lastCount : 0);
-          }
-        });
-    }, SYNC_POLL_INTERVAL_MS);
+    timer.current = setTimeout(() => void finish(0), SYNC_SAFETY_MS);
   }
 
   return (
