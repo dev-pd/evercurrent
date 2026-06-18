@@ -10,10 +10,15 @@ get wrong. The rest (type hints, `strict`, async I/O, no `import *`) is assumed.
 - Logging is **structlog only** — never `print()`, never bare `logging`.
 - No raw `anthropic.AsyncAnthropic()` — all LLM calls go through
   `src/evercurrent/llm/client.py`.
-- Repositories return **schemas** (Pydantic read-models), never SQLAlchemy
-  models. Repos take an `AsyncSession` param; they don't create their own. A
-  shared read-model lives in its repository module (e.g. `MemberSummary` in
-  `db/repositories/memberships.py`).
+- **All SQL lives in repositories** — `db/repositories/*` for shared entities,
+  `<feature>/repository.py` for a feature's own tables. Services, Celery tasks,
+  and routes contain **zero** raw SQL / `session.execute`; they call repository
+  functions. (If you're tempted to inline a `text(...)` query in a service, add
+  a repo method instead.) Repos take an `AsyncSession` param (never create their
+  own) and **return schemas** (Pydantic read-models), never SQLAlchemy models. A
+  repo-returned read-model lives in its repository module (e.g. `MemberSummary`
+  in `db/repositories/memberships.py`, `ConnectorSummary` in
+  `db/repositories/connectors.py`).
 - Pydantic v2 `model_config = ConfigDict(strict=True)` on every schema.
 - **Shapes — three mechanisms, pick by role:** a SQLAlchemy `Base` subclass is a
   **model** (a table, `db/models/` only). A Pydantic `BaseModel` is a **schema**
@@ -25,6 +30,10 @@ get wrong. The rest (type hints, `strict`, async I/O, no `import *`) is assumed.
   `llm/client.py`). Rule: *validate at boundaries → Pydantic; trusted internal
   struct → dataclass; a table → model.*
 - FastAPI collaborators via `Depends(get_x)` factories — no module globals.
+- **Routes hold request/response schemas + thin handler logic only** — no SQL,
+  no business logic. Route-specific Pydantic shapes (e.g. `Auth0OrgEvent`,
+  `SyncStartedResult`) live at the top of their router; cross-route ones in
+  `api/schemas.py`. Handlers call repositories/services and shape the response.
 - Celery tasks in `jobs/tasks/<name>.py`, registered in `celery_tasks.py`, and
   **idempotent** (replay-safe via unique constraints / upserts).
 - A **terse one-line module docstring** for orientation is fine; otherwise no
