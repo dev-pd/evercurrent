@@ -6,8 +6,9 @@ from __future__ import annotations
 import os
 
 from celery import Celery
-from celery.schedules import schedule
+from celery.schedules import crontab
 
+from evercurrent.config import get_settings
 from evercurrent.jobs import metrics_server as _metrics_server  # noqa: F401  registers worker_init
 
 _broker = os.environ.get("REDIS_URL", "redis://redis:6379/0")
@@ -29,9 +30,12 @@ celery_app.conf.update(
     task_default_retry_delay=5,
     task_default_max_retries=2,
     beat_schedule={
-        "enqueue-due-digests": {
+        # Once a day at the org's digest hour (UTC). Co-located teams share one
+        # timezone, so a single daily cron beats a per-minute poll. On-demand
+        # regeneration covers mid-day refreshes.
+        "daily-digests": {
             "task": "evercurrent.enqueue_due_digests_now",
-            "schedule": schedule(run_every=60.0),
+            "schedule": crontab(hour=get_settings().digest_hour, minute=0),
         },
     },
     imports=("evercurrent.jobs.celery_tasks",),

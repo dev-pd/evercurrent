@@ -11,7 +11,6 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from evercurrent.config import get_settings
 from evercurrent.db.session import session_scope
 from evercurrent.digest import repository as digest_repo
 
@@ -27,23 +26,6 @@ def _safe_zone(tz_name: str) -> ZoneInfo:
     except ZoneInfoNotFoundError:
         log.warning("digest.scheduler.bad_tz", tz=tz_name)
         return ZoneInfo("UTC")
-
-
-def members_due_at(
-    now_utc: dt.datetime,
-    memberships: list[dict[str, object]],
-) -> list[uuid.UUID]:
-    if now_utc.tzinfo is None:
-        now_utc = now_utc.replace(tzinfo=dt.UTC)
-
-    settings = get_settings()
-    due: list[uuid.UUID] = []
-    for m in memberships:
-        tz_name = str(m.get("timezone") or "UTC")
-        local = now_utc.astimezone(_safe_zone(tz_name))
-        if local.hour == settings.digest_hour and local.minute < settings.digest_window_minutes:
-            due.append(uuid.UUID(str(m["id"])))
-    return due
 
 
 async def day_index_for_member(
@@ -99,8 +81,10 @@ async def enqueue_due_digests_now(
         enqueuer = _default_enqueue
 
     async with session_scope() as session:
+        # The daily cron is the trigger, so every active member is due — no
+        # per-minute timezone window to evaluate.
         memberships = await digest_repo.list_active_memberships(session)
-        due_ids = members_due_at(now_utc, memberships)
+        due_ids = [uuid.UUID(str(m["id"])) for m in memberships]
 
         enqueued: list[dict[str, object]] = []
         for mid in due_ids:

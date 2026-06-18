@@ -6,65 +6,10 @@ from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
-from freezegun import freeze_time
 
 import evercurrent.digest.digest_generator as agent_mod
 import evercurrent.digest.repository as repo_mod
-from evercurrent.digest.scheduler import members_due_at
 from evercurrent.digest.schemas import DigestRecord, MemberProfile, ProjectSnapshot
-
-
-def _make_membership(tz_name: str) -> dict[str, Any]:
-    return {
-        "id": uuid.uuid4(),
-        "org_id": uuid.uuid4(),
-        "timezone": tz_name,
-    }
-
-
-@freeze_time("2026-06-07 15:00:00")
-def test_beat_emits_one_task_per_member_at_8am_local() -> None:
-    utc_member = _make_membership("UTC")
-    pst_member = _make_membership("America/Los_Angeles")
-    jst_member = _make_membership("Asia/Tokyo")
-
-    now_utc = dt.datetime(2026, 6, 7, 15, 0, tzinfo=dt.UTC)
-
-    due = members_due_at(
-        now_utc,
-        [utc_member, pst_member, jst_member],
-    )
-
-    assert due == [pst_member["id"]]
-
-
-@freeze_time("2026-06-07 08:03:00")
-def test_window_includes_first_five_minutes() -> None:
-    utc_member = _make_membership("UTC")
-    now_utc = dt.datetime(2026, 6, 7, 8, 3, tzinfo=dt.UTC)
-
-    due = members_due_at(now_utc, [utc_member])
-
-    assert due == [utc_member["id"]]
-
-
-@freeze_time("2026-06-07 08:05:00")
-def test_window_excludes_minute_five() -> None:
-    utc_member = _make_membership("UTC")
-    now_utc = dt.datetime(2026, 6, 7, 8, 5, tzinfo=dt.UTC)
-
-    due = members_due_at(now_utc, [utc_member])
-
-    assert due == []
-
-
-def test_bad_timezone_falls_back_to_utc() -> None:
-    bad = _make_membership("Not/AZone")
-    now_utc = dt.datetime(2026, 6, 7, 8, 2, tzinfo=dt.UTC)
-
-    due = members_due_at(now_utc, [bad])
-
-    assert due == [bad["id"]]
 
 
 async def test_digest_idempotent_on_same_member_day(
