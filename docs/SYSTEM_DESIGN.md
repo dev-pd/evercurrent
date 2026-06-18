@@ -22,7 +22,7 @@ electronics engineer, and the QA owner — ranked by **role**,
 **owned subsystems**, **project phase**, and the member's own
 **feedback over time**. On top of the digest:
 
-- **Decisions log** — structured decision/risk/question cards extracted
+- **Decisions log** — structured decision/risk/question signals extracted
   from chatter.
 - **Eve** — a proactive agent that surfaces cross-subsystem conflicts
   (e.g. spec says X, chatter says Y).
@@ -70,7 +70,7 @@ idempotent** — every stage can be replayed safely.
 ```
 Slack ──▶ webhook ──▶ raw_events ──▶ route_message ──▶ messages
                        (dedup)          │  ├─▶ message_tags   (Haiku)
-                                        │  ├─▶ build_card     (Sonnet) ──▶ cards
+                                        │  ├─▶ build_signal   (Sonnet) ──▶ signals
                                         │  └─▶ score_message  (pure code) ──▶ scores
                                         └─▶ publish "message_tagged" (SSE)
 ```
@@ -109,20 +109,20 @@ Slack ──▶ webhook ──▶ raw_events ──▶ route_message ──▶ m
    - **Tag with Haiku** — `routing/router_agent.py:110` (`classify`)
      calls the LLM (tier = tagging, temp 0.0, prompts in
      `routing/prompts/`) and returns a strict `RouterDecision`:
-     `topic, urgency, entities, affected_roles, should_create_card,
-     card_kind`. On parse failure it retries once, then falls back to a
+     `topic, urgency, entities, affected_roles, should_create_signal,
+     signal_kind`. On parse failure it retries once, then falls back to a
      safe default (`routing/schemas.py` `fallback_decision`).
    - **Write the tag** — `message_tags` upsert (`_write_tag:191`).
    - **Fan out** (`_enqueue_followups:227`): always enqueue
-     `score_message_for_members`; enqueue `build_card` only if the
-     router said `should_create_card`.
+     `score_message_for_members`; enqueue `build_signal` only if the
+     router said `should_create_signal`.
    - **Publish** `message_tagged` to the project's SSE channel
      (`route_message.py:371`).
-6. **`build_card` worker** (`jobs/tasks/build_card.py:33` →
-   `cards/builder.py:178`): idempotency check on `(message_id, kind)`,
+6. **`build_signal` worker** (`jobs/tasks/build_signal.py:33` →
+   `signals/signal_drafter.py:178`): idempotency check on `(message_id, kind)`,
    pulls full thread context, drafts a `decision | risk | question`
-   card with Sonnet, inserts into `cards`, records sources, publishes
-   `card_created`.
+   signal with Sonnet, inserts into `signals`, records sources, publishes
+   `signal_created`.
 7. **`score_message_for_members` worker** — see Flow C. This is the
    step that makes the message *personalized*: it computes one score
    per member.
@@ -175,13 +175,13 @@ Two triggers, **one task**: `generate_digest_for_member`.
 4. **Gather candidate content** (`digest/repository.py`):
    - `top_scored_items_for_member` — the member's top ~20 messages by
      **score** (joins `scores`+`messages`+`message_tags`).
-   - `open_cards_for_member_subsystems` — open cards whose
+   - `open_signals_for_member_subsystems` — open signals whose
      `affected_subsystems` overlap the member's `owned_subsystems`
      (Postgres array overlap `&&`).
    - `list_recent_for_member` — last 3 digests, for novelty/continuity.
 5. **Render the prompt** (`digest/prompts/system.txt` +
    `user.txt.j2`) and call **Sonnet** (tier = digest, temp 0.3) for a
-   strict `DigestDraft` (`content_md` + which card/message ids it
+   strict `DigestDraft` (`content_md` + which signal/message ids it
    cited, bucketed into sections).
 6. **Hallucination guard** (`_filter_cited_ids`): drop any cited id the
    model invented that wasn't in the candidate set. The model can only
@@ -229,8 +229,8 @@ personalization story, and it is inspectable row-by-row in the DB.
 
 ## 6. The feedback loop (adaptation over time)
 
-1. User clicks 👍/👎 on a card → `POST /api/v1/cards/{id}/feedback`
-   (`api/routes/cards.py:59`).
+1. User clicks 👍/👎 on a signal → `POST /api/v1/signals/{id}/feedback`
+   (`api/routes/signals.py:59`).
 2. It atomically bumps `org_memberships.topic_weights[topic]` by
    ±1.0 (`_bump_membership_topic_weight:102`, a single JSONB `||`
    update).
@@ -325,7 +325,7 @@ without ever leaving their org.
 - The browser opens one `EventSource` to
   `GET /api/v1/events?project_id=…` (`api/routes/events.py`), which
   subscribes to that channel and streams events
-  (`message_tagged`, `card_created`, `digest_ready`,
+  (`message_tagged`, `signal_created`, `digest_ready`,
   `insight_created`).
 - The hook `hooks/use-events.ts` routes each event to the right cache
   invalidation / refresh.
@@ -417,7 +417,7 @@ visibly updates itself ~20s later with no manual reload.
 - **Postgres 17 + pgvector** — one store for relational data *and*
   embeddings (RAG retrieval, Eve dedup). RLS for tenancy.
 - **Anthropic tiering** — Haiku for high-volume tagging (cheap, fast),
-  Sonnet for digest/cards/Eve (quality). All calls go through one
+  Sonnet for digest/signals/Eve (quality). All calls go through one
   client wrapper with retries + token logging.
 - **Voyage `voyage-3-lite` (512-dim)** — embeddings for retrieval and
   semantic dedup.
@@ -462,10 +462,10 @@ visibly updates itself ~20s later with no manual reload.
 |---|---|
 | Slack webhook | `api/routes/webhooks.py`, `connectors/slack/events.py` |
 | Routing/tagging | `jobs/tasks/route_message.py`, `routing/router_agent.py` |
-| Card extraction | `jobs/tasks/build_card.py`, `cards/builder.py` |
+| Signal extraction | `jobs/tasks/build_signal.py`, `signals/signal_drafter.py` |
 | Scoring | `scoring/engine.py`, `scoring/weights.py`, `jobs/tasks/score_message.py` |
 | Digest | `jobs/tasks/generate_digest_for_member.py`, `digest/agent.py`, `digest/scheduler.py` |
-| Feedback | `api/routes/cards.py` (`post_card_feedback`) |
+| Feedback | `api/routes/signals.py` (`post_signal_feedback`) |
 | Eve | `jobs/tasks/eve_insight.py`, `eve/agent.py` |
 | Tenancy / RLS | `tenancy/rls.py`, `auth/deps.py` |
 | Realtime | `realtime.py`, `api/routes/events.py`, `apps/web/hooks/use-events.ts` |

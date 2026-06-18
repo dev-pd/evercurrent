@@ -1,4 +1,4 @@
-"""SQL for cards: idempotent insert (one card per triggering message + kind),
+"""SQL for signals: idempotent insert (one signal per triggering message + kind),
 source linking, and the paginated/detail read queries."""
 
 from __future__ import annotations
@@ -9,19 +9,19 @@ from typing import Any, cast
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from evercurrent.cards.schemas import (
-    CardKindT,
-    CardListItem,
-    CardPage,
-    CardResponse,
-    CardSourceDetail,
-    CardStatusT,
+from evercurrent.connectors.slack.links import slack_permalink
+from evercurrent.signals.schemas import (
+    SignalKindT,
+    SignalListItem,
+    SignalPage,
+    SignalResponse,
+    SignalSourceDetail,
+    SignalStatusT,
     SourceKindT,
 )
-from evercurrent.connectors.slack.links import slack_permalink
 
 
-async def get_existing_card(
+async def get_existing_signal(
     session: AsyncSession,
     *,
     triggering_message_id: uuid.UUID,
@@ -32,7 +32,7 @@ async def get_existing_card(
             "SELECT id, org_id, project_id, kind, summary, body, status, "
             "       confidence, decided_at, affected_subsystems, "
             "       created_at, updated_at "
-            "FROM cards "
+            "FROM signals "
             "WHERE triggering_message_id = :mid AND kind = :kind",
         ),
         {"mid": str(triggering_message_id), "kind": kind},
@@ -43,7 +43,7 @@ async def get_existing_card(
     return dict(row)
 
 
-async def insert_card(
+async def insert_signal(
     session: AsyncSession,
     *,
     org_id: uuid.UUID,
@@ -58,7 +58,7 @@ async def insert_card(
 ) -> uuid.UUID:
     result = await session.execute(
         text(
-            "INSERT INTO cards "
+            "INSERT INTO signals "
             "(org_id, project_id, kind, summary, body, "
             " affected_subsystems, confidence, decided_at, "
             " triggering_message_id) "
@@ -81,16 +81,16 @@ async def insert_card(
     )
     row = result.first()
     if row is None:
-        msg = "INSERT INTO cards did not return an id"
+        msg = "INSERT INTO signals did not return an id"
         raise RuntimeError(msg)
     return uuid.UUID(str(row[0]))
 
 
-async def add_card_sources(
+async def add_signal_sources(
     session: AsyncSession,
     *,
     org_id: uuid.UUID,
-    card_id: uuid.UUID,
+    signal_id: uuid.UUID,
     refs: list[tuple[str, uuid.UUID]],
 ) -> None:
     seen: set[tuple[str, uuid.UUID]] = set()
@@ -100,21 +100,21 @@ async def add_card_sources(
         seen.add((kind, sid))
         await session.execute(
             text(
-                "INSERT INTO card_sources "
-                "(org_id, card_id, source_kind, source_id) "
-                "VALUES (:org_id, :card_id, :kind, :sid) "
-                "ON CONFLICT (card_id, source_kind, source_id) DO NOTHING",
+                "INSERT INTO signal_sources "
+                "(org_id, signal_id, source_kind, source_id) "
+                "VALUES (:org_id, :signal_id, :kind, :sid) "
+                "ON CONFLICT (signal_id, source_kind, source_id) DO NOTHING",
             ),
             {
                 "org_id": str(org_id),
-                "card_id": str(card_id),
+                "signal_id": str(signal_id),
                 "kind": kind,
                 "sid": str(sid),
             },
         )
 
 
-async def list_cards(
+async def list_signals(
     session: AsyncSession,
     *,
     project_id: uuid.UUID | None = None,
@@ -122,7 +122,7 @@ async def list_cards(
     status: str | None = None,
     limit: int = 50,
     offset: int = 0,
-) -> CardPage:
+) -> SignalPage:
     clauses = ["TRUE"]
     params: dict[str, Any] = {"limit": limit, "offset": offset}
     if project_id is not None:
@@ -138,7 +138,7 @@ async def list_cards(
 
     total = (
         await session.execute(
-            text(f"SELECT COUNT(*) FROM cards c WHERE {where}"),
+            text(f"SELECT COUNT(*) FROM signals c WHERE {where}"),
             params,
         )
     ).scalar_one()
@@ -149,16 +149,16 @@ async def list_cards(
             f"       c.decided_at, c.updated_at, c.affected_subsystems, "
             f"       (SELECT m.posted_at FROM messages m "
             f"        WHERE m.id = c.triggering_message_id) AS occurred_at, "
-            f"       (SELECT COUNT(*) FROM card_sources cs "
-            f"        WHERE cs.card_id = c.id) AS sources_count "
-            f"FROM cards c WHERE {where} "
+            f"       (SELECT COUNT(*) FROM signal_sources cs "
+            f"        WHERE cs.signal_id = c.id) AS sources_count "
+            f"FROM signals c WHERE {where} "
             f"ORDER BY c.updated_at DESC LIMIT :limit OFFSET :offset",
         ),
         params,
     )
     rows = result.mappings().all()
     items = [
-        CardListItem(
+        SignalListItem(
             id=uuid.UUID(str(r["id"])),
             kind=_cast_kind(str(r["kind"])),
             summary=str(r["summary"]),
@@ -172,20 +172,20 @@ async def list_cards(
         )
         for r in rows
     ]
-    return CardPage(items=items, total=int(total), limit=limit, offset=offset)
+    return SignalPage(items=items, total=int(total), limit=limit, offset=offset)
 
 
-async def get_card(
+async def get_signal(
     session: AsyncSession,
-    card_id: uuid.UUID,
-) -> CardResponse | None:
+    signal_id: uuid.UUID,
+) -> SignalResponse | None:
     result = await session.execute(
         text(
             "SELECT id, org_id, kind, summary, body, status, confidence, "
             "       decided_at, affected_subsystems, created_at, updated_at "
-            "FROM cards WHERE id = :id",
+            "FROM signals WHERE id = :id",
         ),
-        {"id": str(card_id)},
+        {"id": str(signal_id)},
     )
     row = result.mappings().first()
     if row is None:
@@ -203,18 +203,18 @@ async def get_card(
 
     src_result = await session.execute(
         text(
-            "SELECT source_kind, source_id FROM card_sources "
-            "WHERE card_id = :id ORDER BY created_at ASC",
+            "SELECT source_kind, source_id FROM signal_sources "
+            "WHERE signal_id = :id ORDER BY created_at ASC",
         ),
-        {"id": str(card_id)},
+        {"id": str(signal_id)},
     )
-    sources: list[CardSourceDetail] = []
+    sources: list[SignalSourceDetail] = []
     for s in src_result.mappings().all():
         kind = str(s["source_kind"])
         sid = uuid.UUID(str(s["source_id"]))
         sources.append(await _resolve_source_detail(session, kind, sid, team_id))
 
-    return CardResponse(
+    return SignalResponse(
         id=uuid.UUID(str(row["id"])),
         kind=_cast_kind(str(row["kind"])),
         summary=str(row["summary"]),
@@ -234,7 +234,7 @@ async def _resolve_source_detail(
     source_kind: str,
     source_id: uuid.UUID,
     team_id: str | None,
-) -> CardSourceDetail:
+) -> SignalSourceDetail:
     if source_kind == "message":
         r = (
             (
@@ -257,7 +257,7 @@ async def _resolve_source_detail(
             slack_ts = str(r["external_id"]) if r["external_id"] else None
             display_channel = r["channel_name"] or channel_id
             display_ts = r["posted_at"].isoformat() if r["posted_at"] else slack_ts
-            return CardSourceDetail(
+            return SignalSourceDetail(
                 id=source_id,
                 kind="message",
                 channel=display_channel,
@@ -267,7 +267,7 @@ async def _resolve_source_detail(
                 url=slack_permalink(team_id, channel_id, slack_ts),
             )
     snippet = await _resolve_source_snippet(session, source_kind, source_id)
-    return CardSourceDetail(
+    return SignalSourceDetail(
         id=source_id,
         kind=_cast_source_kind(source_kind),
         text=snippet or "",
@@ -307,18 +307,18 @@ async def _resolve_source_snippet(
     return None
 
 
-def _cast_kind(value: str) -> CardKindT:
+def _cast_kind(value: str) -> SignalKindT:
     if value not in ("decision", "risk", "question"):
-        msg = f"unexpected card kind: {value!r}"
+        msg = f"unexpected signal kind: {value!r}"
         raise ValueError(msg)
-    return cast("CardKindT", value)
+    return cast("SignalKindT", value)
 
 
-def _cast_status(value: str) -> CardStatusT:
+def _cast_status(value: str) -> SignalStatusT:
     if value not in ("open", "resolved", "dismissed"):
-        msg = f"unexpected card status: {value!r}"
+        msg = f"unexpected signal status: {value!r}"
         raise ValueError(msg)
-    return cast("CardStatusT", value)
+    return cast("SignalStatusT", value)
 
 
 def _cast_source_kind(value: str) -> SourceKindT:
@@ -333,7 +333,7 @@ async def project_phase_and_subsystems(
     project_id: uuid.UUID | None,
 ) -> tuple[str, list[str]]:
     """The project's current phase + its known subsystems (from phase_concerns),
-    used to ground the card draft prompt."""
+    used to ground the signal draft prompt."""
     if project_id is None:
         return "unknown", []
     row = (

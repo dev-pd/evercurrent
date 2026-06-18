@@ -31,7 +31,7 @@ class DigestItemV2(BaseModel):
     author_display_name: str | None = None
     ts: str | None = None
     why_this_matters: str
-    card_id: uuid.UUID | None = None
+    signal_id: uuid.UUID | None = None
 
 
 class DigestTodayResponse(BaseModel):
@@ -43,7 +43,7 @@ class DigestTodayResponse(BaseModel):
     phase: str
     content_md: str
     items: list[DigestItemV2]
-    card_ids: list[uuid.UUID]
+    signal_ids: list[uuid.UUID]
     message_ids: list[uuid.UUID]
     generated_at: str
     is_stale: bool
@@ -106,7 +106,7 @@ async def get_today(
         phase=latest.phase,
         content_md=latest.content_md,
         items=items,
-        card_ids=latest.card_ids,
+        signal_ids=latest.signal_ids,
         message_ids=latest.message_ids,
         generated_at=latest.generated_at.isoformat(),
         is_stale=is_stale,
@@ -133,7 +133,7 @@ async def _build_items(
                 author_display_name=r.author_display_name,
                 ts=r.posted_at.isoformat() if r.posted_at else None,
                 why_this_matters=(r.text or "")[:280],
-                card_id=None,
+                signal_id=None,
             ),
         )
     top = [i for i in out if i.bucket == "top_priority"][:8]

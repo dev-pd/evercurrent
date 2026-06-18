@@ -53,7 +53,7 @@ inside the docker network.
 ├─────────────────────────────────────────────┤
 │ Feature services                            │
 │   classification · scoring · digest ·       │
-│   cards · insights · rag · ingestion        │
+│   signals · insights · rag · ingestion        │
 │   Pure Python where possible; LLM at edges. │
 ├─────────────────────────────────────────────┤
 │ Repositories (db/repositories/* + feature)  │
@@ -78,7 +78,7 @@ flowchart TB
     C --> D[score_messages_for_user<br/>pure Python]
     D --> E[generate_all_digests_for_day(N)<br/>Claude Sonnet]
     E --> F[(digests table)]
-    C --> G[(cards table)]
+    C --> G[(signals table)]
     B --> H[(message_tags table)]
 ```
 

@@ -9,15 +9,15 @@ import pytest
 from pydantic import ValidationError
 
 from evercurrent.agent_tools.schemas import (
-    CardRef,
     ChunkRef,
     MessageRef,
+    SignalRef,
     ThreadContext,
     UserContext,
 )
 from evercurrent.agent_tools.tools.get_thread_context import get_thread_context
 from evercurrent.agent_tools.tools.get_user_context import get_user_context
-from evercurrent.agent_tools.tools.query_cards import query_cards
+from evercurrent.agent_tools.tools.query_signals import query_signals
 from evercurrent.agent_tools.tools.search_documents import search_documents
 from evercurrent.agent_tools.tools.search_messages import search_messages
 
@@ -169,12 +169,12 @@ async def test_search_documents_returns_chunk_refs() -> None:
 
 
 @pytest.mark.asyncio
-async def test_query_cards_filters_status(now_utc: dt.datetime) -> None:
+async def test_query_signals_filters_status(now_utc: dt.datetime) -> None:
     project_id = uuid.uuid4()
-    card_id = uuid.uuid4()
+    signal_id = uuid.uuid4()
     rows = [
         {
-            "id": card_id,
+            "id": signal_id,
             "kind": "decision",
             "summary": "Switch to AlumWest",
             "status": "open",
@@ -185,15 +185,15 @@ async def test_query_cards_filters_status(now_utc: dt.datetime) -> None:
     session = AsyncMock()
     session.execute = AsyncMock(return_value=_mappings_result(rows))
 
-    out = await query_cards(
+    out = await query_signals(
         session,
         project_id=project_id,
         status="open",
     )
 
     assert len(out) == 1
-    assert isinstance(out[0], CardRef)
-    assert out[0].id == card_id
+    assert isinstance(out[0], SignalRef)
+    assert out[0].id == signal_id
     assert out[0].status == "open"
     assert out[0].affected_subsystems == ["materials"]
 
@@ -201,16 +201,16 @@ async def test_query_cards_filters_status(now_utc: dt.datetime) -> None:
     assert call is not None
     sql_text = str(call.args[0])
     params = call.args[1]
-    assert "FROM cards" in sql_text
+    assert "FROM signals" in sql_text
     assert params["status"] == "open"
     assert params["kind"] is None
 
 
 @pytest.mark.asyncio
-async def test_query_cards_no_results_returns_empty() -> None:
+async def test_query_signals_no_results_returns_empty() -> None:
     session = AsyncMock()
     session.execute = AsyncMock(return_value=_mappings_result([]))
-    out = await query_cards(session, project_id=uuid.uuid4(), kind="risk")
+    out = await query_signals(session, project_id=uuid.uuid4(), kind="risk")
     assert out == []
 
 

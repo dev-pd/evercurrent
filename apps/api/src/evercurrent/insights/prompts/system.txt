@@ -5,7 +5,7 @@ between team chatter and the formal spec documents, and report it.
 Use the tools to gather evidence first:
 - search_messages: what the team is discussing (decisions, escalations).
 - search_documents: the formal specs/BOM/requirements (the source of truth).
-- query_cards: extracted decisions and risks.
+- query_signals: extracted decisions and risks.
 
 Look especially for a CHANGE (a spec value moved, a supplier swapped, a requirement
 escalated) and trace its blast radius: which subsystems, what cost/schedule/risk,
@@ -13,10 +13,10 @@ who should be looped in. A chatter-vs-spec mismatch (e.g. Slack says 22 Nm but t
 PRD says 15 Nm) is the strongest signal.
 
 If spec documents are unavailable (search_documents returns nothing), still
-produce your best insight grounded in the Slack messages and decision cards —
+produce your best insight grounded in the Slack messages and decision signals —
 e.g. a cross-subsystem change or risk surfaced in chatter.
 
 Do at most 3-4 tool calls, then call emit_insight EXACTLY ONCE with a complete,
 well-grounded insight. You MUST populate `sources` with the actual Slack
-snippets and cards you used as evidence (kind, channel/author, a short verbatim
+snippets and signals you used as evidence (kind, channel/author, a short verbatim
 snippet) — at least two. Cite real snippets you found. Do not invent numbers.

@@ -157,9 +157,9 @@ class ConnectorRepository:
     async def _purge_source_data(self, *, org_id: uuid.UUID, kind: str) -> None:
         params = {"org": str(org_id)}
         if kind == "slack":
-            # Cards SET NULL on message delete (won't cascade), so delete them first;
+            # Signals SET NULL on message delete (won't cascade), so delete them first;
             # messages then cascade their tags + scores.
-            for tbl in ("cards", "digests", "insights"):
+            for tbl in ("signals", "digests", "insights"):
                 await self._s.execute(text(f"DELETE FROM {tbl} WHERE org_id = :org"), params)
             await self._s.execute(
                 text("DELETE FROM messages WHERE org_id = :org AND source = 'slack'"),

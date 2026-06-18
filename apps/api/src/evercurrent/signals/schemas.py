@@ -1,5 +1,5 @@
-"""Card shapes: the LLM draft (CardDraft), the list/detail HTTP responses
-(CardListItem, CardPage, CardResponse), and their source references."""
+"""Signal shapes: the LLM draft (SignalDraft), the list/detail HTTP responses
+(SignalListItem, SignalPage, SignalResponse), and their source references."""
 
 from __future__ import annotations
 
@@ -9,12 +9,12 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-CardKindT = Literal["decision", "risk", "question"]
-CardStatusT = Literal["open", "resolved", "dismissed"]
+SignalKindT = Literal["decision", "risk", "question"]
+SignalStatusT = Literal["open", "resolved", "dismissed"]
 SourceKindT = Literal["message", "document_chunk", "pr"]
 
 
-class CardDraft(BaseModel):
+class SignalDraft(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True)
 
     summary: str = Field(min_length=10, max_length=200)
@@ -24,7 +24,7 @@ class CardDraft(BaseModel):
     decided_at: dt.datetime | None = None
 
 
-class CardSourceRef(BaseModel):
+class SignalSourceRef(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True)
 
     source_kind: SourceKindT
@@ -32,13 +32,13 @@ class CardSourceRef(BaseModel):
     snippet: str | None = None
 
 
-class CardListItem(BaseModel):
+class SignalListItem(BaseModel):
     model_config = ConfigDict(strict=True)
 
     id: uuid.UUID
-    kind: CardKindT
+    kind: SignalKindT
     summary: str
-    status: CardStatusT
+    status: SignalStatusT
     confidence: float
     decided_at: dt.datetime | None = None
     occurred_at: dt.datetime | None = None
@@ -47,16 +47,16 @@ class CardListItem(BaseModel):
     updated_at: dt.datetime
 
 
-class CardPage(BaseModel):
+class SignalPage(BaseModel):
     model_config = ConfigDict(strict=True)
 
-    items: list[CardListItem]
+    items: list[SignalListItem]
     total: int
     limit: int
     offset: int
 
 
-class CardSourceDetail(BaseModel):
+class SignalSourceDetail(BaseModel):
     model_config = ConfigDict(strict=True)
 
     id: uuid.UUID
@@ -69,17 +69,17 @@ class CardSourceDetail(BaseModel):
     url: str | None = None
 
 
-class CardResponse(BaseModel):
+class SignalResponse(BaseModel):
     model_config = ConfigDict(strict=True)
 
     id: uuid.UUID
-    kind: CardKindT
+    kind: SignalKindT
     summary: str
     body: str
-    status: CardStatusT
+    status: SignalStatusT
     confidence: float
     decided_at: dt.datetime | None = None
     affected_subsystems: list[str]
-    sources: list[CardSourceDetail]
+    sources: list[SignalSourceDetail]
     created_at: dt.datetime
     updated_at: dt.datetime

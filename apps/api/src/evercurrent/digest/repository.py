@@ -1,5 +1,5 @@
 """SQL for digests: upsert a generated digest (idempotent per member + day) and
-the read queries that gather a member's scored items, open cards, and history."""
+the read queries that gather a member's scored items, open signals, and history."""
 
 from __future__ import annotations
 
@@ -13,13 +13,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from evercurrent.db.models import Digest as DigestModel
 from evercurrent.digest.schemas import (
-    CardSummary,
     DigestMessageRow,
     DigestRecord,
     MemberProfile,
     PriorDigest,
     ProjectSnapshot,
     ScoredItem,
+    SignalSummary,
 )
 
 log = structlog.get_logger(__name__)
@@ -36,7 +36,7 @@ async def get_for_member_day(
             await session.execute(
                 text(
                     "SELECT id, org_id, project_member_id, day_index, phase, "
-                    "       content_md, card_ids, message_ids, generated_at "
+                    "       content_md, signal_ids, message_ids, generated_at "
                     "FROM digests "
                     "WHERE project_member_id = :mid AND day_index = :d",
                 ),
@@ -61,7 +61,7 @@ async def get_latest_for_member(
             await session.execute(
                 text(
                     "SELECT id, org_id, project_member_id, day_index, phase, "
-                    "       content_md, card_ids, message_ids, generated_at "
+                    "       content_md, signal_ids, message_ids, generated_at "
                     "FROM digests "
                     "WHERE project_member_id = :mid "
                     "ORDER BY day_index DESC, generated_at DESC LIMIT 1",
@@ -115,7 +115,7 @@ async def upsert_digest(
     day_index: int,
     phase: str,
     content_md: str,
-    card_ids: list[uuid.UUID],
+    signal_ids: list[uuid.UUID],
     message_ids: list[uuid.UUID],
 ) -> DigestRecord:
     stmt = (
@@ -126,7 +126,7 @@ async def upsert_digest(
             day_index=day_index,
             phase=phase,
             content_md=content_md,
-            card_ids=card_ids,
+            signal_ids=signal_ids,
             message_ids=message_ids,
         )
         .on_conflict_do_update(
@@ -134,7 +134,7 @@ async def upsert_digest(
             set_={
                 "phase": phase,
                 "content_md": content_md,
-                "card_ids": card_ids,
+                "signal_ids": signal_ids,
                 "message_ids": message_ids,
                 "generated_at": text("now()"),
             },
@@ -187,13 +187,13 @@ async def top_scored_items_for_member(
     ]
 
 
-async def open_cards_for_member_subsystems(
+async def open_signals_for_member_subsystems(
     session: AsyncSession,
     *,
     project_id: uuid.UUID | None,
     owned_subsystems: list[str],
     limit: int = 20,
-) -> list[CardSummary]:
+) -> list[SignalSummary]:
     if not owned_subsystems:
         return []
 
@@ -212,7 +212,7 @@ async def open_cards_for_member_subsystems(
                 text(
                     "SELECT id, kind, summary, status, affected_subsystems, "
                     "       updated_at "
-                    f"FROM cards WHERE {where} "
+                    f"FROM signals WHERE {where} "
                     "ORDER BY updated_at DESC LIMIT :lim",
                 ),
                 params,
@@ -222,8 +222,8 @@ async def open_cards_for_member_subsystems(
         .all()
     )
     return [
-        CardSummary(
-            card_id=uuid.UUID(str(r["id"])),
+        SignalSummary(
+            signal_id=uuid.UUID(str(r["id"])),
             kind=str(r["kind"]),
             summary=str(r["summary"]),
             status=str(r["status"]),

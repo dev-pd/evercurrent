@@ -10,8 +10,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from evercurrent.db.models.base import Base, _ts_default, _uuid_pk
 
 
-class Card(Base):
-    __tablename__ = "cards"
+class Signal(Base):
+    __tablename__ = "signals"
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     org_id: Mapped[uuid.UUID] = mapped_column(
@@ -69,13 +69,13 @@ class Card(Base):
             "confidence >= 0 AND confidence <= 1",
             name="ck_cards_confidence_range",
         ),
-        Index("cards_org_idx", "org_id"),
-        Index("cards_project_kind_idx", "project_id", "kind"),
+        Index("signals_org_idx", "org_id"),
+        Index("signals_project_kind_idx", "project_id", "kind"),
     )
 
 
-class CardSource(Base):
-    __tablename__ = "card_sources"
+class SignalSource(Base):
+    __tablename__ = "signal_sources"
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     org_id: Mapped[uuid.UUID] = mapped_column(
@@ -83,9 +83,9 @@ class CardSource(Base):
         ForeignKey("orgs.id", ondelete="CASCADE"),
         nullable=False,
     )
-    card_id: Mapped[uuid.UUID] = mapped_column(
+    signal_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("cards.id", ondelete="CASCADE"),
+        ForeignKey("signals.id", ondelete="CASCADE"),
         nullable=False,
     )
     source_kind: Mapped[str] = mapped_column(Text, nullable=False)
@@ -97,6 +97,6 @@ class CardSource(Base):
             "source_kind IN ('message','document_chunk','pr')",
             name="ck_card_sources_kind",
         ),
-        Index("card_sources_card_idx", "card_id"),
-        Index("card_sources_lookup_idx", "source_kind", "source_id"),
+        Index("signal_sources_signal_idx", "signal_id"),
+        Index("signal_sources_lookup_idx", "source_kind", "source_id"),
     )

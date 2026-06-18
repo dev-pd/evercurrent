@@ -109,7 +109,7 @@ webhook slows → Slack retries → more load.
 - **No LLM cost/budget controls.** A circuit breaker and per-org token
   budget are absent. A bad Anthropic day backs the queue up and spikes
   cost silently.
-- **No caching layer.** Read-heavy endpoints (today / cards / digest)
+- **No caching layer.** Read-heavy endpoints (today / signals / digest)
   re-hit Postgres on every load.
 - **Pagination is a smell** — client-side filtering with `limit 1000`
   appeared in the decisions list. Won't survive real volume.
@@ -133,8 +133,8 @@ webhook slows → Slack retries → more load.
 | 6 | many orgs | noisy neighbor: one org's burst starves others | per-org fair queuing, separate queues per tier |
 
 **Workers scale horizontally already** — tasks are idempotent. The real
-win is **separate queues**: Haiku tagging (fast) / Sonnet cards (slow) /
-scoring (CPU) / digest, each autoscaled on its own queue depth, so a card
+win is **separate queues**: Haiku tagging (fast) / Sonnet signals (slow) /
+scoring (CPU) / digest, each autoscaled on its own queue depth, so a signal
 backlog can't starve tagging.
 
 **The dominant scaling cost is LLM spend, not compute** — it grows

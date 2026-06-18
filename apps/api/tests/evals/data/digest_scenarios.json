@@ -67,16 +67,16 @@
         "posted_at": "2026-06-07T16:30:00Z"
       }
     ],
-    "open_cards": [
+    "open_signals": [
       {
-        "card_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "signal_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
         "kind": "decision",
         "summary": "ECO-178 switches BRK-A1 to AL-7075-T6",
         "status": "open",
         "affected_subsystems": ["chassis", "BRK-A1"]
       },
       {
-        "card_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "signal_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
         "kind": "risk",
         "summary": "Gripper resonance at 4150 RPM overlaps motor mount torque spec",
         "status": "open",
@@ -143,9 +143,9 @@
         "posted_at": "2026-06-07T16:00:00Z"
       }
     ],
-    "open_cards": [
+    "open_signals": [
       {
-        "card_id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "signal_id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
         "kind": "risk",
         "summary": "AlumWest PPAP pending — risk of shipping out of process",
         "status": "open",
@@ -202,9 +202,9 @@
         "posted_at": "2026-06-07T16:30:00Z"
       }
     ],
-    "open_cards": [
+    "open_signals": [
       {
-        "card_id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        "signal_id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         "kind": "decision",
         "summary": "BMS hysteresis 8C to 5C lands in v0.9.2",
         "status": "open",
@@ -251,7 +251,7 @@
         "posted_at": "2026-06-07T20:00:00Z"
       }
     ],
-    "open_cards": [],
+    "open_signals": [],
     "expected_critical_topics": ["AlumWest", "supplier", "thermal soak"]
   },
   {
@@ -302,9 +302,9 @@
         "posted_at": "2026-06-07T17:00:00Z"
       }
     ],
-    "open_cards": [
+    "open_signals": [
       {
-        "card_id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        "signal_id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
         "kind": "risk",
         "summary": "ECO-178 schedule slip may miss DVT exit",
         "status": "open",

@@ -2,7 +2,7 @@ You are a strict but fair judge evaluating a personalised morning digest
 that was written for one engineer on a hardware team. You have:
 
 1. The member profile (role, owned subsystems).
-2. The source items the digest writer was given (messages and cards
+2. The source items the digest writer was given (messages and signals
    the member is expected to know about today).
 3. A set of "expected critical topics" — words or short phrases that a
    competent digest would touch on.
@@ -19,7 +19,7 @@ Axis 1 — relevance (0 to 5)
 
 Axis 2 — citation_correctness (0 to 5)
 - 5: every claim that needs evidence cites a real id from the input
-  set in the form [msg:<uuid>] or [card:<uuid>]. No invented ids.
+  set in the form [msg:<uuid>] or [signal:<uuid>]. No invented ids.
 - 3: some citations missing; no invented ids.
 - 1: at least one cited id is not in the input set (hallucinated).
 - 0: most citations are wrong or invented.

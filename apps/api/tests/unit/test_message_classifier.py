@@ -41,9 +41,9 @@ def _happy_payload() -> dict[str, Any]:
         "urgency": "high",
         "entities": ["ECO-178"],
         "affected_roles": ["mech", "ee"],
-        "should_create_card": True,
-        "card_kind": "decision",
-        "card_summary": "Switch to AlumWest to recover thermal margin.",
+        "should_create_signal": True,
+        "signal_kind": "decision",
+        "signal_summary": "Switch to AlumWest to recover thermal margin.",
         "confidence": 0.82,
     }
 
@@ -65,8 +65,8 @@ async def test_classify_happy_path_returns_router_decision() -> None:
     assert isinstance(decision, ClassificationResult)
     assert decision.topic == "thermal_margin"
     assert decision.urgency == "high"
-    assert decision.should_create_card is True
-    assert decision.card_kind == "decision"
+    assert decision.should_create_signal is True
+    assert decision.signal_kind == "decision"
     assert decision.confidence == pytest.approx(0.82)
     assert len(llm.calls) == 1
 
@@ -78,9 +78,9 @@ async def test_classify_retries_once_on_validation_error() -> None:
         "urgency": "high",
         "entities": [],
         "affected_roles": [],
-        "should_create_card": True,
-        "card_kind": None,
-        "card_summary": None,
+        "should_create_signal": True,
+        "signal_kind": None,
+        "signal_summary": None,
         "confidence": 0.7,
     }
     llm = _FakeLLM([invalid, _happy_payload()])
@@ -95,8 +95,8 @@ async def test_classify_retries_once_on_validation_error() -> None:
         project_phase="DVT",
     )
 
-    assert decision.should_create_card is True
-    assert decision.card_kind == "decision"
+    assert decision.should_create_signal is True
+    assert decision.signal_kind == "decision"
     assert len(llm.calls) == 2
     second_prompt = llm.calls[1]["prompt"]
     assert "previous response did not match" in second_prompt
@@ -121,7 +121,7 @@ async def test_classify_falls_back_when_retry_also_fails() -> None:
 
     assert decision.topic is None
     assert decision.urgency == "normal"
-    assert decision.should_create_card is False
+    assert decision.should_create_signal is False
     assert decision.confidence == 0.0
     assert len(llm.calls) == 2
 

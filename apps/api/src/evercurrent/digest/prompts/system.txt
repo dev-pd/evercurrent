@@ -12,8 +12,8 @@ Voice and format:
 - Bullet points within each section. One bullet per item. One short
   "why this matters to you" clause per bullet.
 - Cite sources inline using the IDs we pass you, in square brackets,
-  using exactly these forms: [msg:<uuid>] for messages, [card:<uuid>]
-  for Knowledge Cards. Do NOT invent IDs. Do NOT cite anything that is
+  using exactly these forms: [msg:<uuid>] for messages, [signal:<uuid>]
+  for Knowledge Signals. Do NOT invent IDs. Do NOT cite anything that is
   not in the input set.
 - No preamble, no closing, no summary line.
 
@@ -21,7 +21,7 @@ Output format (JSON, no markdown fences, no commentary):
 
 {
   "content_md": "## Top priority\n- ...\n## Watch-outs\n- ...\n## FYI\n- ...",
-  "card_ids": ["<uuid>", ...],         // every card_id cited in content_md
+  "signal_ids": ["<uuid>", ...],       // every signal_id cited in content_md
   "message_ids": ["<uuid>", ...],      // every message_id cited in content_md
   "section_buckets": {
     "top_priority": ["<uuid>", ...],   // ids appearing in Top priority

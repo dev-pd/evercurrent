@@ -24,7 +24,7 @@ async def test_digest_idempotent_on_same_member_day(
         day_index=3,
         phase="DVT",
         content_md="## Top priority\n- existing",
-        card_ids=[],
+        signal_ids=[],
         message_ids=[],
         generated_at=dt.datetime(2026, 6, 7, 8, 1, tzinfo=dt.UTC),
     )
@@ -72,7 +72,7 @@ async def test_force_regen_replaces_existing(
         day_index=3,
         phase="DVT",
         content_md="## Top priority\n- fresh",
-        card_ids=[],
+        signal_ids=[],
         message_ids=[],
         generated_at=dt.datetime(2026, 6, 7, 8, 4, tzinfo=dt.UTC),
     )
@@ -111,7 +111,7 @@ async def test_force_regen_replaces_existing(
     async def fake_top(*_args: Any, **_kwargs: Any) -> list[Any]:
         return []
 
-    async def fake_open_cards(*_args: Any, **_kwargs: Any) -> list[Any]:
+    async def fake_open_signals(*_args: Any, **_kwargs: Any) -> list[Any]:
         return []
 
     async def fake_recent(*_args: Any, **_kwargs: Any) -> list[Any]:
@@ -122,7 +122,7 @@ async def test_force_regen_replaces_existing(
 
     monkeypatch.setattr(repo_mod, "get_for_member_day", fake_get)
     monkeypatch.setattr(repo_mod, "top_scored_items_for_member", fake_top)
-    monkeypatch.setattr(repo_mod, "open_cards_for_member_subsystems", fake_open_cards)
+    monkeypatch.setattr(repo_mod, "open_signals_for_member_subsystems", fake_open_signals)
     monkeypatch.setattr(repo_mod, "list_recent_for_member", fake_recent)
     monkeypatch.setattr(repo_mod, "upsert_digest", fake_upsert)
     monkeypatch.setattr(repo_mod, "load_member_profile", fake_load_profile)
@@ -133,7 +133,7 @@ async def test_force_regen_replaces_existing(
     llm.complete_json = AsyncMock(
         return_value={
             "content_md": "## Top priority\n- fresh briefing for chassis owner",
-            "card_ids": [],
+            "signal_ids": [],
             "message_ids": [],
             "section_buckets": {"top_priority": [], "watch_outs": [], "fyi": []},
         },

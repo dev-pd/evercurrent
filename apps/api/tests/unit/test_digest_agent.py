@@ -10,11 +10,11 @@ import pytest
 import evercurrent.digest.digest_generator as agent_mod
 import evercurrent.digest.repository as repo_mod
 from evercurrent.digest.schemas import (
-    CardSummary,
     DigestRecord,
     MemberProfile,
     ProjectSnapshot,
     ScoredItem,
+    SignalSummary,
 )
 
 
@@ -31,9 +31,9 @@ def _scored_item(message_id: uuid.UUID, score: float) -> ScoredItem:
     )
 
 
-def _card_summary(card_id: uuid.UUID) -> CardSummary:
-    return CardSummary(
-        card_id=card_id,
+def _signal_summary(signal_id: uuid.UUID) -> SignalSummary:
+    return SignalSummary(
+        signal_id=signal_id,
         kind="risk",
         summary="Thermal margin slipping on ECO-178",
         status="open",
@@ -48,7 +48,7 @@ async def _patch_agent_context(
     member_id: uuid.UUID,
     org_id: uuid.UUID,
     scored: list[ScoredItem],
-    cards: list[CardSummary],
+    signals: list[SignalSummary],
 ) -> None:
     async def fake_load_profile(
         _session: Any,
@@ -87,8 +87,8 @@ async def _patch_agent_context(
         assert limit == 20
         return scored
 
-    async def fake_open_cards(*_args: Any, **_kwargs: Any) -> list[CardSummary]:
-        return cards
+    async def fake_open_signals(*_args: Any, **_kwargs: Any) -> list[SignalSummary]:
+        return signals
 
     async def fake_recent(*_args: Any, **_kwargs: Any) -> list[Any]:
         return []
@@ -100,7 +100,7 @@ async def _patch_agent_context(
     monkeypatch.setattr(repo_mod, "latest_project_id_for_org", fake_resolve_project_id)
     monkeypatch.setattr(repo_mod, "load_project_snapshot", fake_load_project)
     monkeypatch.setattr(repo_mod, "top_scored_items_for_member", fake_top)
-    monkeypatch.setattr(repo_mod, "open_cards_for_member_subsystems", fake_open_cards)
+    monkeypatch.setattr(repo_mod, "open_signals_for_member_subsystems", fake_open_signals)
     monkeypatch.setattr(repo_mod, "list_recent_for_member", fake_recent)
     monkeypatch.setattr(repo_mod, "get_for_member_day", fake_get_for_member_day)
 
@@ -111,14 +111,14 @@ async def test_persisted_row_has_citations(
     member_id = uuid.uuid4()
     org_id = uuid.uuid4()
     msg_id = uuid.uuid4()
-    card_id = uuid.uuid4()
+    signal_id = uuid.uuid4()
 
     await _patch_agent_context(
         monkeypatch,
         member_id=member_id,
         org_id=org_id,
         scored=[_scored_item(msg_id, 0.9)],
-        cards=[_card_summary(card_id)],
+        signals=[_signal_summary(signal_id)],
     )
 
     captured_upsert: dict[str, Any] = {}
@@ -131,7 +131,7 @@ async def test_persisted_row_has_citations(
         day_index: int,
         phase: str,
         content_md: str,
-        card_ids: list[uuid.UUID],
+        signal_ids: list[uuid.UUID],
         message_ids: list[uuid.UUID],
     ) -> DigestRecord:
         captured_upsert.update(
@@ -141,7 +141,7 @@ async def test_persisted_row_has_citations(
                 "day_index": day_index,
                 "phase": phase,
                 "content_md": content_md,
-                "card_ids": card_ids,
+                "signal_ids": signal_ids,
                 "message_ids": message_ids,
             },
         )
@@ -152,7 +152,7 @@ async def test_persisted_row_has_citations(
             day_index=day_index,
             phase=phase,
             content_md=content_md,
-            card_ids=card_ids,
+            signal_ids=signal_ids,
             message_ids=message_ids,
             generated_at=dt.datetime(2026, 6, 7, 8, 0, tzinfo=dt.UTC),
         )
@@ -163,12 +163,12 @@ async def test_persisted_row_has_citations(
     llm.complete_json = AsyncMock(
         return_value={
             "content_md": (
-                f"## Top priority\n- Thermal margin slipping [card:{card_id}] [msg:{msg_id}]"
+                f"## Top priority\n- Thermal margin slipping [signal:{signal_id}] [msg:{msg_id}]"
             ),
-            "card_ids": [str(card_id)],
+            "signal_ids": [str(signal_id)],
             "message_ids": [str(msg_id)],
             "section_buckets": {
-                "top_priority": [str(card_id), str(msg_id)],
+                "top_priority": [str(signal_id), str(msg_id)],
                 "watch_outs": [],
                 "fyi": [],
             },
@@ -186,8 +186,8 @@ async def test_persisted_row_has_citations(
 
     assert persisted.day_index == 2
     assert msg_id in persisted.message_ids
-    assert card_id in persisted.card_ids
-    assert captured_upsert["card_ids"] == [card_id]
+    assert signal_id in persisted.signal_ids
+    assert captured_upsert["signal_ids"] == [signal_id]
     assert captured_upsert["message_ids"] == [msg_id]
 
 
@@ -197,16 +197,16 @@ async def test_hallucinated_citations_dropped(
     member_id = uuid.uuid4()
     org_id = uuid.uuid4()
     real_msg = uuid.uuid4()
-    real_card = uuid.uuid4()
+    real_signal = uuid.uuid4()
     hallucinated_msg = uuid.uuid4()
-    hallucinated_card = uuid.uuid4()
+    hallucinated_signal = uuid.uuid4()
 
     await _patch_agent_context(
         monkeypatch,
         member_id=member_id,
         org_id=org_id,
         scored=[_scored_item(real_msg, 0.7)],
-        cards=[_card_summary(real_card)],
+        signals=[_signal_summary(real_signal)],
     )
 
     captured: dict[str, Any] = {}
@@ -220,7 +220,7 @@ async def test_hallucinated_citations_dropped(
             day_index=kwargs["day_index"],
             phase=kwargs["phase"],
             content_md=kwargs["content_md"],
-            card_ids=kwargs["card_ids"],
+            signal_ids=kwargs["signal_ids"],
             message_ids=kwargs["message_ids"],
             generated_at=dt.datetime(2026, 6, 7, 8, 0, tzinfo=dt.UTC),
         )
@@ -231,7 +231,7 @@ async def test_hallucinated_citations_dropped(
     llm.complete_json = AsyncMock(
         return_value={
             "content_md": "## Top priority\n- something",
-            "card_ids": [str(real_card), str(hallucinated_card)],
+            "signal_ids": [str(real_signal), str(hallucinated_signal)],
             "message_ids": [str(real_msg), str(hallucinated_msg)],
             "section_buckets": {},
         },
@@ -246,5 +246,5 @@ async def test_hallucinated_citations_dropped(
         force=False,
     )
 
-    assert captured["card_ids"] == [real_card]
+    assert captured["signal_ids"] == [real_signal]
     assert captured["message_ids"] == [real_msg]

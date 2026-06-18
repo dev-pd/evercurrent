@@ -9,7 +9,7 @@
       "urgency": "high",
       "entities": ["BRK-A1", "AL-6063-T5", "AL-7075-T6", "ECO-178"],
       "affected_roles": ["mech", "supply"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -22,7 +22,7 @@
       "urgency": "high",
       "entities": ["chassis", "bracket"],
       "affected_roles": ["mech", "qa"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -35,7 +35,7 @@
       "urgency": "critical",
       "entities": ["ExtruCo", "AL-6063-T5", "AlumWest"],
       "affected_roles": ["supply", "mech", "pm"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -48,7 +48,7 @@
       "urgency": "normal",
       "entities": ["AlumWest"],
       "affected_roles": ["supply", "qa", "mech"],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -61,7 +61,7 @@
       "urgency": "normal",
       "entities": ["gripper", "M4"],
       "affected_roles": ["mech"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -74,7 +74,7 @@
       "urgency": "normal",
       "entities": ["PR #221", "BMS"],
       "affected_roles": ["fw", "ee"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -87,7 +87,7 @@
       "urgency": "high",
       "entities": ["gripper", "motor mount", "4150 RPM"],
       "affected_roles": ["mech", "ee"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -100,7 +100,7 @@
       "urgency": "low",
       "entities": [],
       "affected_roles": [],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -113,7 +113,7 @@
       "urgency": "low",
       "entities": ["bracket"],
       "affected_roles": ["mech"],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -126,7 +126,7 @@
       "urgency": "critical",
       "entities": ["ECO-178", "DVT"],
       "affected_roles": ["pm", "supply", "mech"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -139,7 +139,7 @@
       "urgency": "low",
       "entities": ["PrecisionCoat", "AL-7075"],
       "affected_roles": ["supply"],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -152,7 +152,7 @@
       "urgency": "low",
       "entities": [],
       "affected_roles": [],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -165,7 +165,7 @@
       "urgency": "high",
       "entities": ["ExtruCo", "AlumWest"],
       "affected_roles": ["supply", "pm"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -178,7 +178,7 @@
       "urgency": "normal",
       "entities": ["LMR16030", "Texas Instruments"],
       "affected_roles": ["ee", "supply"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -191,7 +191,7 @@
       "urgency": "low",
       "entities": ["drop test"],
       "affected_roles": ["qa"],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -204,7 +204,7 @@
       "urgency": "normal",
       "entities": ["EMC"],
       "affected_roles": ["ee", "pm"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -217,7 +217,7 @@
       "urgency": "high",
       "entities": ["ECO-178"],
       "affected_roles": ["mech", "supply", "pm"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -230,7 +230,7 @@
       "urgency": "low",
       "entities": ["BMS"],
       "affected_roles": ["fw"],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -243,7 +243,7 @@
       "urgency": "critical",
       "entities": ["BMS", "pack 4"],
       "affected_roles": ["fw", "ee", "qa", "pm"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -256,7 +256,7 @@
       "urgency": "normal",
       "entities": ["phase gate"],
       "affected_roles": ["pm"],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -269,7 +269,7 @@
       "urgency": "high",
       "entities": ["cable harness", "rear panel"],
       "affected_roles": ["mech", "ee"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -282,7 +282,7 @@
       "urgency": "normal",
       "entities": ["BMS"],
       "affected_roles": ["fw", "qa"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -295,7 +295,7 @@
       "urgency": "normal",
       "entities": ["gripper"],
       "affected_roles": ["mech"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -308,7 +308,7 @@
       "urgency": "low",
       "entities": [],
       "affected_roles": [],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -321,7 +321,7 @@
       "urgency": "high",
       "entities": ["motor controller"],
       "affected_roles": ["fw"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -334,7 +334,7 @@
       "urgency": "high",
       "entities": ["AlumWest", "ExtruCo"],
       "affected_roles": ["supply", "pm"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -347,7 +347,7 @@
       "urgency": "normal",
       "entities": ["FEA"],
       "affected_roles": ["mech"],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -360,7 +360,7 @@
       "urgency": "high",
       "entities": ["BOM", "BRK-A1", "AL-6063-T5", "AL-7075-T6"],
       "affected_roles": ["supply", "mech"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -373,7 +373,7 @@
       "urgency": "high",
       "entities": ["thermal soak", "DVT"],
       "affected_roles": ["qa", "mech"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -386,7 +386,7 @@
       "urgency": "normal",
       "entities": ["harness"],
       "affected_roles": ["ee"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -399,7 +399,7 @@
       "urgency": "low",
       "entities": ["motor controller"],
       "affected_roles": ["fw"],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -412,7 +412,7 @@
       "urgency": "normal",
       "entities": ["rev C"],
       "affected_roles": ["ee", "supply"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -425,7 +425,7 @@
       "urgency": "normal",
       "entities": ["PRD", "drive coupling"],
       "affected_roles": ["mech", "ee"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -438,7 +438,7 @@
       "urgency": "high",
       "entities": ["bracket", "BMS", "AL-7075"],
       "affected_roles": ["mech", "ee", "fw"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -451,7 +451,7 @@
       "urgency": "low",
       "entities": [],
       "affected_roles": [],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -464,7 +464,7 @@
       "urgency": "normal",
       "entities": ["Bosch SMV", "IMU"],
       "affected_roles": ["ee", "fw"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -477,7 +477,7 @@
       "urgency": "high",
       "entities": ["motor stall"],
       "affected_roles": ["fw", "qa"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -490,7 +490,7 @@
       "urgency": "normal",
       "entities": ["AlumWest"],
       "affected_roles": ["supply", "mech"],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -503,7 +503,7 @@
       "urgency": "low",
       "entities": ["M4x10"],
       "affected_roles": ["mech", "supply"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -516,7 +516,7 @@
       "urgency": "normal",
       "entities": ["thermal report"],
       "affected_roles": ["qa", "mech"],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -529,7 +529,7 @@
       "urgency": "high",
       "entities": ["AlumWest", "PPAP"],
       "affected_roles": ["supply", "qa", "pm"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -542,7 +542,7 @@
       "urgency": "low",
       "entities": ["gripper"],
       "affected_roles": ["mech"],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -555,7 +555,7 @@
       "urgency": "high",
       "entities": ["PCB", "IMU"],
       "affected_roles": ["ee"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -568,7 +568,7 @@
       "urgency": "low",
       "entities": [],
       "affected_roles": [],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -581,7 +581,7 @@
       "urgency": "critical",
       "entities": ["motor controller"],
       "affected_roles": ["fw", "ee"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -594,7 +594,7 @@
       "urgency": "normal",
       "entities": ["PrecisionCoat", "AL-7075"],
       "affected_roles": ["supply", "mech"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -607,7 +607,7 @@
       "urgency": "normal",
       "entities": ["PVT"],
       "affected_roles": ["pm", "qa"],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -620,7 +620,7 @@
       "urgency": "high",
       "entities": ["BMS", "AL-6063"],
       "affected_roles": ["fw", "mech"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   },
   {
@@ -633,7 +633,7 @@
       "urgency": "low",
       "entities": ["bench 3"],
       "affected_roles": ["qa"],
-      "should_create_card": false
+      "should_create_signal": false
     }
   },
   {
@@ -646,7 +646,7 @@
       "urgency": "high",
       "entities": ["IMU", "DVT", "PVT"],
       "affected_roles": ["ee", "fw", "qa"],
-      "should_create_card": true
+      "should_create_signal": true
     }
   }
 ]

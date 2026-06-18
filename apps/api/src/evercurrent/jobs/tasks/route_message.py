@@ -1,5 +1,5 @@
 """The per-message pipeline: load a raw event, persist the message, classify it,
-write tags, and fan out to scoring + card creation. Orchestration only; SQL lives
+write tags, and fan out to scoring + signal creation. Orchestration only; SQL lives
 in route_message_db.py."""
 
 from __future__ import annotations
@@ -54,19 +54,19 @@ def _enqueue_followups(
 ) -> None:
     from evercurrent.jobs.celery_app import celery_app
 
-    if decision.should_create_card and decision.card_kind is not None:
+    if decision.should_create_signal and decision.signal_kind is not None:
         try:
             celery_app.send_task(
-                "evercurrent.build_card",
+                "evercurrent.build_signal",
                 kwargs={
                     "message_id": str(message_id),
-                    "kind": decision.card_kind,
-                    "summary_hint": decision.card_summary or "",
+                    "kind": decision.signal_kind,
+                    "summary_hint": decision.signal_summary or "",
                 },
             )
         except Exception as exc:  # noqa: BLE001
             log.warning(
-                "router.build_card_enqueue_failed",
+                "router.build_signal_enqueue_failed",
                 message_id=str(message_id),
                 error=str(exc),
             )
@@ -206,7 +206,7 @@ async def _route(
                 "message_id": str(message_id),
                 "topic": decision.topic,
                 "urgency": decision.urgency,
-                "should_create_card": decision.should_create_card,
+                "should_create_signal": decision.should_create_signal,
             },
         )
 
@@ -221,7 +221,7 @@ async def _route(
         org_id=str(org_id),
         topic=decision.topic,
         urgency=decision.urgency,
-        should_create_card=decision.should_create_card,
+        should_create_signal=decision.should_create_signal,
         confidence=decision.confidence,
     )
 
@@ -229,7 +229,7 @@ async def _route(
         "raw_event_id": str(raw_event_id),
         "status": "ok",
         "message_id": str(message_id),
-        "should_create_card": decision.should_create_card,
+        "should_create_signal": decision.should_create_signal,
     }
 
 

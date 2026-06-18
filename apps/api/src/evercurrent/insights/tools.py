@@ -25,7 +25,7 @@ READ_TOOLS: list[ToolSpec] = [
         },
     ),
     ToolSpec(
-        name="query_cards",
+        name="query_signals",
         description="List extracted decisions/risks. Optional kind=decision|risk, status=open.",
         input_schema={
             "type": "object",
@@ -87,7 +87,7 @@ EMIT_TOOL = ToolSpec(
             "sources": {
                 "type": "array",
                 "minItems": 2,
-                "description": "Real evidence you used: at least two Slack snippets or cards.",
+                "description": "Real evidence you used: at least two Slack snippets or signals.",
                 "items": {
                     "type": "object",
                     "properties": {

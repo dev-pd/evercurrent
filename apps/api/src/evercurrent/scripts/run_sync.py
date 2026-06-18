@@ -2,7 +2,7 @@
 
 Mirrors the POST /connectors/{id}/slack/sync route but runs admin-scoped, so
 it can be driven headless. Backfill enqueues route_message per raw event; the
-worker then tags/scores/embeds/builds cards.
+worker then tags/scores/embeds/builds signals.
 
 Run:  docker compose exec api python /tmp/run_sync.py
 """

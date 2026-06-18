@@ -1,5 +1,5 @@
-"""Task: draft a decision card from a message (resolves the message's org,
-delegates to cards.card_drafter, publishes a card_created SSE event)."""
+"""Task: draft a decision signal from a message (resolves the message's org,
+delegates to signals.signal_drafter, publishes a signal_created SSE event)."""
 
 from __future__ import annotations
 
@@ -8,10 +8,10 @@ from typing import Any
 
 import structlog
 
-from evercurrent.cards.card_drafter import build_card as build_card_impl
 from evercurrent.db.repositories.messages import MessageRepository
 from evercurrent.db.session import session_scope
 from evercurrent.llm.client import LLMProvider, get_provider
+from evercurrent.signals.signal_drafter import build_signal as build_signal_impl
 from evercurrent.sse_publisher import publish_event
 from evercurrent.tenancy.org_context import set_org_context
 
@@ -26,7 +26,7 @@ async def _load_message_org(
         return uuid.UUID(str(msg["org_id"])) if msg is not None else None
 
 
-async def build_card(
+async def build_signal(
     _ctx: dict[str, Any],
     message_id: str,
     kind: str,
@@ -38,7 +38,7 @@ async def build_card(
     org_id = await _load_message_org(parsed_message_id)
     if org_id is None:
         log.warning(
-            "cards.build_card.missing_message",
+            "signals.build_signal.missing_message",
             message_id=message_id,
         )
         return {"message_id": message_id, "status": "missing"}
@@ -47,7 +47,7 @@ async def build_card(
 
     async with session_scope() as session:
         await set_org_context(session, org_id)
-        result = await build_card_impl(
+        result = await build_signal_impl(
             session,
             provider,
             message_id=parsed_message_id,
@@ -59,9 +59,9 @@ async def build_card(
     if result.get("project_id"):
         publish_event(
             result["project_id"],
-            "card_created",
+            "signal_created",
             {
-                "card_id": str(result["card_id"]),
+                "signal_id": str(result["signal_id"]),
                 "kind": result.get("kind", kind),
                 "summary": result.get("summary", summary_hint),
                 "project_id": str(result["project_id"]),
@@ -71,6 +71,6 @@ async def build_card(
 
     return {
         "message_id": message_id,
-        "card_id": str(result["card_id"]),
+        "signal_id": str(result["signal_id"]),
         "existing": bool(result.get("existing", False)),
     }

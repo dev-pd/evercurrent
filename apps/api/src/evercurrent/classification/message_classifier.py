@@ -1,5 +1,5 @@
 """Classifies one Slack message with Haiku: topic, urgency, entities, affected
-roles, and whether it should spawn a decision card. Falls back to a safe neutral
+roles, and whether it should spawn a decision signal. Falls back to a safe neutral
 result after one retry on schema drift."""
 
 from __future__ import annotations
@@ -83,9 +83,9 @@ _RETRY_REMINDER = (
     "Re-emit it as a single JSON object with exactly these fields: "
     "topic (string or null), urgency (one of low|normal|high|critical), "
     "entities (array of strings), affected_roles (array of strings), "
-    "should_create_card (bool), card_kind (decision|risk|question or null), "
-    "card_summary (string or null), confidence (number 0..1). "
-    "If should_create_card is false, card_kind AND card_summary MUST be null."
+    "should_create_signal (bool), signal_kind (decision|risk|question or null), "
+    "signal_summary (string or null), confidence (number 0..1). "
+    "If should_create_signal is false, signal_kind AND signal_summary MUST be null."
 )
 
 

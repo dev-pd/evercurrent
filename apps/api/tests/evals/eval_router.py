@@ -41,7 +41,7 @@ async def _classify_one(
         decision.urgency,
         decision.entities,
         decision.affected_roles,
-        decision.should_create_card,
+        decision.should_create_signal,
     )
 
 
@@ -57,7 +57,7 @@ def test_router_accuracy(
         "role_jaccards": [],
     }
     detail_rows: list[tuple[str, ...]] = [
-        ("id", "topic", "urgency", "entities", "roles", "card?"),
+        ("id", "topic", "urgency", "entities", "roles", "signal?"),
     ]
     failures: list[dict[str, Any]] = []
 
@@ -78,7 +78,7 @@ def test_router_accuracy(
             expected = row["expected"]
             t_ok = _topic_match(topic, expected["topic"])
             u_ok = urgency == expected["urgency"]
-            scc_ok = scc == expected["should_create_card"]
+            scc_ok = scc == expected["should_create_signal"]
             e_jac = jaccard(entities, expected["entities"])
             r_jac = jaccard(roles, expected["affected_roles"])
 
@@ -122,7 +122,7 @@ def test_router_accuracy(
         ("urgency", "accuracy", f"{urgency_acc:.3f}", "0.90"),
         ("entities", "jaccard", f"{entity_avg:.3f}", "0.60"),
         ("affected_roles", "jaccard", f"{role_avg:.3f}", "0.70"),
-        ("should_create_card", "accuracy", f"{scc_acc:.3f}", "0.85"),
+        ("should_create_signal", "accuracy", f"{scc_acc:.3f}", "0.85"),
         ("--- errors ---", "", str(len(failures)), ""),
     ]
     emit_metric_table("router eval (50 labelled messages)", summary_rows)
@@ -132,7 +132,7 @@ def test_router_accuracy(
     warn_if_below_baseline("router_urgency", urgency_acc)
     warn_if_below_baseline("router_entities", entity_avg)
     warn_if_below_baseline("router_affected_roles", role_avg)
-    warn_if_below_baseline("router_should_create_card", scc_acc)
+    warn_if_below_baseline("router_should_create_signal", scc_acc)
 
     write_report(
         "router",
@@ -144,7 +144,7 @@ def test_router_accuracy(
                 "urgency_accuracy": urgency_acc,
                 "entities_jaccard": entity_avg,
                 "affected_roles_jaccard": role_avg,
-                "should_create_card_accuracy": scc_acc,
+                "should_create_signal_accuracy": scc_acc,
             },
         },
     )

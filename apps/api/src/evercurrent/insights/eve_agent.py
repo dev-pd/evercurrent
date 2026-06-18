@@ -1,5 +1,5 @@
 """Eve, the proactive insight agent: a native tool-use loop (<=8 turns) that
-searches messages/docs/cards, then emits one grounded cross-functional insight."""
+searches messages/docs/signals, then emits one grounded cross-functional insight."""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ def _as_evidence(tool_name: str, out: Any) -> list[dict[str, Any]]:
     if isinstance(out, list):
         items = out
     elif isinstance(out, dict):
-        items = out.get("results") or out.get("messages") or out.get("cards") or []
+        items = out.get("results") or out.get("messages") or out.get("signals") or []
     else:
         items = []
     kind = "doc" if tool_name == "search_documents" else "slack"

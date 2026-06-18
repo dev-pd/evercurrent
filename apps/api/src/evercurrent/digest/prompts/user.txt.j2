@@ -13,13 +13,13 @@ Day index: {{ day_index }}
 (no scored items for today)
 {% endif %}
 
-==== OPEN KNOWLEDGE CARDS AFFECTING YOUR SUBSYSTEMS ====
-{% if open_cards %}{% for card in open_cards %}
-- [card:{{ card.card_id }}] {{ card.kind }} ({{ card.status }}) — {{ card.summary }}
-  subsystems: {{ card.affected_subsystems | join(", ") or "(none)" }}
-  updated_at={{ card.updated_at.isoformat() }}
+==== OPEN KNOWLEDGE SIGNALS AFFECTING YOUR SUBSYSTEMS ====
+{% if open_signals %}{% for signal in open_signals %}
+- [signal:{{ signal.signal_id }}] {{ signal.kind }} ({{ signal.status }}) — {{ signal.summary }}
+  subsystems: {{ signal.affected_subsystems | join(", ") or "(none)" }}
+  updated_at={{ signal.updated_at.isoformat() }}
 {% endfor %}{% else %}
-(no open cards on your subsystems)
+(no open signals on your subsystems)
 {% endif %}
 
 ==== PRIOR DIGESTS (last few days, for continuity) ====

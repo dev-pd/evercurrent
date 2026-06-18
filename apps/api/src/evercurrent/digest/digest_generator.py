@@ -1,5 +1,5 @@
 """Generates a member's personalized daily digest: gathers their top-scored
-messages, open cards, and prior digests, then prompts Sonnet for the markdown."""
+messages, open signals, and prior digests, then prompts Sonnet for the markdown."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ log = structlog.get_logger(__name__)
 _PROMPT_PKG = "evercurrent.digest.prompts"
 _TOP_N_SCORED = 20
 _PRIOR_DIGESTS_LIMIT = 3
-_OPEN_CARDS_LIMIT = 20
+_OPEN_SIGNALS_LIMIT = 20
 _MAX_TOKENS = 2048
 _PREVIEW_MAX_CHARS = 220
 
@@ -54,7 +54,7 @@ def _render_user_prompt(ctx: DigestContext) -> str:
         project=ctx.project,
         day_index=ctx.day_index,
         top_scored_items=ctx.top_scored_items,
-        open_cards=ctx.open_cards,
+        open_signals=ctx.open_signals,
         prior_digests=ctx.prior_digests,
     )
 
@@ -62,28 +62,28 @@ def _render_user_prompt(ctx: DigestContext) -> str:
 def _filter_cited_ids(
     draft: DigestDraft,
     *,
-    valid_card_ids: set[uuid.UUID],
+    valid_signal_ids: set[uuid.UUID],
     valid_message_ids: set[uuid.UUID],
 ) -> DigestDraft:
-    dropped_cards = [c for c in draft.card_ids if c not in valid_card_ids]
+    dropped_signals = [c for c in draft.signal_ids if c not in valid_signal_ids]
     dropped_msgs = [m for m in draft.message_ids if m not in valid_message_ids]
-    if dropped_cards or dropped_msgs:
+    if dropped_signals or dropped_msgs:
         log.warning(
             "digest.hallucinated_citations_dropped",
-            dropped_cards=len(dropped_cards),
+            dropped_signals=len(dropped_signals),
             dropped_messages=len(dropped_msgs),
         )
 
-    filtered_card_ids = [c for c in draft.card_ids if c in valid_card_ids]
+    filtered_signal_ids = [c for c in draft.signal_ids if c in valid_signal_ids]
     filtered_message_ids = [m for m in draft.message_ids if m in valid_message_ids]
     filtered_buckets: dict[str, list[uuid.UUID]] = {}
     for bucket, ids in draft.section_buckets.items():
-        keep = [i for i in ids if i in valid_card_ids or i in valid_message_ids]
+        keep = [i for i in ids if i in valid_signal_ids or i in valid_message_ids]
         filtered_buckets[bucket] = keep
 
     return DigestDraft(
         content_md=draft.content_md,
-        card_ids=filtered_card_ids,
+        signal_ids=filtered_signal_ids,
         message_ids=filtered_message_ids,
         section_buckets=filtered_buckets,
     )
@@ -129,7 +129,7 @@ def _stub_draft_from_scored(scored: list) -> DigestDraft:
     message_ids = [s.message_id for s in (top + watch + fyi)]
     return DigestDraft(
         content_md=content_md,
-        card_ids=[],
+        signal_ids=[],
         message_ids=message_ids,
     )
 
@@ -175,11 +175,11 @@ async def generate_digest(
         project_member_id=project_member_id,
         limit=_TOP_N_SCORED,
     )
-    cards = await digest_repo.open_cards_for_member_subsystems(
+    signals = await digest_repo.open_signals_for_member_subsystems(
         session,
         project_id=project_id,
         owned_subsystems=member.owned_subsystems,
-        limit=_OPEN_CARDS_LIMIT,
+        limit=_OPEN_SIGNALS_LIMIT,
     )
     prior = await digest_repo.list_recent_for_member(
         session,
@@ -193,7 +193,7 @@ async def generate_digest(
         project=project,
         day_index=day_index,
         top_scored_items=scored,
-        open_cards=cards,
+        open_signals=signals,
         prior_digests=prior,
     )
 
@@ -226,11 +226,11 @@ async def generate_digest(
         )
         draft = _stub_draft_from_scored(scored)
 
-    valid_card_ids = {c.card_id for c in cards}
+    valid_signal_ids = {c.signal_id for c in signals}
     valid_message_ids = {s.message_id for s in scored}
     draft = _filter_cited_ids(
         draft,
-        valid_card_ids=valid_card_ids,
+        valid_signal_ids=valid_signal_ids,
         valid_message_ids=valid_message_ids,
     )
 
@@ -241,7 +241,7 @@ async def generate_digest(
         day_index=day_index,
         phase=phase,
         content_md=draft.content_md,
-        card_ids=draft.card_ids,
+        signal_ids=draft.signal_ids,
         message_ids=draft.message_ids,
     )
     log.info(
@@ -250,7 +250,7 @@ async def generate_digest(
         project_member_id=str(project_member_id),
         day_index=day_index,
         phase=phase,
-        card_count=len(draft.card_ids),
+        signal_count=len(draft.signal_ids),
         message_count=len(draft.message_ids),
     )
     return persisted

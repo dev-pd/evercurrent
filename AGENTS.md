@@ -47,7 +47,7 @@ evercurrent/
 │   │   │   ├── classification/       Message classification (Haiku)
 │   │   │   ├── scoring/              Per-user relevance scoring (pure)
 │   │   │   ├── digest/               Per-member digest generation
-│   │   │   ├── cards/                Decision cards (decision extraction)
+│   │   │   ├── signals/              Knowledge signals (decision extraction)
 │   │   │   ├── insights/             Eve, the tool-using insight agent
 │   │   │   ├── agent_tools/          Eve's in-process tool implementations
 │   │   │   ├── rag/                  Embeddings, chunking, retrieval
@@ -89,7 +89,7 @@ evercurrent/
   embedder, Redis) via `Depends()` or the container. No globals.
 - **Adapter pattern** for external services: `EmbeddingProvider`/`VoyageEmbedder`,
   `LLMProvider`/`AnthropicProvider`. Swappable.
-- **Feature slices.** `classification/`, `scoring/`, `digest/`, `cards/`,
+- **Feature slices.** `classification/`, `scoring/`, `digest/`, `signals/`,
   `insights/`, `rag/` each own their schemas + logic; the shared tables they
   read stay central in `db/models/`.
 
@@ -116,7 +116,7 @@ TDD on deterministic code, evals on LLM behaviour.
 
 - New deterministic modules: red → green → refactor. Test public behaviour, not
   privates. Name tests as full sentences.
-- Coverage gate 80% on `auth/`, `tenancy/`, `scoring/`, `cards/`, `ingestion/`,
+- Coverage gate 80% on `auth/`, `tenancy/`, `scoring/`, `signals/`, `ingestion/`,
   `db/repositories/`, `connectors/*/events`. Agents + prompts excluded.
 - Do NOT unit-test: prompt strings, LLM content, generated SQL (test real DB via
   testcontainers), thin SDK wrappers.

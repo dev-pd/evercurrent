@@ -19,8 +19,8 @@ BASELINES: dict[str, Baseline] = {
         "metric": "jaccard",
         "target": 0.70,
     },
-    "router_should_create_card": {
-        "name": "router_should_create_card",
+    "router_should_create_signal": {
+        "name": "router_should_create_signal",
         "metric": "accuracy",
         "target": 0.85,
     },

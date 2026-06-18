@@ -1,4 +1,4 @@
-"""Tool: list extracted decision/risk cards, optionally filtered by kind/status,
+"""Tool: list extracted decision/risk signals, optionally filtered by kind/status,
 so the agent can ground insights in already-captured decisions."""
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ import structlog
 from sqlalchemy import bindparam, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from evercurrent.agent_tools.schemas import CardRef
+from evercurrent.agent_tools.schemas import SignalRef
 
 log = structlog.get_logger(__name__)
 
@@ -23,7 +23,7 @@ _SQL = text(
         status,
         affected_subsystems,
         decided_at
-    FROM cards
+    FROM signals
     WHERE (CAST(:kind AS text) IS NULL OR kind = :kind)
       AND (CAST(:status AS text) IS NULL OR status = :status)
     ORDER BY created_at DESC
@@ -36,14 +36,14 @@ _SQL = text(
 )
 
 
-async def query_cards(
+async def query_signals(
     session: AsyncSession,
     *,
     project_id: uuid.UUID,
     kind: str | None = None,
     status: str | None = None,
     limit: int = 25,
-) -> list[CardRef]:
+) -> list[SignalRef]:
     start = time.perf_counter()
     _ = project_id
     result = await session.execute(
@@ -53,7 +53,7 @@ async def query_cards(
     rows = list(result.mappings())
 
     out = [
-        CardRef(
+        SignalRef(
             id=r["id"],
             kind=r["kind"],
             summary=r["summary"],
@@ -67,7 +67,7 @@ async def query_cards(
     duration_ms = int((time.perf_counter() - start) * 1000)
     log.info(
         "tool.call",
-        tool_name="query_cards",
+        tool_name="query_signals",
         kind=kind,
         status=status,
         result_count=len(out),

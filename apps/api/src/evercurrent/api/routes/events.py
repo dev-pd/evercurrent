@@ -1,4 +1,4 @@
-"""Server-Sent Events endpoint: streams live pipeline events (card/insight created) to the
+"""Server-Sent Events endpoint: streams live pipeline events (signal/insight created) to the
 dashboard."""
 
 from __future__ import annotations

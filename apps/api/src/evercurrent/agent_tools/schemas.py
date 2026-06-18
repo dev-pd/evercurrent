@@ -30,7 +30,7 @@ class ChunkRef(BaseModel):
     similarity: float
 
 
-class CardRef(BaseModel):
+class SignalRef(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True)
 
     id: uuid.UUID

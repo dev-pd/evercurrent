@@ -1,5 +1,5 @@
-"""Drafts a decision/risk/question card from a triggering message: pulls the
-thread context, prompts Sonnet for a CardDraft, and persists it idempotently."""
+"""Drafts a decision/risk/question signal from a triggering message: pulls the
+thread context, prompts Sonnet for a SignalDraft, and persists it idempotently."""
 
 from __future__ import annotations
 
@@ -15,16 +15,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from evercurrent.agent_tools.client import InProcessToolClient
 from evercurrent.agent_tools.schemas import ThreadContext
-from evercurrent.cards import repository as cards_repo
-from evercurrent.cards.schemas import CardDraft
 from evercurrent.db.repositories.messages import MessageRepository
 from evercurrent.llm.client import LLMProvider
 from evercurrent.llm.tiering import ModelTier
+from evercurrent.signals import repository as signals_repo
+from evercurrent.signals.schemas import SignalDraft
 
 log = structlog.get_logger(__name__)
 
 
-_PROMPT_PKG = "evercurrent.cards.prompts"
+_PROMPT_PKG = "evercurrent.signals.prompts"
 
 
 def _load_prompt(name: str) -> str:
@@ -32,7 +32,7 @@ def _load_prompt(name: str) -> str:
 
 
 _RETRY_REMINDER = (
-    "Your previous response did not match the CardDraft schema. "
+    "Your previous response did not match the SignalDraft schema. "
     "Re-emit as a single JSON object with exactly these fields: "
     "summary (string, 10..200 chars), body (string, >=20 chars), "
     "affected_subsystems (array of strings, 0..3 entries), "
@@ -73,7 +73,7 @@ def _build_prompt(
     project_phase: str,
     known_subsystems: list[str],
 ) -> tuple[str, str]:
-    system = _load_prompt("draft_card.txt")
+    system = _load_prompt("draft_signal.txt")
     subsystems_block = ", ".join(known_subsystems) if known_subsystems else "(no fixed vocabulary)"
     user = (
         f"Kind: {kind}\n"
@@ -81,7 +81,7 @@ def _build_prompt(
         f"Known subsystems: {subsystems_block}\n"
         f"Router summary hint: {summary_hint}\n\n"
         f"Context:\n{thread_block}\n\n"
-        f"Draft the Card. Return JSON only."
+        f"Draft the Signal. Return JSON only."
     )
     return system, user
 
@@ -101,11 +101,11 @@ async def _complete_json(
     )
 
 
-def _parse_draft(payload: Any) -> CardDraft:
+def _parse_draft(payload: Any) -> SignalDraft:
     if isinstance(payload, list):
         msg = "expected JSON object, got list"
         raise TypeError(msg)
-    return CardDraft.model_validate(payload)
+    return SignalDraft.model_validate(payload)
 
 
 async def _draft_with_retry(
@@ -113,13 +113,13 @@ async def _draft_with_retry(
     *,
     system: str,
     prompt: str,
-) -> CardDraft:
+) -> SignalDraft:
     try:
         payload = await _complete_json(llm, system=system, prompt=prompt)
         return _parse_draft(payload)
     except (ValidationError, json.JSONDecodeError, ValueError, TypeError) as first_exc:
         log.warning(
-            "cards.draft.retry",
+            "signals.draft.retry",
             reason="schema_drift",
             error=str(first_exc),
         )
@@ -131,7 +131,7 @@ async def _draft_with_retry(
 
 def _existing_to_response(row: dict[str, Any]) -> dict[str, Any]:
     return {
-        "card_id": uuid.UUID(str(row["id"])),
+        "signal_id": uuid.UUID(str(row["id"])),
         "org_id": uuid.UUID(str(row["org_id"])),
         "project_id": uuid.UUID(str(row["project_id"])) if row["project_id"] else None,
         "summary": str(row["summary"]),
@@ -140,7 +140,7 @@ def _existing_to_response(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-async def build_card(
+async def build_signal(
     session: AsyncSession,
     llm: LLMProvider,
     *,
@@ -149,15 +149,15 @@ async def build_card(
     summary_hint: str,
     tool_client: InProcessToolClient | None = None,
 ) -> dict[str, Any]:
-    existing = await cards_repo.get_existing_card(
+    existing = await signals_repo.get_existing_signal(
         session,
         triggering_message_id=message_id,
         kind=kind,
     )
     if existing is not None:
         log.info(
-            "cards.idempotent_hit",
-            card_id=str(existing["id"]),
+            "signals.idempotent_hit",
+            signal_id=str(existing["id"]),
             message_id=str(message_id),
             kind=kind,
         )
@@ -183,7 +183,7 @@ async def build_card(
         own_author=str(meta["author_display_name"] or "unknown"),
         thread=thread if isinstance(thread, ThreadContext) else None,
     )
-    project_phase, known_subsystems = await cards_repo.project_phase_and_subsystems(
+    project_phase, known_subsystems = await signals_repo.project_phase_and_subsystems(
         session,
         project_id,
     )
@@ -199,7 +199,7 @@ async def build_card(
         draft = await _draft_with_retry(llm, system=system, prompt=prompt)
     except (ValidationError, json.JSONDecodeError, ValueError, TypeError) as exc:
         log.warning(
-            "cards.draft.failed",
+            "signals.draft.failed",
             message_id=str(message_id),
             kind=kind,
             error=str(exc),
@@ -207,7 +207,7 @@ async def build_card(
         raise
 
     try:
-        card_id = await cards_repo.insert_card(
+        signal_id = await signals_repo.insert_signal(
             session,
             org_id=org_id,
             project_id=project_id,
@@ -221,7 +221,7 @@ async def build_card(
         )
     except IntegrityError:
         await session.rollback()
-        existing = await cards_repo.get_existing_card(
+        existing = await signals_repo.get_existing_signal(
             session,
             triggering_message_id=message_id,
             kind=kind,
@@ -229,8 +229,8 @@ async def build_card(
         if existing is None:
             raise
         log.info(
-            "cards.idempotent_hit",
-            card_id=str(existing["id"]),
+            "signals.idempotent_hit",
+            signal_id=str(existing["id"]),
             message_id=str(message_id),
             kind=kind,
             race=True,
@@ -243,16 +243,16 @@ async def build_card(
             refs.append(("message", thread.root.id))
         refs.extend(("message", reply.id) for reply in thread.replies if reply.id != message_id)
 
-    await cards_repo.add_card_sources(
+    await signals_repo.add_signal_sources(
         session,
         org_id=org_id,
-        card_id=card_id,
+        signal_id=signal_id,
         refs=refs,
     )
 
     log.info(
-        "cards.build",
-        card_id=str(card_id),
+        "signals.build",
+        signal_id=str(signal_id),
         message_id=str(message_id),
         kind=kind,
         confidence=draft.confidence,
@@ -260,7 +260,7 @@ async def build_card(
     )
 
     return {
-        "card_id": card_id,
+        "signal_id": signal_id,
         "org_id": org_id,
         "project_id": project_id,
         "summary": draft.summary,

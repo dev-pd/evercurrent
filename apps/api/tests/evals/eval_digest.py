@@ -10,12 +10,12 @@ import pytest
 from jinja2 import Environment, StrictUndefined
 
 from evercurrent.digest.schemas import (
-    CardSummary,
     DigestContext,
     DigestDraft,
     MemberProfile,
     ProjectSnapshot,
     ScoredItem,
+    SignalSummary,
 )
 from evercurrent.llm.client import LLMProvider
 from evercurrent.llm.tiering import ModelTier
@@ -71,23 +71,23 @@ def _build_context(scenario: dict[str, Any]) -> DigestContext:
         )
         for item in scenario["top_scored_items"]
     ]
-    cards = [
-        CardSummary(
-            card_id=uuid.UUID(c["card_id"]),
+    signals = [
+        SignalSummary(
+            signal_id=uuid.UUID(c["signal_id"]),
             kind=c["kind"],
             summary=c["summary"],
             status=c["status"],
             affected_subsystems=c.get("affected_subsystems", []),
             updated_at=dt.datetime.now(dt.UTC),
         )
-        for c in scenario.get("open_cards", [])
+        for c in scenario.get("open_signals", [])
     ]
     return DigestContext(
         member=member,
         project=project,
         day_index=int(scenario["day_index"]),
         top_scored_items=scored,
-        open_cards=cards,
+        open_signals=signals,
         prior_digests=[],
     )
 
@@ -99,7 +99,7 @@ def _render_user_prompt(ctx: DigestContext) -> str:
         project=ctx.project,
         day_index=ctx.day_index,
         top_scored_items=ctx.top_scored_items,
-        open_cards=ctx.open_cards,
+        open_signals=ctx.open_signals,
         prior_digests=ctx.prior_digests,
     )
 
@@ -132,7 +132,7 @@ Digest under review:
 
 {digest_md}
 
-Cited card_ids: {cited_cards}
+Cited signal_ids: {cited_signals}
 Cited message_ids: {cited_messages}
 
 Score the digest now, returning the JSON object the rubric describes.
@@ -144,10 +144,11 @@ def _format_sources(ctx: DigestContext) -> str:
         f"- [msg:{item.message_id}] urgency={item.urgency} topic={item.topic}: {item.text!r}"
         for item in ctx.top_scored_items
     ]
-    card_lines = [
-        f"- [card:{card.card_id}] {card.kind}: {card.summary!r}" for card in ctx.open_cards
+    signal_lines = [
+        f"- [signal:{signal.signal_id}] {signal.kind}: {signal.summary!r}"
+        for signal in ctx.open_signals
     ]
-    lines = [*msg_lines, *card_lines]
+    lines = [*msg_lines, *signal_lines]
     return "\n".join(lines) if lines else "(empty)"
 
 
@@ -165,7 +166,7 @@ async def _judge(
         source_block=_format_sources(ctx),
         expected_topics=", ".join(scenario["expected_critical_topics"]),
         digest_md=draft.content_md,
-        cited_cards=", ".join(str(c) for c in draft.card_ids) or "(none)",
+        cited_signals=", ".join(str(c) for c in draft.signal_ids) or "(none)",
         cited_messages=", ".join(str(m) for m in draft.message_ids) or "(none)",
     )
     payload = await llm.complete_json(

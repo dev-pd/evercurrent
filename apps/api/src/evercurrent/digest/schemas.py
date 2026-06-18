@@ -1,5 +1,5 @@
 """Digest shapes: the persisted DigestRecord, the context fed to the LLM
-(member/project/scored items/cards), and the parsed DigestDraft it returns."""
+(member/project/scored items/signals), and the parsed DigestDraft it returns."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ class DigestRecord(BaseModel):
     day_index: Annotated[int, Field(ge=0)]
     phase: Annotated[str, Field(min_length=1, max_length=64)]
     content_md: str
-    card_ids: list[uuid.UUID] = Field(default_factory=list)
+    signal_ids: list[uuid.UUID] = Field(default_factory=list)
     message_ids: list[uuid.UUID] = Field(default_factory=list)
     generated_at: dt.datetime
 
@@ -103,10 +103,10 @@ class ScoredItem(BaseModel):
     posted_at: dt.datetime
 
 
-class CardSummary(BaseModel):
+class SignalSummary(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True)
 
-    card_id: uuid.UUID
+    signal_id: uuid.UUID
     kind: str
     summary: str
     status: str
@@ -128,7 +128,7 @@ class DigestContext(BaseModel):
     project: ProjectSnapshot
     day_index: int
     top_scored_items: list[ScoredItem] = Field(default_factory=list)
-    open_cards: list[CardSummary] = Field(default_factory=list)
+    open_signals: list[SignalSummary] = Field(default_factory=list)
     prior_digests: list[PriorDigest] = Field(default_factory=list)
 
 
@@ -139,6 +139,6 @@ class DigestDraft(BaseModel):
     model_config = ConfigDict(strict=True)
 
     content_md: Annotated[str, Field(min_length=20)]
-    card_ids: UUIDList = Field(default_factory=list)
+    signal_ids: UUIDList = Field(default_factory=list)
     message_ids: UUIDList = Field(default_factory=list)
     section_buckets: UUIDDict = Field(default_factory=dict)

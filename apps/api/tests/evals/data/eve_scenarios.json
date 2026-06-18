@@ -34,7 +34,7 @@
           "ts": "2026-06-10T14:45:00Z"
         }
       ],
-      "query_cards": [
+      "query_signals": [
         {
           "kind": "decision",
           "summary": "Raise gripper firmware torque ceiling to 22 Nm to stop fixture slip.",
@@ -72,7 +72,7 @@
           "ts": "2026-06-11T11:10:00Z"
         }
       ],
-      "query_cards": [
+      "query_signals": [
         {
           "kind": "risk",
           "summary": "Baseplate flatness failures at AlumWest threaten PVT schedule.",
@@ -110,7 +110,7 @@
           "ts": "2026-06-12T09:05:00Z"
         }
       ],
-      "query_cards": []
+      "query_signals": []
     }
   },
   {
@@ -136,7 +136,7 @@
           "ts": "2026-06-12T13:00:00Z"
         }
       ],
-      "query_cards": [
+      "query_signals": [
         {
           "kind": "decision",
           "summary": "Battery pack stays at 48V nominal per REQ-090, no change.",

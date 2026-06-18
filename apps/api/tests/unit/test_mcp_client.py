@@ -13,7 +13,7 @@ from evercurrent.agent_tools.tools.get_thread_context import (
 from evercurrent.agent_tools.tools.get_user_context import (
     get_user_context as fn_get_user_context,
 )
-from evercurrent.agent_tools.tools.query_cards import query_cards as fn_query_cards
+from evercurrent.agent_tools.tools.query_signals import query_signals as fn_query_signals
 from evercurrent.agent_tools.tools.search_documents import (
     search_documents as fn_search_documents,
 )
@@ -27,7 +27,7 @@ def test_default_dispatch_lists_all_phase4_tools() -> None:
     expected = {
         "search_messages",
         "search_documents",
-        "query_cards",
+        "query_signals",
         "get_thread_context",
         "get_user_context",
     }
@@ -87,7 +87,7 @@ def test_call_routes_each_default_tool_by_name() -> None:
     expected = {
         "search_messages": fn_search_messages,
         "search_documents": fn_search_documents,
-        "query_cards": fn_query_cards,
+        "query_signals": fn_query_signals,
         "get_thread_context": fn_get_thread_context,
         "get_user_context": fn_get_user_context,
     }

@@ -27,7 +27,7 @@ class Digest(Base):
     day_index: Mapped[int] = mapped_column(Integer, nullable=False)
     phase: Mapped[str] = mapped_column(Text, nullable=False)
     content_md: Mapped[str] = mapped_column(Text, nullable=False)
-    card_ids: Mapped[list[uuid.UUID]] = mapped_column(
+    signal_ids: Mapped[list[uuid.UUID]] = mapped_column(
         ARRAY(UUID(as_uuid=True)),
         nullable=False,
         server_default="{}",

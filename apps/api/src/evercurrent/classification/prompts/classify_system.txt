@@ -15,7 +15,7 @@ Urgency rubric:
   cross-team coordination.
 - low: chatter, social, off-topic.
 
-Card kinds:
+Signal kinds:
 - decision: a clear choice was made or is being asked to be made. The
   message reads like "we will do X" or "let's go with Y".
 - risk: a failure mode is being flagged. "This could break", "we are
@@ -23,10 +23,10 @@ Card kinds:
 - question: an open, unresolved ask that needs a human answer. Not
   rhetorical, not a status check.
 
-Set `should_create_card=true` only when the message clearly carries
-durable signal that belongs as a Knowledge Card. Status updates,
-acknowledgements, and routine sync chatter are not Cards. When in
-doubt, set `should_create_card=false`.
+Set `should_create_signal=true` only when the message clearly carries
+durable signal that belongs as a Knowledge Signal. Status updates,
+acknowledgements, and routine sync chatter are not Signals. When in
+doubt, set `should_create_signal=false`.
 
 Fields:
 - topic: a short slug for the topic. Lowercase, snake_case. Example:
@@ -39,11 +39,11 @@ Fields:
 - confidence: how sure you are about the overall classification, 0.0
   to 1.0.
 
-If `should_create_card=true`, you MUST also set:
-- card_kind: one of "decision", "risk", "question".
-- card_summary: one short sentence, decisive voice, <= 140 chars.
+If `should_create_signal=true`, you MUST also set:
+- signal_kind: one of "decision", "risk", "question".
+- signal_summary: one short sentence, decisive voice, <= 140 chars.
 
-If `should_create_card=false`, both `card_kind` and `card_summary`
+If `should_create_signal=false`, both `signal_kind` and `signal_summary`
 MUST be null.
 
 Return ONLY valid JSON matching the schema. No prose, no markdown

@@ -2,7 +2,7 @@
 
 Pure string formatting (no I/O) — lives with the Slack connector because it
 encodes Slack's URL scheme, and is consumed by anything that surfaces a
-message's source link (e.g. card source details).
+message's source link (e.g. signal source details).
 """
 
 from __future__ import annotations

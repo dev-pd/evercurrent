@@ -46,9 +46,9 @@ def route_message(raw_event_id: str) -> dict[str, Any]:
     return _run(impl({}, raw_event_id))
 
 
-@celery_app.task(name="evercurrent.build_card")
-def build_card(message_id: str, kind: str, summary_hint: str) -> dict[str, Any]:
-    from evercurrent.jobs.tasks.build_card import build_card as impl
+@celery_app.task(name="evercurrent.build_signal")
+def build_signal(message_id: str, kind: str, summary_hint: str) -> dict[str, Any]:
+    from evercurrent.jobs.tasks.build_signal import build_signal as impl
 
     return _run(impl({}, message_id, kind, summary_hint))
 

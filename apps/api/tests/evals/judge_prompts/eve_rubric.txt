@@ -4,7 +4,7 @@ to surface ONE high-impact cross-subsystem change or a conflict between
 team chatter and the formal spec. You have:
 
 1. The evidence corpus Eve was allowed to retrieve (Slack messages, spec
-   document snippets, decision/risk cards).
+   document snippets, decision/risk signals).
 2. Whether this scenario actually contained a planted conflict.
 3. The insight Eve emitted: title, summary, conflicts, and the source
    snippets it cited.

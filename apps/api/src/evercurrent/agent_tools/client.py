@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from evercurrent.agent_tools.tools import (
     get_thread_context,
     get_user_context,
-    query_cards,
+    query_signals,
     search_documents,
     search_messages,
 )
@@ -31,7 +31,7 @@ def _build_dispatch() -> dict[str, ToolFn]:
     return {
         "search_messages": search_messages,
         "search_documents": search_documents,
-        "query_cards": query_cards,
+        "query_signals": query_signals,
         "get_thread_context": get_thread_context,
         "get_user_context": get_user_context,
     }

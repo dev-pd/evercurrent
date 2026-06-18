@@ -9,8 +9,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-import evercurrent.cards.card_drafter as builder_mod
-import evercurrent.cards.repository as repo_mod
+import evercurrent.signals.repository as repo_mod
+import evercurrent.signals.signal_drafter as builder_mod
 from evercurrent.agent_tools.schemas import MessageRef, ThreadContext
 
 
@@ -89,8 +89,8 @@ def _patch_repo(
     *,
     existing_first: dict[str, Any] | None,
     existing_after_insert: dict[str, Any] | None = None,
-    insert_card_returns: uuid.UUID | None = None,
-    insert_card_raises: Exception | None = None,
+    insert_signal_returns: uuid.UUID | None = None,
+    insert_signal_raises: Exception | None = None,
 ) -> dict[str, list[Any]]:
     captured: dict[str, list[Any]] = {
         "existing_calls": [],
@@ -105,20 +105,20 @@ def _patch_repo(
             return None
         return existing_responses.pop(0)
 
-    async def fake_insert_card(*_args: Any, **kwargs: Any) -> uuid.UUID:
+    async def fake_insert_signal(*_args: Any, **kwargs: Any) -> uuid.UUID:
         captured["insert_calls"].append(kwargs)
-        if insert_card_raises is not None:
-            raise insert_card_raises
-        if insert_card_returns is None:
+        if insert_signal_raises is not None:
+            raise insert_signal_raises
+        if insert_signal_returns is None:
             return uuid.uuid4()
-        return insert_card_returns
+        return insert_signal_returns
 
     async def fake_add_sources(*_args: Any, **kwargs: Any) -> None:
         captured["source_calls"].append(kwargs)
 
-    monkeypatch.setattr(repo_mod, "get_existing_card", fake_get_existing)
-    monkeypatch.setattr(repo_mod, "insert_card", fake_insert_card)
-    monkeypatch.setattr(repo_mod, "add_card_sources", fake_add_sources)
+    monkeypatch.setattr(repo_mod, "get_existing_signal", fake_get_existing)
+    monkeypatch.setattr(repo_mod, "insert_signal", fake_insert_signal)
+    monkeypatch.setattr(repo_mod, "add_signal_sources", fake_add_sources)
     return captured
 
 
@@ -162,7 +162,7 @@ def _patch_meta_and_project(
 
 
 @pytest.mark.asyncio
-async def test_build_card_happy_path_writes_card_and_sources(
+async def test_build_signal_happy_path_writes_signal_and_sources(
     monkeypatch: pytest.MonkeyPatch,
     fake_session: AsyncMock,
     tool_client_with_thread: MagicMock,
@@ -170,7 +170,7 @@ async def test_build_card_happy_path_writes_card_and_sources(
     org_id = uuid.uuid4()
     project_id = uuid.uuid4()
     message_id = uuid.uuid4()
-    card_id = uuid.uuid4()
+    signal_id = uuid.uuid4()
 
     _patch_meta_and_project(
         monkeypatch,
@@ -180,12 +180,12 @@ async def test_build_card_happy_path_writes_card_and_sources(
     captured = _patch_repo(
         monkeypatch,
         existing_first=None,
-        insert_card_returns=card_id,
+        insert_signal_returns=signal_id,
     )
 
     llm = _FakeLLM([_happy_draft()])
 
-    result = await builder_mod.build_card(
+    result = await builder_mod.build_signal(
         fake_session,
         llm,
         message_id=message_id,
@@ -194,7 +194,7 @@ async def test_build_card_happy_path_writes_card_and_sources(
         tool_client=tool_client_with_thread,
     )
 
-    assert result["card_id"] == card_id
+    assert result["signal_id"] == signal_id
     assert result["existing"] is False
     assert len(llm.calls) == 1
     assert len(captured["insert_calls"]) == 1
@@ -212,7 +212,7 @@ async def test_build_card_happy_path_writes_card_and_sources(
 
 
 @pytest.mark.asyncio
-async def test_build_card_idempotent_when_existing(
+async def test_build_signal_idempotent_when_existing(
     monkeypatch: pytest.MonkeyPatch,
     fake_session: AsyncMock,
     tool_client_with_thread: MagicMock,
@@ -220,12 +220,12 @@ async def test_build_card_idempotent_when_existing(
     org_id = uuid.uuid4()
     project_id = uuid.uuid4()
     message_id = uuid.uuid4()
-    card_id = uuid.uuid4()
+    signal_id = uuid.uuid4()
 
     captured = _patch_repo(
         monkeypatch,
         existing_first={
-            "id": str(card_id),
+            "id": str(signal_id),
             "org_id": str(org_id),
             "project_id": str(project_id),
             "kind": "decision",
@@ -242,7 +242,7 @@ async def test_build_card_idempotent_when_existing(
 
     llm = _FakeLLM([])
 
-    result = await builder_mod.build_card(
+    result = await builder_mod.build_signal(
         fake_session,
         llm,
         message_id=message_id,
@@ -251,7 +251,7 @@ async def test_build_card_idempotent_when_existing(
         tool_client=tool_client_with_thread,
     )
 
-    assert result["card_id"] == card_id
+    assert result["signal_id"] == signal_id
     assert result["existing"] is True
     assert len(llm.calls) == 0
     assert len(captured["insert_calls"]) == 0
@@ -260,7 +260,7 @@ async def test_build_card_idempotent_when_existing(
 
 
 @pytest.mark.asyncio
-async def test_build_card_handles_integrity_error_race(
+async def test_build_signal_handles_integrity_error_race(
     monkeypatch: pytest.MonkeyPatch,
     fake_session: AsyncMock,
     tool_client_with_thread: MagicMock,
@@ -268,7 +268,7 @@ async def test_build_card_handles_integrity_error_race(
     org_id = uuid.uuid4()
     project_id = uuid.uuid4()
     message_id = uuid.uuid4()
-    existing_card_id = uuid.uuid4()
+    existing_signal_id = uuid.uuid4()
 
     _patch_meta_and_project(
         monkeypatch,
@@ -280,7 +280,7 @@ async def test_build_card_handles_integrity_error_race(
         monkeypatch,
         existing_first=None,
         existing_after_insert={
-            "id": str(existing_card_id),
+            "id": str(existing_signal_id),
             "org_id": str(org_id),
             "project_id": str(project_id),
             "kind": "decision",
@@ -293,12 +293,12 @@ async def test_build_card_handles_integrity_error_race(
             "created_at": dt.datetime(2026, 6, 7, tzinfo=dt.UTC),
             "updated_at": dt.datetime(2026, 6, 7, tzinfo=dt.UTC),
         },
-        insert_card_raises=integrity_err,
+        insert_signal_raises=integrity_err,
     )
 
     llm = _FakeLLM([_happy_draft()])
 
-    result = await builder_mod.build_card(
+    result = await builder_mod.build_signal(
         fake_session,
         llm,
         message_id=message_id,
@@ -307,7 +307,7 @@ async def test_build_card_handles_integrity_error_race(
         tool_client=tool_client_with_thread,
     )
 
-    assert result["card_id"] == existing_card_id
+    assert result["signal_id"] == existing_signal_id
     assert result["existing"] is True
     assert len(captured["insert_calls"]) == 1
     fake_session.rollback.assert_awaited()
