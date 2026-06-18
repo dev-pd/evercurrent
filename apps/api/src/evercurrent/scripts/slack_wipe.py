@@ -1,8 +1,9 @@
-"""Delete every bot-deletable message from all Slack channels.
+"""Delete every deletable message from all Slack channels.
 
-Uses SLACK_DEMO_BOT_TOKEN directly (not the connector DB row), so it works
-before connecting or after a DB nuke. The bot can only delete messages it
-posted; genuine human messages are left untouched.
+Two passes: the demo bot token (SLACK_DEMO_BOT_TOKEN) deletes bot-posted
+messages, then the user token (SLACK_USER_TOKEN), if set, deletes the real
+user's own messages — so `make webhook` chatter from the Prasad user is wiped
+too. A token only deletes its own messages; anything neither owns survives.
 
 Run:  docker compose exec api python -m evercurrent.scripts.slack_wipe
 """
@@ -11,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import os
 
 from evercurrent.config import get_settings
 from evercurrent.connectors.slack.client import SlackAPIError, SlackClient
@@ -65,21 +67,36 @@ async def _wipe_thread(client: SlackClient, channel_id: str, root_ts: str) -> in
     return deleted
 
 
-async def main() -> None:
-    token = get_settings().slack_demo_bot_token
-    if not token:
-        raise SystemExit("SLACK_DEMO_BOT_TOKEN not set")
+async def _wipe_with_token(token: str, label: str) -> int:
     client = SlackClient(bot_token=token)
     total = 0
+    channel_count = 0
     try:
         channels = await client.list_all_channels()
+        channel_count = len(channels)
         for ch in channels:
             with contextlib.suppress(SlackAPIError):
                 await client.conversations_join(channel=ch.id)
             total += await _wipe_channel(client, ch.id, ch.name)
     finally:
         await client.aclose()
-    print(f"done. deleted {total} messages across {len(channels)} channels")
+    print(f"[{label}] deleted {total} messages across {channel_count} channels")
+    return total
+
+
+async def main() -> None:
+    bot_token = get_settings().slack_demo_bot_token
+    if not bot_token:
+        raise SystemExit("SLACK_DEMO_BOT_TOKEN not set")
+    total = await _wipe_with_token(bot_token, "bot")
+
+    user_token = os.environ.get("SLACK_USER_TOKEN")
+    if user_token:
+        total += await _wipe_with_token(user_token, "user")
+    else:
+        print("SLACK_USER_TOKEN not set — skipping user-message pass")
+
+    print(f"done. deleted {total} messages total")
 
 
 if __name__ == "__main__":
