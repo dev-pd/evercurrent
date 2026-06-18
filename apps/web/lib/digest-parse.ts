@@ -41,7 +41,9 @@ export function parseDigest(md: string | null | undefined): ParsedDigest {
       const cite = body.match(/\[msg:([0-9a-fA-F-]+)\]/);
       const messageId = cite ? cite[1] : null;
       const text = body
-        .replace(/\s*\[msg:[0-9a-fA-F-]+\]\s*/g, " ")
+        // Strip every citation token the digest LLM emits — [msg:…],
+        // [message:…], [signal:…] — so none leak into the rendered text.
+        .replace(/\s*\[(?:msg|message|signal):[0-9a-fA-F-]+\]\s*/g, " ")
         .replace(/\*\*/g, "")
         .trim();
       if (text) out[current].push({ text, messageId });
