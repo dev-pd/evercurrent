@@ -67,9 +67,7 @@ export const messages = {
     regenStarted: "Regenerating your digest…",
     regenFailed: "Couldn't regenerate the digest. Try again.",
     regenNeedsData: "Connect Slack and sync first",
-    live: "Live",
-    newCount: (n: number) => `${n} new`,
-    updatedAt: (time: string) => `updated ${time}`,
+    updatedAt: (time: string) => `Digest refreshed ${time}`,
   },
   digest: {
     topPriorityLabel: "Top priority",

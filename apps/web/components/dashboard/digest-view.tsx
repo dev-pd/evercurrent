@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useDigest, useDigestList } from "@/hooks/use-digest";
+import { useRegen } from "@/stores/regen";
 import { parseDigest } from "@/lib/digest-parse";
 import { messages } from "@/lib/messages";
 import { DigestColumns } from "./digest-columns";
@@ -15,6 +16,7 @@ const digestCopy = messages.digest;
 
 export function DigestView() {
   const list = useDigestList();
+  const regenerating = useRegen((s) => s.pending);
   const todayIndex = list.data?.today_index ?? null;
 
   // Default to today once the list resolves; never let the picker point at a
@@ -38,6 +40,14 @@ export function DigestView() {
   }
 
   if (items.length === 0) {
+    if (regenerating) {
+      return (
+        <div className="flex flex-col items-center justify-center gap-3 py-12">
+          <Spinner size="md" />
+          <span className="text-sm text-[var(--text-muted)]">{digestCopy.regenerating}</span>
+        </div>
+      );
+    }
     return <EmptyState title={copy.noDigestTitle} hint={copy.noDigestHint} />;
   }
 

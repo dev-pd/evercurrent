@@ -12,6 +12,7 @@ export type StreamEventType =
   | "signal_resolved"
   | "digest_regen_enqueued"
   | "digest_ready"
+  | "sync_complete"
   | "insight_created"
   | "insight_failed";
 
@@ -30,6 +31,7 @@ export function useEvents({ projectId, onEvent, enabled = true }: UseEventsOptio
   const queryClient = useQueryClient();
   const router = useRouter();
   const regenDone = useRegen((s) => s.done);
+  const regenStart = useRegen((s) => s.start);
   const sourceRef = useRef<EventSource | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [connected, setConnected] = useState(false);
@@ -85,6 +87,15 @@ export function useEvents({ projectId, onEvent, enabled = true }: UseEventsOptio
           regenDone();
           queryClient.invalidateQueries({ queryKey: ["digest"] });
           queryClient.invalidateQueries({ queryKey: ["digests", "list"] });
+          router.refresh();
+          break;
+        case "sync_complete":
+          // Sync provisioned members + channels — refresh the members dropdown
+          // and the rest of the server tree without a manual reload. The first
+          // digest is generating now, so show the regenerating spinner until
+          // digest_ready clears it.
+          queryClient.invalidateQueries({ queryKey: ["members"] });
+          regenStart();
           router.refresh();
           break;
       }

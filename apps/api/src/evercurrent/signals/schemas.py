@@ -7,7 +7,7 @@ import datetime as dt
 import uuid
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 SignalKindT = Literal["decision", "risk", "question"]
 SignalStatusT = Literal["open", "resolved", "dismissed"]
@@ -22,6 +22,22 @@ class SignalDraft(BaseModel):
     affected_subsystems: list[str]
     confidence: float = Field(ge=0.0, le=1.0)
     decided_at: dt.datetime | None = None
+
+    @field_validator("decided_at", mode="before")
+    @classmethod
+    def _coerce_decided_at(cls, v: object) -> object:
+        # Sonnet returns decided_at as an ISO string ("2024-01-01T00:00:00Z");
+        # strict mode would reject the str and force a wasted retry, so parse it
+        # here. Unparseable / "null" -> None rather than failing the whole draft.
+        if isinstance(v, str):
+            text = v.strip()
+            if not text or text.lower() == "null":
+                return None
+            try:
+                return dt.datetime.fromisoformat(text)
+            except ValueError:
+                return None
+        return v
 
 
 class SignalSourceRef(BaseModel):

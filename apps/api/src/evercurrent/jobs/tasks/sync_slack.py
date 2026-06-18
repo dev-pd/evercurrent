@@ -19,6 +19,7 @@ from evercurrent.connectors.slack.client import SlackClient
 from evercurrent.connectors.slack.crypto import TokenVault
 from evercurrent.db import models
 from evercurrent.db.session import admin_session_scope
+from evercurrent.sse_publisher import publish_event
 
 log = structlog.get_logger(__name__)
 
@@ -30,6 +31,7 @@ async def sync_slack_connector(_ctx: dict[str, Any], connector_id: str) -> dict[
         raise RuntimeError(msg)
     vault = TokenVault(settings.connector_secret_key)
     cid = uuid.UUID(connector_id)
+    project_id: str | None = None
     async with admin_session_scope() as session:
         connector = (
             await session.execute(
@@ -82,8 +84,27 @@ async def sync_slack_connector(_ctx: dict[str, Any], connector_id: str) -> dict[
                 except Exception as exc:  # noqa: BLE001
                     log.warning("slack.sync.channel_failed", channel=ch.name, error=str(exc))
             members = await _provision_authors(session, client, connector.org_id)
+            project_row = (
+                await session.execute(
+                    text(
+                        "SELECT id FROM projects WHERE org_id = :o "
+                        "ORDER BY created_at DESC LIMIT 1",
+                    ),
+                    {"o": str(connector.org_id)},
+                )
+            ).first()
+            project_id = str(project_row[0]) if project_row else None
         finally:
             await client.aclose()
+
+    # Tell open clients the sync finished so they re-fetch server data (members
+    # dropdown, boards) without a manual refresh.
+    if project_id is not None:
+        publish_event(
+            project_id,
+            "sync_complete",
+            {"members": members, "channels": channels_done},
+        )
 
     # Draft each member's first digest now that messages are ingested. Delayed so
     # the per-message scoring/signal tasks enqueued during backfill drain before
