@@ -5,30 +5,30 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { apiServer } from "@/lib/api";
 import { PageContainer } from "@/components/layout/page-header";
-import { KnowledgeCard } from "@/components/cards/knowledge-card";
+import { SignalCard } from "@/components/signals/signal-card";
 import { messages } from "@/lib/messages";
-import type { CardResponse } from "@/lib/types";
+import type { SignalResponse } from "@/lib/types";
 
-async function safeGetCard(id: string): Promise<CardResponse | null> {
+async function safeGetSignal(id: string): Promise<SignalResponse | null> {
   try {
     const client = await apiServer();
-    return await client.getCard(id);
+    return await client.getSignal(id);
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("card fetch failed", error);
+      console.warn("signal fetch failed", error);
     }
     return null;
   }
 }
 
-interface CardDetailPageProps {
+interface SignalDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function CardDetailPage({ params }: CardDetailPageProps) {
+export default async function SignalDetailPage({ params }: SignalDetailPageProps) {
   const { id } = await params;
-  const card = await safeGetCard(id);
-  if (!card) {
+  const signal = await safeGetSignal(id);
+  if (!signal) {
     notFound();
   }
   return (
@@ -44,7 +44,7 @@ export default async function CardDetailPage({ params }: CardDetailPageProps) {
       }
     >
       <div className="mx-auto w-full max-w-3xl">
-        <KnowledgeCard card={card} />
+        <SignalCard signal={signal} />
       </div>
     </PageContainer>
   );

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { DataTable, type Column } from "@/components/ui/data-table";
 import { messages } from "@/lib/messages";
-import type { CardListItem } from "@/lib/types";
+import type { SignalListItem } from "@/lib/types";
 import { useDecisionModal } from "@/stores/decision-modal";
 
 const copy = messages.decisions;
@@ -19,7 +19,7 @@ function kindStyle(kind: string): string {
   return KIND_STYLES[kind] ?? "border-zinc-200 bg-zinc-50 text-zinc-700";
 }
 
-const columns: Column<CardListItem>[] = [
+const columns: Column<SignalListItem>[] = [
   {
     key: "kind",
     header: "Kind",
@@ -75,17 +75,17 @@ function buildFilters(hasSubs: boolean): { label: string; filter: Filter }[] {
   ];
 }
 
-function inMyScope(card: CardListItem, mySubs: string[]): boolean {
-  if (card.status !== "open") return false;
+function inMyScope(signal: SignalListItem, mySubs: string[]): boolean {
+  if (signal.status !== "open") return false;
   if (mySubs.length === 0) return true;
-  return card.affected_subsystems.some((subsystem) => mySubs.includes(subsystem));
+  return signal.affected_subsystems.some((subsystem) => mySubs.includes(subsystem));
 }
 
-function matches(card: CardListItem, f: Filter, mySubs: string[]): boolean {
+function matches(signal: SignalListItem, f: Filter, mySubs: string[]): boolean {
   if (f.key === "all") return true;
-  if (f.key === "open") return card.status === "open";
-  if (f.key === "kind") return card.status === "open" && card.kind === f.kind;
-  return inMyScope(card, mySubs);
+  if (f.key === "open") return signal.status === "open";
+  if (f.key === "kind") return signal.status === "open" && signal.kind === f.kind;
+  return inMyScope(signal, mySubs);
 }
 
 function isActive(a: Filter, b: Filter): boolean {
@@ -95,16 +95,16 @@ function isActive(a: Filter, b: Filter): boolean {
 }
 
 export function DecisionsBoard({
-  cards,
+  signals,
   mySubsystems = [],
 }: {
-  cards: CardListItem[];
+  signals: SignalListItem[];
   mySubsystems?: string[];
 }) {
   const hasSubs = mySubsystems.length > 0;
   const filters = buildFilters(hasSubs);
   const [filter, setFilter] = useState<Filter>(hasSubs ? { key: "mine" } : { key: "open" });
-  const filtered = cards.filter((card) => matches(card, filter, mySubsystems));
+  const filtered = signals.filter((signal) => matches(signal, filter, mySubsystems));
   const open = useDecisionModal((s) => s.open);
 
   return (
@@ -128,7 +128,7 @@ export function DecisionsBoard({
           );
         })}
         <span className="ml-auto font-mono text-xs text-[var(--text-muted)] tabular-nums">
-          {filtered.length}/{cards.length}
+          {filtered.length}/{signals.length}
         </span>
       </div>
 

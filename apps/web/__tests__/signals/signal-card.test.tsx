@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { KnowledgeCard } from "@/components/cards/knowledge-card";
-import type { CardResponse } from "@/lib/types";
+import { SignalCard } from "@/components/signals/signal-card";
+import type { SignalResponse } from "@/lib/types";
 
-const card: CardResponse = {
+const signal: SignalResponse = {
   id: "11111111-1111-1111-1111-111111111111",
   kind: "decision",
   summary: "Switch BRK-A1 from AL-6063-T5 to AL-7075-T6",
@@ -27,9 +27,9 @@ const card: CardResponse = {
   activity: [],
 };
 
-describe("KnowledgeCard", () => {
+describe("SignalCard", () => {
   test("renders summary, body, and sources", () => {
-    render(<KnowledgeCard card={card} />);
+    render(<SignalCard signal={signal} />);
     expect(screen.getByText(/switch brk-a1/i)).toBeInTheDocument();
     expect(screen.getByText(/chassis bracket material/i)).toBeInTheDocument();
     expect(screen.getByText(/#mech-design/)).toBeInTheDocument();

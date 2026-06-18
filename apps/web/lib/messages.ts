@@ -61,7 +61,7 @@ export const messages = {
     kpiMessagesToday: "Messages today",
     kpiProgramProgress: "Program progress",
     kpiFcsTarget: "FCS target",
-    kpiOpenCards: "Open cards",
+    kpiOpenSignals: "Open signals",
     noDigestTitle: "No digest yet.",
     noDigestHint: "Connect Slack and regenerate to draft the first briefing.",
     regenerate: "Regenerate",
@@ -93,11 +93,11 @@ export const messages = {
     filterRisks: "Risks",
     filterQuestions: "Questions",
     filterAll: "All",
-    noMatch: "No cards match this filter.",
+    noMatch: "No signals match this filter.",
     modalLabel: "Decision",
     backToDecisions: "Back to Decisions",
   },
-  card: {
+  signal: {
     statusPrefix: "status:",
     confidencePrefix: "confidence:",
     decidedPrefix: "decided:",

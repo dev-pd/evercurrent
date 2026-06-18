@@ -35,7 +35,7 @@ export const todayV2Schema = z.object({
 });
 export type TodayV2 = z.infer<typeof todayV2Schema>;
 
-export const cardSourceSchema = z.object({
+export const signalSourceSchema = z.object({
   id: z.string().uuid(),
   kind: z.string(),
   channel: z.string().nullable().optional(),
@@ -45,18 +45,18 @@ export const cardSourceSchema = z.object({
   text: z.string(),
   url: z.string().nullable().optional(),
 });
-export type CardSource = z.infer<typeof cardSourceSchema>;
+export type SignalSource = z.infer<typeof signalSourceSchema>;
 
-export const cardActivitySchema = z.object({
+export const signalActivitySchema = z.object({
   id: z.string().uuid(),
   at: z.string(),
   actor: z.string().nullable().optional(),
   kind: z.string(),
   description: z.string(),
 });
-export type CardActivity = z.infer<typeof cardActivitySchema>;
+export type SignalActivity = z.infer<typeof signalActivitySchema>;
 
-export const cardListItemSchema = z.object({
+export const signalListItemSchema = z.object({
   id: z.string().uuid(),
   kind: z.string(),
   summary: z.string(),
@@ -68,17 +68,17 @@ export const cardListItemSchema = z.object({
   affected_subsystems: z.array(z.string()).default([]),
   updated_at: z.string(),
 });
-export type CardListItem = z.infer<typeof cardListItemSchema>;
+export type SignalListItem = z.infer<typeof signalListItemSchema>;
 
-export const cardPageSchema = z.object({
-  items: z.array(cardListItemSchema),
+export const signalPageSchema = z.object({
+  items: z.array(signalListItemSchema),
   total: z.number().int(),
   limit: z.number().int(),
   offset: z.number().int(),
 });
-export type CardPage = z.infer<typeof cardPageSchema>;
+export type SignalPage = z.infer<typeof signalPageSchema>;
 
-export const cardResponseSchema = z.object({
+export const signalResponseSchema = z.object({
   id: z.string().uuid(),
   kind: z.string(),
   summary: z.string(),
@@ -87,10 +87,10 @@ export const cardResponseSchema = z.object({
   confidence: z.number().nullable().optional(),
   decided_at: z.string().nullable().optional(),
   updated_at: z.string(),
-  sources: z.array(cardSourceSchema),
-  activity: z.array(cardActivitySchema).default([]),
+  sources: z.array(signalSourceSchema),
+  activity: z.array(signalActivitySchema).default([]),
 });
-export type CardResponse = z.infer<typeof cardResponseSchema>;
+export type SignalResponse = z.infer<typeof signalResponseSchema>;
 
 export const digestItemV2Schema = z.object({
   id: z.string().uuid(),
@@ -99,7 +99,7 @@ export const digestItemV2Schema = z.object({
   author_display_name: z.string().nullable().optional(),
   ts: z.string().nullable().optional(),
   why_this_matters: z.string(),
-  card_id: z.string().uuid().nullable().optional(),
+  signal_id: z.string().uuid().nullable().optional(),
   message_id: z.string().uuid().nullable().optional(),
 });
 export type DigestItemV2 = z.infer<typeof digestItemV2Schema>;
@@ -111,7 +111,7 @@ export const digestV2Schema = z.object({
   content_md: z.string(),
   items: z.array(digestItemV2Schema),
   generated_at: z.string(),
-  card_ids: z.array(z.string().uuid()).default([]),
+  signal_ids: z.array(z.string().uuid()).default([]),
   message_ids: z.array(z.string().uuid()).default([]),
 });
 export type DigestV2 = z.infer<typeof digestV2Schema>;

@@ -4,24 +4,24 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, X } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
-import { KnowledgeCard } from "@/components/cards/knowledge-card";
+import { SignalCard } from "@/components/signals/signal-card";
 import { messages } from "@/lib/messages";
 import { useDecisionModal } from "@/stores/decision-modal";
 
 const copy = messages.decisions;
 
 export function DecisionModal() {
-  const cardId = useDecisionModal((s) => s.cardId);
+  const signalId = useDecisionModal((s) => s.signalId);
   const close = useDecisionModal((s) => s.close);
 
-  const { data: card, isLoading } = useQuery({
-    queryKey: ["card", cardId],
-    queryFn: () => apiBrowser().getCard(cardId as string),
-    enabled: !!cardId,
+  const { data: signal, isLoading } = useQuery({
+    queryKey: ["signal", signalId],
+    queryFn: () => apiBrowser().getSignal(signalId as string),
+    enabled: !!signalId,
   });
 
   useEffect(() => {
-    if (!cardId) return undefined;
+    if (!signalId) return undefined;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
     };
@@ -31,9 +31,9 @@ export function DecisionModal() {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [cardId, close]);
+  }, [signalId, close]);
 
-  if (!cardId) return null;
+  if (!signalId) return null;
 
   return (
     <div
@@ -65,12 +65,12 @@ export function DecisionModal() {
           </button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {isLoading || !card ? (
+          {isLoading || !signal ? (
             <div className="flex h-44 items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-[var(--color-accent-600)]" />
             </div>
           ) : (
-            <KnowledgeCard card={card} />
+            <SignalCard signal={signal} />
           )}
         </div>
       </div>

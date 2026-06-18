@@ -5,7 +5,7 @@ import { apiServer, VIEW_AS_COOKIE } from "@/lib/api";
 import { PageContainer, PageHeader } from "@/components/layout/page-header";
 import { DecisionsBoard } from "@/components/decisions/decisions-board";
 import { messages } from "@/lib/messages";
-import type { CardPage, MemberSummary } from "@/lib/types";
+import type { SignalPage, MemberSummary } from "@/lib/types";
 
 const copy = messages.decisions;
 
@@ -22,11 +22,11 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 export default async function DecisionsPage() {
   const client = await apiServer();
-  const [cardPage, members] = await Promise.all([
-    safe<CardPage | null>(() => client.listCards({ limit: 1000 }), null),
+  const [signalPage, members] = await Promise.all([
+    safe<SignalPage | null>(() => client.listSignals({ limit: 1000 }), null),
     safe<MemberSummary[]>(() => client.listMembers(), []),
   ]);
-  const cards = cardPage?.items ?? [];
+  const signals = signalPage?.items ?? [];
 
   const viewedId = (await cookies()).get(VIEW_AS_COOKIE)?.value ?? null;
   const viewed = members.find((member) => member.id === viewedId) ?? members[0] ?? null;
@@ -36,7 +36,7 @@ export default async function DecisionsPage() {
 
   return (
     <PageContainer header={<PageHeader title={copy.title} subtitle={subtitle} />}>
-      <DecisionsBoard cards={cards} mySubsystems={mySubsystems} />
+      <DecisionsBoard signals={signals} mySubsystems={mySubsystems} />
     </PageContainer>
   );
 }

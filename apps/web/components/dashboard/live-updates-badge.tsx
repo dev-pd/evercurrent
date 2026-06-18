@@ -28,7 +28,7 @@ export function LiveUpdatesBadge({ projectId, generatedAt }: LiveUpdatesBadgePro
   }
 
   const handleEvent = useCallback((event: StreamEvent) => {
-    if (event.type === "message_tagged" || event.type === "card_created") {
+    if (event.type === "message_tagged" || event.type === "signal_created") {
       setState((prev) => ({ ...prev, count: prev.count + 1 }));
     } else if (event.type === "digest_ready") {
       setState((prev) => ({ ...prev, count: 0 }));

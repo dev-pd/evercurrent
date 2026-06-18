@@ -1,13 +1,13 @@
 import { create } from "zustand";
 
 interface DecisionModalState {
-  cardId: string | null;
+  signalId: string | null;
   open: (id: string) => void;
   close: () => void;
 }
 
 export const useDecisionModal = create<DecisionModalState>((set) => ({
-  cardId: null,
-  open: (id) => set({ cardId: id }),
-  close: () => set({ cardId: null }),
+  signalId: null,
+  open: (id) => set({ signalId: id }),
+  close: () => set({ signalId: null }),
 }));

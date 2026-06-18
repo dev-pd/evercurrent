@@ -1,7 +1,7 @@
 import { z } from "zod";
 import {
-  cardPageSchema,
-  cardResponseSchema,
+  signalPageSchema,
+  signalResponseSchema,
   digestV2Schema,
   meSchema,
   memberSummarySchema,
@@ -12,8 +12,8 @@ import {
   proactiveInsightSchema,
   timelineSchema,
   todayV2Schema,
-  type CardPage,
-  type CardResponse,
+  type SignalPage,
+  type SignalResponse,
   type DigestV2,
   type Me,
   type MemberSummary,
@@ -125,14 +125,14 @@ export interface ApiClient {
   getToday(projectId: string): Promise<TodayV2>;
   getDigestToday(): Promise<DigestV2>;
   regenerateDigest(): Promise<RegenerateResponse>;
-  listCards(filters?: CardFilters): Promise<CardPage>;
-  getCard(id: string): Promise<CardResponse>;
+  listSignals(filters?: SignalFilters): Promise<SignalPage>;
+  getSignal(id: string): Promise<SignalResponse>;
   getInsights(limit?: number): Promise<ProactiveInsight[]>;
   generateInsight(): Promise<{ status: string; project_id: string }>;
   getTimeline(projectId: string): Promise<Timeline>;
 }
 
-export interface CardFilters {
+export interface SignalFilters {
   projectId?: string;
   kind?: string;
   status?: string;
@@ -140,7 +140,7 @@ export interface CardFilters {
   offset?: number;
 }
 
-function buildCardQuery(filters?: CardFilters): string {
+function buildSignalQuery(filters?: SignalFilters): string {
   if (!filters) return "";
   const params = new URLSearchParams();
   if (filters.projectId) params.set("project_id", filters.projectId);
@@ -206,11 +206,15 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
         body: {},
       });
     },
-    async listCards(filters) {
-      return apiFetch(`/api/v1/cards${buildCardQuery(filters)}`, cardPageSchema, await getCtx());
+    async listSignals(filters) {
+      return apiFetch(
+        `/api/v1/signals${buildSignalQuery(filters)}`,
+        signalPageSchema,
+        await getCtx(),
+      );
     },
-    async getCard(id) {
-      return apiFetch(`/api/v1/cards/${id}`, cardResponseSchema, await getCtx());
+    async getSignal(id) {
+      return apiFetch(`/api/v1/signals/${id}`, signalResponseSchema, await getCtx());
     },
     async getInsights(limit = 5) {
       return apiFetch(`/api/v1/insights?limit=${limit}`, insightListSchema, await getCtx());

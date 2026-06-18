@@ -7,7 +7,7 @@ const STYLE_OPTIONS: Record<TimestampStyle, Intl.DateTimeFormatOptions> = {
 };
 
 /** Format an ISO timestamp for display. Returns null for empty input and the
- *  raw string if it can't be parsed (so a bad value never crashes a card). */
+ *  raw string if it can't be parsed (so a bad value never crashes a signal). */
 export function formatTimestamp(
   iso: string | null | undefined,
   style: TimestampStyle = "datetime",

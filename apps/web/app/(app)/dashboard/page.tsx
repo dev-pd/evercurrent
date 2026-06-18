@@ -37,11 +37,11 @@ export default async function DashboardPage() {
     memberList.find((member) => member.id === asMember) ?? memberList[0] ?? null;
   const projectId = projects?.[0]?.id ?? null;
 
-  const [today, timeline, openCardPage] = await Promise.all([
+  const [today, timeline, openSignalPage] = await Promise.all([
     projectId ? safeFetch(() => client.getToday(projectId)) : Promise.resolve(null),
     projectId ? safeFetch(() => client.getTimeline(projectId)) : Promise.resolve(null),
     projectId
-      ? safeFetch(() => client.listCards({ projectId, status: "open", limit: 1 }))
+      ? safeFetch(() => client.listSignals({ projectId, status: "open", limit: 1 }))
       : Promise.resolve(null),
   ]);
 
@@ -50,14 +50,14 @@ export default async function DashboardPage() {
   const phase = today?.phase ?? digest?.phase ?? "—";
   const dayIndex = today?.live_day ?? digest?.day_index ?? 0;
 
-  const openCards = openCardPage?.total ?? 0;
+  const openSignals = openSignalPage?.total ?? 0;
   const fcsTarget = timeline?.fcs_label?.split(" FCS")[0] ?? "—";
 
   const kpis = [
     { label: copy.kpiMessagesToday, value: today?.message_count ?? 0 },
     { label: copy.kpiProgramProgress, value: `${timeline?.progress_pct ?? 0}%` },
     { label: copy.kpiFcsTarget, value: fcsTarget },
-    { label: copy.kpiOpenCards, value: openCards },
+    { label: copy.kpiOpenSignals, value: openSignals },
   ];
 
   return (

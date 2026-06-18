@@ -4,12 +4,12 @@ import { AlertTriangle } from "lucide-react";
 import { timeAgo } from "@/lib/format-date";
 import { DataTable, type Column } from "@/components/ui/data-table";
 import { messages } from "@/lib/messages";
-import type { CardListItem } from "@/lib/types";
+import type { SignalListItem } from "@/lib/types";
 import { useDecisionModal } from "@/stores/decision-modal";
 
 const copy = messages.timeline;
 
-const columns: Column<CardListItem>[] = [
+const columns: Column<SignalListItem>[] = [
   {
     key: "summary",
     header: "Blocker",
@@ -48,10 +48,10 @@ const columns: Column<CardListItem>[] = [
   },
 ];
 
-export function BlockerBoard({ cards }: { cards: CardListItem[] }) {
+export function BlockerBoard({ signals }: { signals: SignalListItem[] }) {
   const open = useDecisionModal((s) => s.open);
-  const blockers = cards
-    .filter((card) => card.kind === "risk" && card.status === "open")
+  const blockers = signals
+    .filter((signal) => signal.kind === "risk" && signal.status === "open")
     .sort((left, right) => (right.occurred_at ?? "").localeCompare(left.occurred_at ?? ""));
 
   return (

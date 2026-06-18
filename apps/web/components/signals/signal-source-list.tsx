@@ -1,12 +1,12 @@
 import { FileText, MessageSquare } from "lucide-react";
 import { formatTimestamp } from "@/lib/format-date";
 import { messages } from "@/lib/messages";
-import type { CardSource } from "@/lib/types";
+import type { SignalSource } from "@/lib/types";
 
-const copy = messages.card;
+const copy = messages.signal;
 
-interface CardSourceListProps {
-  sources: CardSource[];
+interface SignalSourceListProps {
+  sources: SignalSource[];
 }
 
 function sourceIcon(kind: string) {
@@ -16,7 +16,7 @@ function sourceIcon(kind: string) {
   return <FileText className="h-3.5 w-3.5 text-zinc-500" aria-hidden="true" />;
 }
 
-export function CardSourceList({ sources }: CardSourceListProps) {
+export function SignalSourceList({ sources }: SignalSourceListProps) {
   if (sources.length === 0) {
     return <p className="text-xs text-zinc-500">{copy.noSources}</p>;
   }

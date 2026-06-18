@@ -8,7 +8,7 @@ import { useRegen } from "@/stores/regen";
 
 export type StreamEventType =
   | "message_tagged"
-  | "card_created"
+  | "signal_created"
   | "digest_ready"
   | "insight_created"
   | "insight_failed";
@@ -62,10 +62,10 @@ export function useEvents({ projectId, onEvent, enabled = true }: UseEventsOptio
         case "message_tagged":
           queryClient.invalidateQueries({ queryKey: ["today", projectId] });
           break;
-        case "card_created":
-          // Cards are server-rendered too; debounce a refresh so a burst
+        case "signal_created":
+          // Signals are server-rendered too; debounce a refresh so a burst
           // of new messages collapses into one re-render (~1.5s of quiet).
-          queryClient.invalidateQueries({ queryKey: ["cards", projectId] });
+          queryClient.invalidateQueries({ queryKey: ["signals", projectId] });
           if (refreshTimer.current) clearTimeout(refreshTimer.current);
           refreshTimer.current = setTimeout(() => router.refresh(), 1500);
           break;

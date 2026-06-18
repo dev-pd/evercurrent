@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Flag } from "lucide-react";
 import { messages } from "@/lib/messages";
-import type { CardListItem } from "@/lib/types";
+import type { SignalListItem } from "@/lib/types";
 import { useDecisionModal } from "@/stores/decision-modal";
 
 const copy = messages.timeline;
@@ -24,11 +24,11 @@ const KIND_DOT: Record<string, string> = {
 interface GanttProps {
   startDate: string;
   fcsLabel: string;
-  cards: CardListItem[];
+  signals: SignalListItem[];
 }
 
 interface Marker {
-  card: CardListItem;
+  signal: SignalListItem;
   pct: number;
 }
 
@@ -36,7 +36,7 @@ function fmt(d: Date): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-export function GanttChart({ startDate, fcsLabel, cards }: GanttProps) {
+export function GanttChart({ startDate, fcsLabel, signals }: GanttProps) {
   const open = useDecisionModal((s) => s.open);
   const [hover, setHover] = useState<Marker | null>(null);
 
@@ -54,9 +54,9 @@ export function GanttChart({ startDate, fcsLabel, cards }: GanttProps) {
   }));
 
   // Plot open decisions + risks by their real (backdated) date.
-  const markers: Marker[] = cards
-    .filter((card) => card.status === "open" && card.kind !== "question" && card.occurred_at)
-    .map((card) => ({ card, pct: pct(new Date(card.occurred_at as string).getTime()) }));
+  const markers: Marker[] = signals
+    .filter((signal) => signal.status === "open" && signal.kind !== "question" && signal.occurred_at)
+    .map((signal) => ({ signal, pct: pct(new Date(signal.occurred_at as string).getTime()) }));
 
   const ticks = Array.from({ length: 5 }, (_, i) => {
     const tickTime = start + (span * i) / 4;
@@ -95,13 +95,13 @@ export function GanttChart({ startDate, fcsLabel, cards }: GanttProps) {
         <div className="absolute top-1/2 h-px w-full -translate-y-1/2 bg-[var(--border-default)]" />
         {markers.map((marker, i) => (
           <button
-            key={marker.card.id + i}
+            key={marker.signal.id + i}
             type="button"
-            onClick={() => open(marker.card.id)}
+            onClick={() => open(marker.signal.id)}
             onMouseEnter={() => setHover(marker)}
             onMouseLeave={() => setHover(null)}
-            aria-label={marker.card.summary}
-            className={`absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ${KIND_DOT[marker.card.kind] ?? "bg-zinc-400 ring-zinc-200"} hover:scale-150`}
+            aria-label={marker.signal.summary}
+            className={`absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ${KIND_DOT[marker.signal.kind] ?? "bg-zinc-400 ring-zinc-200"} hover:scale-150`}
             style={{ left: `${marker.pct}%` }}
           />
         ))}
@@ -135,7 +135,7 @@ export function GanttChart({ startDate, fcsLabel, cards }: GanttProps) {
 
       {hover && (
         <div className="rounded-md border border-[var(--border-default)] bg-[var(--surface-muted)] px-3 py-2 text-xs text-[var(--text-secondary)]">
-          <span className="font-medium uppercase">{hover.card.kind}</span> · {hover.card.summary}
+          <span className="font-medium uppercase">{hover.signal.kind}</span> · {hover.signal.summary}
         </div>
       )}
     </div>
