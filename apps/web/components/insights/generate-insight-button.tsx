@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Sparkles } from "lucide-react";
 import { apiBrowser } from "@/lib/api";
@@ -22,12 +22,23 @@ export function GenerateInsightButton({
   const toast = useToast();
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshingRef = useRef(false);
 
   function stop() {
     if (timer.current) clearTimeout(timer.current);
     setRunning(false);
   }
+
+  // Toast only after the refresh transition settles (the insight has rendered),
+  // so the success toast doesn't beat the insight onto the page.
+  useEffect(() => {
+    if (isPending || !refreshingRef.current) return;
+    refreshingRef.current = false;
+    toast.show(copy.insightReady, "success");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPending]);
 
   // Eve runs on the worker (50-90s) and pushes the result over SSE. Keep
   // listening whenever the page is open — not only while `running` — so a
@@ -39,8 +50,8 @@ export function GenerateInsightButton({
       if (e.type === "insight_created") {
         stop();
         setError(null);
-        router.refresh();
-        toast.show(copy.insightReady, "success");
+        refreshingRef.current = true;
+        startTransition(() => router.refresh());
       } else if (e.type === "insight_failed") {
         stop();
         setError(running ? copy.eveNothing : null);

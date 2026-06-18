@@ -54,3 +54,4 @@ logs/
 
 # Docker volumes (when developing without volumes mounted)
 .docker-data/
+Atlas_PRD.pdf
