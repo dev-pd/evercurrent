@@ -32,6 +32,14 @@ def _phase_for(key: str) -> Any:
     return PHASES[1]
 
 
+def _norm(text: str) -> str:
+    """Normalized key for dedup: case- and whitespace-insensitive. The Sonnet
+    generator occasionally re-emits the same line across rounds/channels, which
+    used to seed duplicate messages -> duplicate signals -> the same topic
+    lingering after one copy was resolved."""
+    return " ".join(text.lower().split())
+
+
 async def emit_chatter() -> dict[str, Any]:
     settings = get_settings()
     token = settings.slack_demo_bot_token
@@ -47,6 +55,7 @@ async def emit_chatter() -> dict[str, Any]:
     client = SlackClient(bot_token=token)
     posted = 0
     used: set[str] = set()
+    seen_texts: set[str] = set()
     _max_rounds = 4
     try:
         live = await client.list_all_channels()
@@ -76,6 +85,9 @@ async def emit_chatter() -> dict[str, Any]:
                 for m in msgs[:want]:
                     if posted >= count:
                         break
+                    key = _norm(m.text)
+                    if key in seen_texts:
+                        continue
                     persona = BY_NAME.get(m.author)
                     try:
                         await client.chat_post_message(
@@ -86,6 +98,7 @@ async def emit_chatter() -> dict[str, Any]:
                         )
                         posted += 1
                         used.add(name)
+                        seen_texts.add(key)
                     except SlackAPIError as exc:
                         log.warning("demo_chatter.post_failed", author=m.author, error=exc.error)
     finally:
