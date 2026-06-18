@@ -171,6 +171,29 @@ webhook-resolve: ## Demo step 2: post resolving + follow-up replies into open-si
 		SIM_RESOLVE_COUNT=$${RESOLVE:-2} SIM_CONTEXT_COUNT=$${CONTEXT:-2} \
 		uv run python -m evercurrent.scripts.resolve_chatter
 
+# ----- Demo runbook (see prep/DEMO_PLAN.md) ---------------------------------
+
+.PHONY: wipe
+wipe: ## Clean Slack — bot AND user messages. Needs SLACK_DEMO_BOT_TOKEN + SLACK_USER_TOKEN in .env.
+	@set -a; [ -f .env ] && . ./.env; set +a; cd apps/api && uv run python -m evercurrent.scripts.slack_wipe
+
+.PHONY: bot-msgs
+bot-msgs: ## Post ~30 persona/bot messages to Slack (seed threads). Needs SLACK_DEMO_BOT_TOKEN. Vars: COUNT.
+	@set -a; [ -f .env ] && . ./.env; set +a; cd apps/api && \
+		BOT_MSGS_COUNT=$${COUNT:-30} uv run python -m evercurrent.scripts.demo_chatter
+
+.PHONY: user-msgs
+user-msgs: ## Post 5 messages AS the Prasad user (xoxp) -> webhook -> pipeline. Needs SLACK_USER_TOKEN. Vars: CHANNEL, COUNT, INTERVAL.
+	@set -a; [ -f .env ] && . ./.env; set +a; cd apps/api && \
+		CHATTER_CHANNEL=$${CHANNEL:-mech-design} CHATTER_COUNT=$${COUNT:-5} CHATTER_INTERVAL=$${INTERVAL:-2} \
+		uv run python -m evercurrent.scripts.user_chatter
+
+.PHONY: resolve-msgs
+resolve-msgs: ## Post resolving replies into ~15 open-signal threads -> webhook -> auto-resolution. Needs SLACK_DEMO_BOT_TOKEN. Vars: RESOLVE, CONTEXT.
+	@set -a; [ -f .env ] && . ./.env; set +a; cd apps/api && \
+		SIM_RESOLVE_COUNT=$${RESOLVE:-15} SIM_CONTEXT_COUNT=$${CONTEXT:-0} \
+		uv run python -m evercurrent.scripts.resolve_chatter
+
 .PHONY: prune
 prune: ## DESTRUCTIVE: nuke containers + volumes + dangling images for this project
 	$(COMPOSE) --profile dev --profile monitor down -v --remove-orphans

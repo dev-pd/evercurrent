@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime as dt
+import os
 from typing import Any
 
 import structlog
@@ -41,6 +42,8 @@ async def emit_chatter() -> dict[str, Any]:
     channels = list(CHANNEL_TOPICS)
     channel = channels[dt.datetime.now(dt.UTC).minute % len(channels)]
     phase = _phase_for(settings.demo_chatter_phase)
+    # Total bot messages to post (BOT_MSGS_COUNT env, else the config default).
+    count = int(os.environ.get("BOT_MSGS_COUNT", str(settings.demo_chatter_batch)))
 
     client = SlackClient(bot_token=token)
     posted = 0
@@ -52,11 +55,12 @@ async def emit_chatter() -> dict[str, Any]:
         msgs = await generate_batch(
             channel=channel,
             phase=phase,
-            count=settings.demo_chatter_batch,
+            count=count,
             threads=1,
             tier=ModelTier.DIGEST,
         )
-        for m in msgs:
+        # generate_batch can overshoot (thread expansion); cap to the request.
+        for m in msgs[:count]:
             persona = BY_NAME.get(m.author)
             try:
                 await client.chat_post_message(
