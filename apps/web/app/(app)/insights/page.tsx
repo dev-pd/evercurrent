@@ -2,8 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { apiServer } from "@/lib/api";
 import { PageContainer, PageHeader } from "@/components/layout/page-header";
-import { EmptyState } from "@/components/ui/empty-state";
-import { InsightsTable } from "@/components/insights/insights-table";
+import { InsightsView } from "@/components/insights/insights-view";
 import { GenerateInsightButton } from "@/components/insights/generate-insight-button";
 import { messages } from "@/lib/messages";
 import type { ProactiveInsight, Project, TodayV2 } from "@/lib/types";
@@ -44,11 +43,7 @@ export default async function InsightsPage() {
         />
       }
     >
-      {insightList.length === 0 ? (
-        <EmptyState title={copy.emptyTitle} hint={copy.emptyHint} />
-      ) : (
-        <InsightsTable insights={insightList} />
-      )}
+      <InsightsView insights={insightList} />
     </PageContainer>
   );
 }
