@@ -165,6 +165,12 @@ webhook: ## Post 10 live messages AS YOUR USER (xoxp) -> webhook -> pipeline (de
 		CHATTER_CHANNEL=$${CHANNEL:-mech-design} CHATTER_COUNT=$${COUNT:-10} CHATTER_INTERVAL=$${INTERVAL:-2} \
 		uv run python -m evercurrent.scripts.user_chatter
 
+.PHONY: webhook-resolve
+webhook-resolve: ## Demo step 2: post resolving + follow-up replies into open-signal threads -> webhook -> auto-resolution (live). Needs SLACK_DEMO_BOT_TOKEN. Vars: RESOLVE, CONTEXT.
+	@set -a; [ -f .env ] && . ./.env; set +a; cd apps/api && \
+		SIM_RESOLVE_COUNT=$${RESOLVE:-2} SIM_CONTEXT_COUNT=$${CONTEXT:-2} \
+		uv run python -m evercurrent.scripts.resolve_chatter
+
 .PHONY: prune
 prune: ## DESTRUCTIVE: nuke containers + volumes + dangling images for this project
 	$(COMPOSE) --profile dev --profile monitor down -v --remove-orphans
