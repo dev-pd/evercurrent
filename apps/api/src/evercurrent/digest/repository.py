@@ -107,6 +107,30 @@ async def list_recent_for_member(
     ]
 
 
+async def list_member_digests(
+    session: AsyncSession,
+    *,
+    project_member_id: uuid.UUID,
+) -> list[dict[str, object]]:
+    """Lightweight index of a member's stored digests (day + when generated),
+    newest first — backs the history date picker."""
+    rows = (
+        (
+            await session.execute(
+                text(
+                    "SELECT day_index, phase, generated_at FROM digests "
+                    "WHERE project_member_id = :mid "
+                    "ORDER BY day_index DESC",
+                ),
+                {"mid": str(project_member_id)},
+            )
+        )
+        .mappings()
+        .all()
+    )
+    return [dict(r) for r in rows]
+
+
 async def upsert_digest(
     session: AsyncSession,
     *,

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import uuid
+from typing import cast
 
 import structlog
 from fastapi import APIRouter, HTTPException, status
@@ -72,6 +74,21 @@ class DigestTodayResponse(BaseModel):
     stale_new_messages: int
 
 
+class DigestSummary(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    day_index: int
+    phase: str
+    generated_at: str
+
+
+class DigestListResponse(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    items: list[DigestSummary]
+    today_index: int
+
+
 class RegenerateResponse(BaseModel):
     model_config = ConfigDict(strict=True)
 
@@ -108,42 +125,71 @@ async def get_today(
             detail="digest not yet generated; regen enqueued",
         )
 
+    return await _digest_response(session, latest, today_index=today_idx)
+
+
+async def _digest_response(
+    session,  # noqa: ANN001
+    record,  # noqa: ANN001
+    *,
+    today_index: int,
+) -> DigestTodayResponse:
     resolved_cited = await digest_repo.count_resolved_cited_signals(
         session,
-        signal_ids=latest.signal_ids,
+        signal_ids=record.signal_ids,
     )
     new_messages = await digest_repo.count_new_scored_since(
         session,
-        project_member_id=user.membership_id,
-        since=latest.generated_at,
+        project_member_id=record.project_member_id,
+        since=record.generated_at,
     )
     is_stale = _compute_is_stale(
-        day_index=latest.day_index,
-        today_index=today_idx,
+        day_index=record.day_index,
+        today_index=today_index,
         resolved_cited=resolved_cited,
         new_messages=new_messages,
         new_threshold=_NEW_ACTIVITY_THRESHOLD,
     )
-
-    items = await _build_items(
-        session,
-        message_ids=latest.message_ids,
-    )
-
+    items = await _build_items(session, message_ids=record.message_ids)
     return DigestTodayResponse(
-        id=latest.id,
-        project_member_id=latest.project_member_id,
-        day_index=latest.day_index,
-        phase=latest.phase,
-        content_md=latest.content_md,
+        id=record.id,
+        project_member_id=record.project_member_id,
+        day_index=record.day_index,
+        phase=record.phase,
+        content_md=record.content_md,
         items=items,
-        signal_ids=latest.signal_ids,
-        message_ids=latest.message_ids,
-        generated_at=latest.generated_at.isoformat(),
+        signal_ids=record.signal_ids,
+        message_ids=record.message_ids,
+        generated_at=record.generated_at.isoformat(),
         is_stale=is_stale,
         stale_resolved_signals=resolved_cited,
         stale_new_messages=new_messages,
     )
+
+
+@router.get("", response_model=DigestListResponse)
+async def list_digests(
+    session: SessionDep,
+    user: CurrentUserDep,
+) -> DigestListResponse:
+    today_idx = await day_index_for_member(
+        session,
+        project_member_id=user.membership_id,
+        org_id=user.org_id,
+    )
+    rows = await digest_repo.list_member_digests(
+        session,
+        project_member_id=user.membership_id,
+    )
+    items = [
+        DigestSummary(
+            day_index=cast("int", r["day_index"]),
+            phase=str(r["phase"]),
+            generated_at=cast("dt.datetime", r["generated_at"]).isoformat(),
+        )
+        for r in rows
+    ]
+    return DigestListResponse(items=items, today_index=today_idx)
 
 
 async def _build_items(
@@ -212,3 +258,33 @@ async def regenerate(
         project_member_id=user.membership_id,
         day_index=today_idx,
     )
+
+
+@router.get("/{day_index}", response_model=DigestTodayResponse)
+async def get_by_day(
+    day_index: int,
+    session: SessionDep,
+    user: CurrentUserDep,
+) -> DigestTodayResponse:
+    """A past day's stored digest, read-only. Future days don't exist."""
+    today_idx = await day_index_for_member(
+        session,
+        project_member_id=user.membership_id,
+        org_id=user.org_id,
+    )
+    if day_index > today_idx:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="future digests do not exist",
+        )
+    record = await digest_repo.get_for_member_day(
+        session,
+        project_member_id=user.membership_id,
+        day_index=day_index,
+    )
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="no digest for that day",
+        )
+    return await _digest_response(session, record, today_index=today_idx)
