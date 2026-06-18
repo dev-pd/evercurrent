@@ -125,7 +125,7 @@ export interface ApiClient {
   disconnect(connectorId: string): Promise<{ status: string; kind: string }>;
   listProjects(): Promise<Project[]>;
   getToday(projectId: string): Promise<TodayV2>;
-  getDigestToday(): Promise<DigestV2>;
+  getDigestToday(): Promise<DigestV2 | null>;
   listDigests(): Promise<DigestList>;
   getDigestByDay(dayIndex: number): Promise<DigestV2>;
   regenerateDigest(): Promise<RegenerateResponse>;
@@ -202,7 +202,7 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
       );
     },
     async getDigestToday() {
-      return apiFetch("/api/v1/digests/today", digestV2Schema, await getCtx());
+      return apiFetch("/api/v1/digests/today", digestV2Schema.nullable(), await getCtx());
     },
     async listDigests() {
       return apiFetch("/api/v1/digests", digestListSchema, await getCtx());

@@ -15,7 +15,7 @@ export function useDigestList() {
 // is a read-only past snapshot (`/digests/{dayIndex}`). A null dayIndex disables
 // the query until the list resolves and a day is selected.
 export function useDigest(dayIndex: number | null, todayIndex: number | null) {
-  return useQuery<DigestV2>({
+  return useQuery<DigestV2 | null>({
     queryKey: ["digest", dayIndex],
     queryFn: () =>
       dayIndex === todayIndex

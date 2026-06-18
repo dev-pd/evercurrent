@@ -97,33 +97,24 @@ class RegenerateResponse(BaseModel):
     day_index: int
 
 
-@router.get("/today", response_model=DigestTodayResponse)
+@router.get("/today", response_model=DigestTodayResponse | None)
 async def get_today(
     session: SessionDep,
     user: CurrentUserDep,
-) -> DigestTodayResponse:
+) -> DigestTodayResponse | None:
+    # Read-only: returns null (not 404) when no digest exists yet. Generation is
+    # triggered by Slack sync and the manual Regenerate action, not by viewing.
     today_idx = await day_index_for_member(
         session,
         project_member_id=user.membership_id,
         org_id=user.org_id,
     )
-    phase = await project_phase_for_member(session, org_id=user.org_id)
-
     latest = await digest_repo.get_latest_for_member(
         session,
         project_member_id=user.membership_id,
     )
     if latest is None:
-        generate_digest_for_member.delay(
-            str(user.membership_id),
-            today_idx,
-            phase,
-            force=False,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="digest not yet generated; regen enqueued",
-        )
+        return None
 
     return await _digest_response(session, latest, today_index=today_idx)
 

@@ -27,7 +27,7 @@ export default async function DashboardPage() {
   const [members, projects, digest] = await Promise.all([
     safeFetch<MemberSummary[]>(() => client.listMembers()),
     safeFetch(() => client.listProjects()),
-    safeFetch<DigestV2>(() => client.getDigestToday()),
+    safeFetch(() => client.getDigestToday()),
   ]);
 
   const memberList = members ?? [];
