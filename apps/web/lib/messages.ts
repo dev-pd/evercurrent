@@ -80,8 +80,7 @@ export const messages = {
     historyLabel: "Digest date",
     todayOption: (date: string) => `${date} (today)`,
     loadError: "Couldn't load this digest. Try another day.",
-    staleBanner: (resolvedSignals: number, newMessages: number) =>
-      `${resolvedSignals} signal${resolvedSignals === 1 ? "" : "s"} resolved · ${newMessages} new message${newMessages === 1 ? "" : "s"} since this digest`,
+    staleBanner: "New activity since this digest — regenerate to update.",
     regenerate: "Regenerate",
     regenerating: "Regenerating…",
   },

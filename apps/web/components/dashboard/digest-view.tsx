@@ -24,9 +24,7 @@ export function DigestView() {
   const [selected, setSelected] = useState<number | null>(null);
   const items = list.data?.items ?? [];
   const effectiveSelected =
-    selected !== null && items.some((item) => item.day_index === selected)
-      ? selected
-      : todayIndex;
+    selected !== null && items.some((item) => item.day_index === selected) ? selected : todayIndex;
 
   const digest = useDigest(effectiveSelected, todayIndex);
   const isToday = effectiveSelected !== null && effectiveSelected === todayIndex;
@@ -68,12 +66,7 @@ export function DigestView() {
         {digest.isFetching && <Spinner size="sm" />}
       </div>
 
-      {showBanner && data && (
-        <StalenessBanner
-          resolvedSignals={data.stale_resolved_signals}
-          newMessages={data.stale_new_messages}
-        />
-      )}
+      {showBanner && data && <StalenessBanner />}
 
       {digest.isLoading ? (
         <div className="flex justify-center py-12">
