@@ -31,14 +31,21 @@ log = structlog.get_logger(__name__)
 def resolving_text(kind: str, summary: str) -> str:
     if kind == "risk":
         return (
-            f"Update: '{summary}' is mitigated — fix is in and verified, "
-            "no longer a concern. Closing this out."
+            f"This is now RESOLVED — no further action needed. The risk "
+            f"'{summary}' has been fully mitigated: the fix is implemented, "
+            "verified in test, and signed off. Removing it from the open-risk "
+            "register and closing this thread."
         )
     if kind == "question":
-        return f"Answered — '{summary}' is settled. Resolving the thread."
+        return (
+            f"This is now RESOLVED — no further action needed. The open question "
+            f"'{summary}' is definitively answered and agreed by all owners. "
+            "Closing this thread."
+        )
     return (
-        f"Decision confirmed: we're going with '{summary}'. "
-        "Locking it in and closing this out."
+        f"This is now RESOLVED — no further action needed. The decision on "
+        f"'{summary}' is final: reviewed, approved, and signed off by all "
+        "owners. Locking it in and closing this thread."
     )
 
 

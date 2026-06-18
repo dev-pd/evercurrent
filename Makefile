@@ -189,10 +189,12 @@ user-msgs: ## Post 5 messages AS the Prasad user (xoxp) -> webhook -> pipeline. 
 		uv run python -m evercurrent.scripts.user_chatter
 
 .PHONY: resolve-msgs
-resolve-msgs: ## Post resolving replies into ~15 open-signal threads -> webhook -> auto-resolution. Needs SLACK_DEMO_BOT_TOKEN. Vars: RESOLVE, CONTEXT.
-	@set -a; [ -f .env ] && . ./.env; set +a; cd apps/api && \
-		SIM_RESOLVE_COUNT=$${RESOLVE:-15} SIM_CONTEXT_COUNT=$${CONTEXT:-0} \
-		uv run python -m evercurrent.scripts.resolve_chatter
+resolve-msgs: ## Post resolving replies into ~15 open-signal threads -> auto-resolution on next Slack sync. Needs SLACK_DEMO_BOT_TOKEN. Vars: RESOLVE, CONTEXT.
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+		docker compose exec -T \
+			-e SLACK_DEMO_BOT_TOKEN="$$SLACK_DEMO_BOT_TOKEN" \
+			-e SIM_RESOLVE_COUNT=$${RESOLVE:-15} -e SIM_CONTEXT_COUNT=$${CONTEXT:-0} \
+			api python -m evercurrent.scripts.resolve_chatter
 
 .PHONY: prune
 prune: ## DESTRUCTIVE: nuke containers + volumes + dangling images for this project
