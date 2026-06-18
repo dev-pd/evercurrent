@@ -61,7 +61,7 @@ export const messages = {
     kpiFcsTarget: "FCS target",
     kpiOpenSignals: "Open signals",
     noDigestTitle: "No digest yet.",
-    noDigestHint: "Connect Slack and regenerate to draft the first briefing.",
+    noDigestHint: "Click Regenerate to draft the first briefing.",
     regenerate: "Regenerate",
     regenerating: "Regenerating…",
     regenStarted: "Regenerating your digest…",

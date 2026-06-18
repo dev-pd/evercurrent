@@ -31,7 +31,6 @@ export function useEvents({ projectId, onEvent, enabled = true }: UseEventsOptio
   const queryClient = useQueryClient();
   const router = useRouter();
   const regenDone = useRegen((s) => s.done);
-  const regenStart = useRegen((s) => s.start);
   const sourceRef = useRef<EventSource | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [connected, setConnected] = useState(false);
@@ -91,11 +90,9 @@ export function useEvents({ projectId, onEvent, enabled = true }: UseEventsOptio
           break;
         case "sync_complete":
           // Sync provisioned members + channels — refresh the members dropdown
-          // and the rest of the server tree without a manual reload. The first
-          // digest is generating now, so show the regenerating spinner until
-          // digest_ready clears it.
+          // and the rest of the server tree without a manual reload. No digest
+          // is generated automatically; the user draws the first one.
           queryClient.invalidateQueries({ queryKey: ["members"] });
-          regenStart();
           router.refresh();
           break;
       }

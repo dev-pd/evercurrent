@@ -98,20 +98,14 @@ async def sync_slack_connector(_ctx: dict[str, Any], connector_id: str) -> dict[
             await client.aclose()
 
     # Tell open clients the sync finished so they re-fetch server data (members
-    # dropdown, boards) without a manual refresh.
+    # dropdown, boards) without a manual refresh. The digest is NOT generated
+    # automatically — the user draws the first one with the Regenerate button.
     if project_id is not None:
         publish_event(
             project_id,
             "sync_complete",
             {"members": members, "channels": channels_done},
         )
-
-    # Draft each member's first digest now that messages are ingested. Delayed so
-    # the per-message scoring/signal tasks enqueued during backfill drain before
-    # the digest reads from them.
-    from evercurrent.jobs.celery_app import celery_app
-
-    celery_app.send_task("evercurrent.enqueue_due_digests_now", countdown=20)
 
     log.info(
         "slack.sync.done",
