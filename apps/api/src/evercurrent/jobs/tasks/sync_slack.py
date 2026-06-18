@@ -49,11 +49,14 @@ async def sync_slack_connector(_ctx: dict[str, Any], connector_id: str) -> dict[
         raw_total = 0
         channels_done = 0
         members = 0
+        cap = settings.slack_backfill_max_messages
         try:
             channels = await client.list_all_channels()
             for ch in channels:
                 if ch.is_archived:
                     continue
+                if cap > 0 and raw_total >= cap:
+                    break
                 cc_id = (
                     await session.execute(
                         text(
@@ -78,6 +81,7 @@ async def sync_slack_connector(_ctx: dict[str, Any], connector_id: str) -> dict[
                         vault=vault,
                         connector_channel_id=cc_id,
                         slack_client=client,
+                        max_messages=(cap - raw_total) if cap > 0 else None,
                     )
                     raw_total += summary.raw_events_inserted
                     channels_done += 1

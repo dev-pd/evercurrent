@@ -32,6 +32,7 @@ async def backfill_channel(
     vault: TokenVault,
     connector_channel_id: uuid.UUID,
     slack_client: SlackClient | None = None,
+    max_messages: int | None = None,
 ) -> BackfillSummary:
     channel_row = (
         await session.execute(
@@ -61,9 +62,9 @@ async def backfill_channel(
     msg_inserted = 0
 
     # Cursor-based batch pagination over the channel's full history: Slack returns
-    # a page (~200) at a time and we page until exhausted. No date/count cap —
-    # prod ingests everything; the demo stays small by keeping the Slack
-    # workspace itself small.
+    # a page (~200) at a time and we page until exhausted. `max_messages` caps
+    # ingestion (demo speed); prod leaves it unset to ingest everything.
+    capped = max_messages is not None and max_messages > 0
     try:
         cursor: str | None = None
         while True:
@@ -72,6 +73,8 @@ async def backfill_channel(
                 cursor=cursor,
             )
             for raw_msg in page.get("messages", []):
+                if capped and raw_inserted >= max_messages:
+                    break
                 inserted_raw, inserted_msg = await _persist_one(
                     session=session,
                     org_id=connector_row.org_id,
@@ -90,6 +93,8 @@ async def backfill_channel(
                         thread_ts=str(raw_msg["ts"]),
                     )
 
+            if capped and raw_inserted >= max_messages:
+                break
             cursor = page.get("response_metadata", {}).get("next_cursor") or None
             has_more = bool(page.get("has_more", False))
             if not cursor or not has_more:

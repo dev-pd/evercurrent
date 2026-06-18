@@ -72,6 +72,10 @@ class Settings(BaseSettings):
     # inherit the Auth0 org name (which re-syncs every login). Empty -> org name.
     default_project_name: str = "atlas"
 
+    # Demo cap: stop Slack backfill after this many messages so tagging stays
+    # fast. 0 / negative = unlimited (prod ingests everything).
+    slack_backfill_max_messages: int = 30
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
