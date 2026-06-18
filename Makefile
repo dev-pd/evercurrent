@@ -159,10 +159,10 @@ logs-pretty: ## Tail api logs and pretty-print structlog JSON
 demo-chatter: ## Post one persona-chatter batch to Slack now (personas -> Slack -> webhook -> pipeline). Needs SLACK_DEMO_BOT_TOKEN in .env.
 	@set -a; [ -f .env ] && . ./.env; set +a; cd apps/api && uv run python -m evercurrent.scripts.demo_chatter
 
-.PHONY: webhook-chatter
-webhook-chatter: ## Post a message AS YOUR USER (xoxp) -> live webhook -> pipeline. Needs SLACK_USER_TOKEN in .env. Vars: CHANNEL, COUNT, INTERVAL.
+.PHONY: webhook
+webhook: ## Post 10 live messages AS YOUR USER (xoxp) -> webhook -> pipeline (demo). Needs SLACK_USER_TOKEN. Vars: CHANNEL, COUNT, INTERVAL.
 	@set -a; [ -f .env ] && . ./.env; set +a; cd apps/api && \
-		CHATTER_CHANNEL=$${CHANNEL:-mech-design} CHATTER_COUNT=$${COUNT:-1} CHATTER_INTERVAL=$${INTERVAL:-3} \
+		CHATTER_CHANNEL=$${CHANNEL:-mech-design} CHATTER_COUNT=$${COUNT:-10} CHATTER_INTERVAL=$${INTERVAL:-2} \
 		uv run python -m evercurrent.scripts.user_chatter
 
 .PHONY: prune
