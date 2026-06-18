@@ -226,16 +226,26 @@ async def open_signals_for_member_subsystems(
     *,
     project_id: uuid.UUID | None,
     owned_subsystems: list[str],
+    eng_role: str | None = None,
     limit: int = 20,
 ) -> list[SignalSummary]:
-    if not owned_subsystems:
+    # Relevant if the signal's subsystems overlap the member's owned ones, OR
+    # the member's role is one the signal is addressed to (role = hard include,
+    # e.g. a "Supply, …" message reaches the supply member regardless of tags).
+    if not owned_subsystems and not eng_role:
         return []
 
     params: dict[str, object] = {
-        "subsystems": owned_subsystems,
+        "subsystems": owned_subsystems or [],
+        "role": eng_role or "",
         "lim": limit,
     }
-    where = "status = 'open' AND affected_subsystems && CAST(:subsystems AS text[])"
+    where = (
+        "status = 'open' AND ("
+        "  affected_subsystems && CAST(:subsystems AS text[])"
+        "  OR (:role <> '' AND :role = ANY(affected_roles))"
+        ")"
+    )
     if project_id is not None:
         where += " AND project_id = :pid"
         params["pid"] = str(project_id)

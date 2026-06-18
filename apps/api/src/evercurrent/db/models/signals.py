@@ -43,6 +43,11 @@ class Signal(Base):
         nullable=False,
         server_default="{}",
     )
+    affected_roles: Mapped[list[str]] = mapped_column(
+        ARRAY(Text),
+        nullable=False,
+        server_default="{}",
+    )
     confidence: Mapped[float] = mapped_column(Float, nullable=False, server_default="0.5")
     decided_at: Mapped[dt.datetime | None] = mapped_column(
         TIMESTAMP(timezone=True),

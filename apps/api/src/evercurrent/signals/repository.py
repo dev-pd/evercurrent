@@ -43,6 +43,21 @@ async def get_existing_signal(
     return dict(row)
 
 
+async def message_affected_roles(
+    session: AsyncSession,
+    message_id: uuid.UUID,
+) -> list[str]:
+    """The roles the classifier tagged the triggering message with (e.g.
+    {supply,qa}) — carried onto the signal so the digest can route by role."""
+    row = (
+        await session.execute(
+            text("SELECT affected_roles FROM message_tags WHERE message_id = :id"),
+            {"id": str(message_id)},
+        )
+    ).first()
+    return list(row[0]) if row and row[0] else []
+
+
 async def insert_signal(
     session: AsyncSession,
     *,
@@ -52,6 +67,7 @@ async def insert_signal(
     summary: str,
     body: str,
     affected_subsystems: list[str],
+    affected_roles: list[str],
     confidence: float,
     decided_at: Any | None,
     triggering_message_id: uuid.UUID,
@@ -60,11 +76,11 @@ async def insert_signal(
         text(
             "INSERT INTO signals "
             "(org_id, project_id, kind, summary, body, "
-            " affected_subsystems, confidence, decided_at, "
+            " affected_subsystems, affected_roles, confidence, decided_at, "
             " triggering_message_id) "
             "VALUES (:org_id, :project_id, :kind, :summary, :body, "
-            "        CAST(:subsystems AS text[]), :confidence, :decided_at, "
-            "        :mid) "
+            "        CAST(:subsystems AS text[]), CAST(:roles AS text[]), "
+            "        :confidence, :decided_at, :mid) "
             "RETURNING id",
         ),
         {
@@ -74,6 +90,7 @@ async def insert_signal(
             "summary": summary,
             "body": body,
             "subsystems": affected_subsystems,
+            "roles": affected_roles,
             "confidence": confidence,
             "decided_at": decided_at,
             "mid": str(triggering_message_id),

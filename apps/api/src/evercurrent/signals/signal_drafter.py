@@ -206,6 +206,7 @@ async def build_signal(
         )
         raise
 
+    affected_roles = await signals_repo.message_affected_roles(session, message_id)
     try:
         signal_id = await signals_repo.insert_signal(
             session,
@@ -215,6 +216,7 @@ async def build_signal(
             summary=draft.summary,
             body=draft.body,
             affected_subsystems=draft.affected_subsystems,
+            affected_roles=affected_roles,
             confidence=draft.confidence,
             decided_at=draft.decided_at if kind == "decision" else None,
             triggering_message_id=message_id,

@@ -177,6 +177,7 @@ async def generate_digest(
         session,
         project_id=project_id,
         owned_subsystems=member.owned_subsystems,
+        eng_role=member.role,
         limit=_OPEN_SIGNALS_LIMIT,
     )
 

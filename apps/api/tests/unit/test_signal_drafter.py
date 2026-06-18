@@ -116,9 +116,13 @@ def _patch_repo(
     async def fake_add_sources(*_args: Any, **kwargs: Any) -> None:
         captured["source_calls"].append(kwargs)
 
+    async def fake_affected_roles(*_args: Any, **_kwargs: Any) -> list[str]:
+        return ["supply"]
+
     monkeypatch.setattr(repo_mod, "get_existing_signal", fake_get_existing)
     monkeypatch.setattr(repo_mod, "insert_signal", fake_insert_signal)
     monkeypatch.setattr(repo_mod, "add_signal_sources", fake_add_sources)
+    monkeypatch.setattr(repo_mod, "message_affected_roles", fake_affected_roles)
     return captured
 
 
