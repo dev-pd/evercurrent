@@ -10,11 +10,13 @@ import uuid
 from typing import Any
 
 import structlog
+from sqlalchemy import text
 
 from evercurrent.config import get_settings
 from evercurrent.connectors.dropbox.sync import sync_folder as dropbox_sync_folder
 from evercurrent.connectors.slack.crypto import TokenVault
 from evercurrent.db.session import admin_session_scope
+from evercurrent.sse_publisher import publish_event
 
 log = structlog.get_logger(__name__)
 
@@ -26,6 +28,7 @@ async def sync_dropbox_connector(_ctx: dict[str, Any], connector_id: str) -> dic
         raise RuntimeError(msg)
     vault = TokenVault(settings.connector_secret_key)
     cid = uuid.UUID(connector_id)
+    project_id: str | None = None
     async with admin_session_scope() as session:
         try:
             result = await dropbox_sync_folder(
@@ -39,5 +42,19 @@ async def sync_dropbox_connector(_ctx: dict[str, Any], connector_id: str) -> dic
         except Exception as exc:  # noqa: BLE001
             log.warning("dropbox.webhook.sync_failed", connector_id=connector_id, error=str(exc))
             return {"status": "failed", "error": str(exc)}
+        row = (
+            await session.execute(
+                text(
+                    "SELECT p.id FROM projects p JOIN connectors c ON c.org_id = p.org_id "
+                    "WHERE c.id = :cid ORDER BY p.created_at DESC LIMIT 1",
+                ),
+                {"cid": connector_id},
+            )
+        ).first()
+        project_id = str(row[0]) if row else None
+
+    # Same SSE the Slack sync uses — open clients refresh (document count) live.
+    if project_id is not None:
+        publish_event(project_id, "sync_complete", {"source": "dropbox"})
     log.info("dropbox.webhook.synced", connector_id=connector_id, **result)
     return {"status": "ok", **result}

@@ -29,7 +29,11 @@ interface SourcesCardProps {
 export function SourcesCard({ connectors, projectId }: SourcesCardProps) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
+  const [syncing, setSyncing] = useState<Record<string, boolean>>({});
+
+  function setSyncingKind(kind: string, value: boolean) {
+    setSyncing((prev) => ({ ...prev, [kind]: value }));
+  }
 
   async function connect(kind: "slack" | "dropbox") {
     setBusy(kind);
@@ -67,25 +71,24 @@ export function SourcesCard({ connectors, projectId }: SourcesCardProps) {
                     {source.label}
                   </span>
                   <span className="text-xs text-[var(--text-muted)]">
-                    {connected
-                      ? source.kind === "slack"
-                        ? syncing
-                          ? copy.syncing
-                          : copy.synced(connector.message_count, connector.channels_count)
-                        : copy.documents(connector.message_count)
-                      : source.desc}
+                    {!connected
+                      ? source.desc
+                      : syncing[source.kind]
+                        ? copy.syncing
+                        : source.kind === "slack"
+                          ? copy.synced(connector.message_count, connector.channels_count)
+                          : copy.documents(connector.message_count)}
                   </span>
                 </div>
               </div>
               {connected ? (
                 <div className="flex items-center gap-2">
-                  {source.kind === "slack" && (
-                    <SyncButton
-                      connectorId={connector.id}
-                      projectId={projectId}
-                      onSyncingChange={setSyncing}
-                    />
-                  )}
+                  <SyncButton
+                    connectorId={connector.id}
+                    kind={source.kind}
+                    projectId={projectId}
+                    onSyncingChange={(v) => setSyncingKind(source.kind, v)}
+                  />
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
                     <Check className="h-3 w-3" /> {copy.connected}
                   </span>
@@ -113,11 +116,12 @@ export function SourcesCard({ connectors, projectId }: SourcesCardProps) {
 
 interface SyncButtonProps {
   connectorId: string;
+  kind: "slack" | "dropbox";
   projectId: string | null;
   onSyncingChange: (syncing: boolean) => void;
 }
 
-function SyncButton({ connectorId, projectId, onSyncingChange }: SyncButtonProps) {
+function SyncButton({ connectorId, kind, projectId, onSyncingChange }: SyncButtonProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -134,27 +138,23 @@ function SyncButton({ connectorId, projectId, onSyncingChange }: SyncButtonProps
   // poll, which settled before backfill finished and made the counts jump. We
   // also don't refresh mid-sync, so the count only updates once, to its final
   // value. A safety timeout covers a missed event.
-  const finish = useCallback(
-    async (memberCount: number) => {
-      if (finishedRef.current) return;
-      finishedRef.current = true;
-      if (timer.current) clearTimeout(timer.current);
-      await queryClient.invalidateQueries({ queryKey: ["members"] });
-      router.refresh();
-      setState(false);
-      toast.show(copy.syncComplete(memberCount), "success");
-    },
+  const finish = useCallback(() => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    if (timer.current) clearTimeout(timer.current);
+    void queryClient.invalidateQueries({ queryKey: ["members"] });
+    router.refresh();
+    setState(false);
+    toast.show(copy.syncDone, "success");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [queryClient, router, toast],
-  );
+  }, [queryClient, router, toast]);
 
   useEvents({
     projectId,
     enabled: syncing && !!projectId,
     onEvent: (event) => {
       if (event.type === "sync_complete") {
-        const members = typeof event.payload.members === "number" ? event.payload.members : 0;
-        void finish(members);
+        finish();
       }
     },
   });
@@ -163,7 +163,11 @@ function SyncButton({ connectorId, projectId, onSyncingChange }: SyncButtonProps
     finishedRef.current = false;
     setState(true);
     try {
-      await apiBrowser().syncSlack(connectorId);
+      if (kind === "dropbox") {
+        await apiBrowser().syncDropbox(connectorId);
+      } else {
+        await apiBrowser().syncSlack(connectorId);
+      }
     } catch {
       finishedRef.current = true;
       setState(false);
@@ -171,7 +175,7 @@ function SyncButton({ connectorId, projectId, onSyncingChange }: SyncButtonProps
       return;
     }
     toast.show(copy.syncStarted, "info");
-    timer.current = setTimeout(() => void finish(0), SYNC_SAFETY_MS);
+    timer.current = setTimeout(() => finish(), SYNC_SAFETY_MS);
   }
 
   return (

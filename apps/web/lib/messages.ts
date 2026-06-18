@@ -198,9 +198,10 @@ export const messages = {
     disconnectTitle: (label: string) => `Disconnect ${label}?`,
     disconnectConfirm: (label: string) =>
       `This removes ${label}'s synced messages and members from this workspace. You can re-connect and sync again anytime.`,
-    syncStarted: "Sync started — pulling messages in the background…",
+    syncStarted: "Sync started — pulling in the background…",
     syncComplete: (members: number) =>
       `Synced ✓ ${members} member${members === 1 ? "" : "s"} provisioned`,
+    syncDone: "Synced ✓",
     syncFailedToast: "Sync failed — please try again.",
     disconnected: (label: string) => `${label} disconnected`,
   },

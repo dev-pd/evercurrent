@@ -157,3 +157,35 @@ async def sync_dropbox_folder(
             detail=f"dropbox api error: {exc}",
         ) from exc
     return DropboxSyncResult(**result)
+
+
+class DropboxResyncResult(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    status: str
+    connector_id: uuid.UUID
+
+
+@router.post(
+    "/{connector_id}/dropbox/resync",
+    response_model=DropboxResyncResult,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def dropbox_resync(
+    session: SessionDep,
+    current_user: AdminUserDep,
+    connector_id: uuid.UUID,
+) -> DropboxResyncResult:
+    """Background re-ingest (mirrors the Slack Sync button): enqueue the
+    default-folder sync; sync_complete SSE refreshes the UI on finish."""
+    _ = current_user
+    if await ConnectorRepository(session).get_dropbox(connector_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
+
+    from evercurrent.jobs.celery_app import celery_app
+
+    celery_app.send_task(
+        "evercurrent.sync_dropbox_connector",
+        kwargs={"connector_id": str(connector_id)},
+    )
+    return DropboxResyncResult(status="started", connector_id=connector_id)

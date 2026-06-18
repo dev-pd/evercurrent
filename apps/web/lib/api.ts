@@ -122,6 +122,7 @@ export interface ApiClient {
   listConnectors(): Promise<ConnectorSummary[]>;
   startInstall(kind: "slack" | "dropbox"): Promise<InstallResponse>;
   syncSlack(connectorId: string): Promise<{ status: string; connector_id: string }>;
+  syncDropbox(connectorId: string): Promise<{ status: string; connector_id: string }>;
   disconnect(connectorId: string): Promise<{ status: string; kind: string }>;
   listProjects(): Promise<Project[]>;
   getToday(projectId: string): Promise<TodayV2>;
@@ -178,6 +179,14 @@ function createClient(getCtx: () => Promise<FetchContext>): ApiClient {
     async syncSlack(connectorId) {
       return apiFetch(
         `/api/v1/connectors/${connectorId}/slack/sync`,
+        z.object({ status: z.string(), connector_id: z.string() }),
+        await getCtx(),
+        { method: "POST" },
+      );
+    },
+    async syncDropbox(connectorId) {
+      return apiFetch(
+        `/api/v1/connectors/${connectorId}/dropbox/resync`,
         z.object({ status: z.string(), connector_id: z.string() }),
         await getCtx(),
         { method: "POST" },
