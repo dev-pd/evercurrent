@@ -32,6 +32,13 @@ class SignalSourceRef(BaseModel):
     snippet: str | None = None
 
 
+class ResolveCheck(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True)
+
+    resolves: bool
+    reason: str | None = None
+
+
 class SignalListItem(BaseModel):
     model_config = ConfigDict(strict=True)
 

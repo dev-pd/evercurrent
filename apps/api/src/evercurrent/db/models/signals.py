@@ -48,6 +48,15 @@ class Signal(Base):
         TIMESTAMP(timezone=True),
         nullable=True,
     )
+    resolved_at: Mapped[dt.datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+    )
+    resolving_message_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("messages.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     created_at: Mapped[dt.datetime] = _ts_default()
     updated_at: Mapped[dt.datetime] = mapped_column(
         TIMESTAMP(timezone=True),

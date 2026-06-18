@@ -127,6 +127,23 @@ async def resolve_thread_parent_text(
     return str(row[0])
 
 
+async def thread_root_for_message(
+    session: AsyncSession,
+    message_id: uuid.UUID,
+) -> uuid.UUID | None:
+    """The thread root a message replies to, or None when it is a thread root
+    itself / standalone — i.e. has no earlier in-thread context to resolve."""
+    row = (
+        await session.execute(
+            text("SELECT thread_root_id FROM messages WHERE id = :id"),
+            {"id": str(message_id)},
+        )
+    ).first()
+    if row is None or row[0] is None:
+        return None
+    return uuid.UUID(str(row[0]))
+
+
 async def resolve_author_role(
     session: AsyncSession,
     *,

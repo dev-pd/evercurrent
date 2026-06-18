@@ -86,6 +86,56 @@ async def insert_signal(
     return uuid.UUID(str(row[0]))
 
 
+async def set_status(
+    session: AsyncSession,
+    *,
+    signal_id: uuid.UUID,
+    status: str,
+    resolving_message_id: uuid.UUID | None = None,
+) -> bool:
+    """Write a signal's status. Stamps `resolved_at` + records the closing
+    message when resolving; clears both on any other status (e.g. reopen).
+    Returns False if no signal matched."""
+    result = await session.execute(
+        text(
+            "UPDATE signals SET "
+            "  status = :status, "
+            "  resolved_at = CASE WHEN :status = 'resolved' THEN now() ELSE NULL END, "
+            "  resolving_message_id = "
+            "    CASE WHEN :status = 'resolved' THEN :rmid ELSE NULL END "
+            "WHERE id = :id "
+            "RETURNING id",
+        ),
+        {
+            "id": str(signal_id),
+            "status": status,
+            "rmid": str(resolving_message_id) if resolving_message_id else None,
+        },
+    )
+    return result.first() is not None
+
+
+async def open_signals_in_thread(
+    session: AsyncSession,
+    *,
+    thread_root_id: uuid.UUID,
+) -> list[dict[str, Any]]:
+    """Open signals anchored anywhere in a message thread — the signal's
+    triggering message is the thread root itself or a reply under it. Drives
+    the in-thread auto-resolution check."""
+    result = await session.execute(
+        text(
+            "SELECT s.id, s.kind, s.summary, s.body, s.project_id "
+            "FROM signals s "
+            "JOIN messages m ON m.id = s.triggering_message_id "
+            "WHERE s.status = 'open' "
+            "  AND (m.id = :root OR m.thread_root_id = :root)",
+        ),
+        {"root": str(thread_root_id)},
+    )
+    return [dict(r) for r in result.mappings().all()]
+
+
 async def add_signal_sources(
     session: AsyncSession,
     *,
